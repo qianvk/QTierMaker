@@ -23,6 +23,9 @@ private slots:
     void doubleClickingPreviewImageCloses();
     void clickingOutsidePreviewImageCloses();
     void operationToolTipPreferenceIncludesPreview();
+    void changingPreviewEffectPreservesAnimationState();
+    void liquidGlassSelectsUnfilteredProjectBackground();
+    void plusAndMinusScaleTheLiquidGlassLayer();
     void windowChromeDoesNotStealPreviewInput();
 };
 
@@ -180,6 +183,68 @@ void PreviewOverlayTest::operationToolTipPreferenceIncludesPreview() {
     overlay.setToolTipsEnabled(true);
     QVERIFY(!overlay.toolTipTextAt(position).isEmpty());
     QVERIFY(!overlay.toolTip().isEmpty());
+}
+
+void PreviewOverlayTest::changingPreviewEffectPreservesAnimationState() {
+    PreviewOverlay overlay;
+    overlay.resize(800, 600);
+    const QRect previewGeometry(180, 120, 440, 360);
+    overlay.setPreviewGeometry(previewGeometry);
+    overlay.setBackdropProgress(0.42);
+
+    overlay.setPreviewEffect(BackdropEffect::LiquidGlass);
+    QCOMPARE(overlay.previewEffect(), BackdropEffect::LiquidGlass);
+    QCOMPARE(overlay.previewGeometry(), previewGeometry);
+    QCOMPARE(overlay.backdropProgress(), 0.42);
+
+    overlay.setPreviewEffect(BackdropEffect::DepthSoftFocus);
+    QCOMPARE(overlay.previewEffect(), BackdropEffect::DepthSoftFocus);
+    QCOMPARE(overlay.previewGeometry(), previewGeometry);
+    QCOMPARE(overlay.backdropProgress(), 0.42);
+}
+
+void PreviewOverlayTest::liquidGlassSelectsUnfilteredProjectBackground() {
+    QCOMPARE(PreviewOverlay::resolveBackgroundTreatment(
+                 BackdropEffect::LiquidGlass, PreviewBackgroundMode::None, true, true),
+             PreviewBackgroundTreatment::ProjectImage);
+    QCOMPARE(PreviewOverlay::resolveBackgroundTreatment(
+                 BackdropEffect::LiquidGlass, PreviewBackgroundMode::SelfImage, true, true),
+             PreviewBackgroundTreatment::ProjectImage);
+    QCOMPARE(PreviewOverlay::resolveBackgroundTreatment(
+                 BackdropEffect::LiquidGlass, PreviewBackgroundMode::SelfImage, true, false),
+             PreviewBackgroundTreatment::SolidColor);
+    QCOMPARE(PreviewOverlay::resolveBackgroundTreatment(
+                 BackdropEffect::DepthSoftFocus, PreviewBackgroundMode::SelfImage, true, true),
+             PreviewBackgroundTreatment::DepthSoftFocus);
+}
+
+void PreviewOverlayTest::plusAndMinusScaleTheLiquidGlassLayer() {
+    QWidget host;
+    host.resize(800, 600);
+    PreviewOverlay overlay(&host);
+    overlay.setGeometry(host.rect());
+    overlay.setPreviewEffect(BackdropEffect::LiquidGlass);
+    host.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&host));
+
+    QPixmap image(640, 360);
+    image.fill(QColor(68, 126, 214));
+    overlay.openPreview(QRect(220, 180, 72, 72), image);
+    QTRY_COMPARE_WITH_TIMEOUT(overlay.liquidGlassScale(), 1.0, 1000);
+    QTRY_VERIFY_WITH_TIMEOUT(overlay.previewGeometry().width() > 400, 1000);
+    QTest::qWait(320);
+    const QSize defaultSize = overlay.previewGeometry().size();
+
+    QTest::keyClick(&overlay, Qt::Key_Plus);
+    QCOMPARE(overlay.liquidGlassScale(), 1.1);
+    QVERIFY(overlay.previewGeometry().width() > defaultSize.width());
+
+    QTest::keyClick(&overlay, Qt::Key_Minus);
+    QCOMPARE(overlay.liquidGlassScale(), 1.0);
+    QCOMPARE(overlay.previewGeometry().size(), defaultSize);
+
+    overlay.closePreview();
+    QTRY_VERIFY_WITH_TIMEOUT(!overlay.isOpen(), 1000);
 }
 
 QTEST_MAIN(PreviewOverlayTest)

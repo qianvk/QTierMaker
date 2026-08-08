@@ -255,6 +255,10 @@ void RootWidget::buildUi(ProjectRepository* repository, RecentProjectsStore* rec
     m_previewOverlay->setGeometry(rect());
     m_previewOverlay->setBackgroundMode(settings ? settings->previewBackgroundMode()
                                                  : PreviewBackgroundMode::None);
+    m_previewOverlay->setPreviewEffect(settings ? settings->previewEffect()
+                                                : BackdropEffect::DepthSoftFocus);
+    m_previewOverlay->setLiquidGlassParameters(settings ? settings->liquidGlassParameters()
+                                                        : LiquidGlassParameters{});
     m_previewOverlay->setToolTipsEnabled(settings ? settings->tierListToolTipsEnabled() : true);
     connect(m_editPage, &EditPage::imagePreviewRequested, m_previewOverlay,
             &PreviewOverlay::openPreview);
@@ -263,6 +267,13 @@ void RootWidget::buildUi(ProjectRepository* repository, RecentProjectsStore* rec
     if (settings) {
         connect(settings, &AppSettings::previewBackgroundModeChanged, m_previewOverlay,
                 &PreviewOverlay::setBackgroundMode);
+        connect(settings, &AppSettings::previewEffectChanged, m_previewOverlay,
+                &PreviewOverlay::setPreviewEffect);
+        connect(settings, &AppSettings::liquidGlassParametersChanged, m_previewOverlay,
+                [this, settings]() {
+                    m_previewOverlay->setLiquidGlassParameters(
+                        settings->liquidGlassParameters());
+                });
         connect(settings, &AppSettings::tierListToolTipsEnabledChanged, m_previewOverlay,
                 &PreviewOverlay::setToolTipsEnabled);
     }
@@ -281,6 +292,8 @@ void RootWidget::buildUi(ProjectRepository* repository, RecentProjectsStore* rec
         m_previewSystemButtonStateCaptured = false;
         Logger::info(QStringLiteral("ui.preview.input.barrier enabled=0 scope=window"));
     });
+    connect(m_previewOverlay, &PreviewOverlay::closed, m_editPage,
+            &EditPage::restoreGalleryAfterPreview);
 
     m_splitter->addWidget(m_sidebarShell);
     m_splitter->addWidget(m_content);
@@ -548,7 +561,8 @@ QFrame* RootWidget::createContent(ProjectRepository* repository,
     m_pages->setContentsMargins(0, 0, 0, 0);
     m_editPage =
         new EditPage(repository, recentProjects, assetManager, thumbnailCache, settings, content);
-    m_projectsPage = new ProjectsPage(repository, recentProjects, settings, content);
+    m_projectsPage =
+        new ProjectsPage(repository, recentProjects, thumbnailCache, settings, content);
     m_pages->addWidget(m_editPage);
     m_pages->addWidget(m_projectsPage);
     contentLayout->addWidget(m_pages, 1);

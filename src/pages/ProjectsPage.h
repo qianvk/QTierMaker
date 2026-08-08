@@ -16,6 +16,7 @@ namespace tlm {
 class AppSettings;
 class ProjectRepository;
 class RecentProjectsModel;
+class ThumbnailCache;
 
 /** Recent-project browser with search, sorting, missing markers, and file actions. */
 class ProjectsPage : public QWidget {
@@ -23,7 +24,7 @@ class ProjectsPage : public QWidget {
 
 public:
     ProjectsPage(ProjectRepository* repository, RecentProjectsStore* recentProjects,
-                 AppSettings* settings, QWidget* parent = nullptr);
+                 ThumbnailCache* thumbnailCache, AppSettings* settings, QWidget* parent = nullptr);
 
 public slots:
     void refresh();
@@ -49,6 +50,7 @@ private:
 
     ProjectRepository* m_repository{nullptr};
     RecentProjectsStore* m_recentProjects{nullptr};
+    ThumbnailCache* m_thumbnailCache{nullptr};
     AppSettings* m_settings{nullptr};
     QLineEdit* m_search{nullptr};
     QComboBox* m_sort{nullptr};

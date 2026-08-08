@@ -37,6 +37,7 @@ ui_*.h
 
 # Local app data and user projects
 *.tlmproject
+!samples/**/*.tlmproject
 *.tlmproject.assets/
 /assets/
 thumbnails/

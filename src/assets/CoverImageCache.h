@@ -7,9 +7,10 @@
 
 namespace tlm {
 
-/** Caches a center-cropped image at the exact device-pixel size used for painting. */
+/** Caches a decoded source and its center-cropped device-pixel rendering. */
 class CoverImageCache final {
 public:
+    const QImage& sourceImage(const QString& path);
     const QPixmap& pixmap(const QString& path, QSize logicalSize, qreal devicePixelRatio);
     void clear();
 

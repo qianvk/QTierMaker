@@ -33,13 +33,16 @@ private:
     void rebuildPreferencePages();
     void updateNavWidth();
     void refreshPreferenceControlStyles();
+    void refreshLiquidGlassAvailability();
     void refreshUpdateActions();
     void refreshUpdatePolicyText();
     void applyUpdateResult(const UpdateCheckResult& result);
     void applyUpdateFailure(const QString& reason);
     QWidget* createGeneralPage();
+    QWidget* createLiquidGlassPage();
     QWidget* createUpdatePage();
     QWidget* createAboutPage();
+    QWidget* createScrollablePage(QWidget* content);
 
     AppSettings* m_settings{nullptr};
     LanguageManager* m_languageManager{nullptr};

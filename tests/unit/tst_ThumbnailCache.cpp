@@ -14,6 +14,7 @@ class ThumbnailCacheTest final : public QObject {
 
 private slots:
     void detailEvictionRetainsFallbacksAndUsesRecentAccess();
+    void repeatedSmallRequestsCoalesceScaledDecode();
     void coverRenderingIsReusedUntilPaintSizeChanges();
 };
 
@@ -55,6 +56,35 @@ void ThumbnailCacheTest::detailEvictionRetainsFallbacksAndUsesRecentAccess() {
     for (const QString& id : ids) {
         QVERIFY2(!cache.thumbnail(id).isNull(), "Every image must retain a fallback pixmap.");
     }
+}
+
+void ThumbnailCacheTest::repeatedSmallRequestsCoalesceScaledDecode() {
+    QTemporaryDir directory;
+    QVERIFY(directory.isValid());
+    const QString path = directory.filePath(QStringLiteral("project-cover.png"));
+    QImage image(QSize(2400, 1350), QImage::Format_ARGB32_Premultiplied);
+    image.fill(QColor(72, 116, 184));
+    QVERIFY(image.save(path));
+
+    ThumbnailCache cache;
+    QSignalSpy readySpy(&cache, &ThumbnailCache::thumbnailReady);
+    const QString key = QStringLiteral("projects.cover|test");
+    const QSize paintPixelSize(148, 108);
+    for (int request = 0; request < 64; ++request) {
+        cache.requestThumbnail(key, path, paintPixelSize);
+    }
+    QTRY_COMPARE_WITH_TIMEOUT(readySpy.count(), 1, 5000);
+
+    const QPixmap thumbnail = cache.thumbnail(key, paintPixelSize);
+    QVERIFY(!thumbnail.isNull());
+    QVERIFY(thumbnail.width() <= 256);
+    QVERIFY(thumbnail.height() <= 192);
+
+    for (int request = 0; request < 64; ++request) {
+        cache.requestThumbnail(key, path, paintPixelSize);
+    }
+    QTest::qWait(50);
+    QCOMPARE(readySpy.count(), 1);
 }
 
 void ThumbnailCacheTest::coverRenderingIsReusedUntilPaintSizeChanges() {

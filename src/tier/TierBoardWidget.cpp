@@ -133,4 +133,16 @@ void TierBoardWidget::setToolTipsEnabled(bool enabled) {
     }
 }
 
+void TierBoardWidget::setOverviewBackdropEffect(BackdropEffect effect) {
+    if (m_view) {
+        m_view->setOverviewBackdropEffect(effect);
+    }
+}
+
+void TierBoardWidget::setLiquidGlassParameters(const LiquidGlassParameters& parameters) {
+    if (m_view) {
+        m_view->setLiquidGlassParameters(parameters);
+    }
+}
+
 } // namespace tlm
