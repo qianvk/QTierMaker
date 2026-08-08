@@ -1,70 +1,26 @@
 # TierListMaker
 
-TierListMaker is a native Qt 6/C++20 desktop app for creating personal tier lists. It uses Qt
-Widgets, JSON project files, local assets, QWindowKit's native window integration, and VkUI's
-cross-platform control style.
+TierListMaker is a native Qt desktop app for building personal tier lists on Windows, macOS,
+and Linux. Projects stay local and keep their imported images, tier structure, background, and
+presentation settings together.
 
-![Screenshot placeholder](docs/screenshot-placeholder.svg)
+## Edit and Arrange
 
-## Features
+![Anime Girls v5 open in the tier editor](docs/screenshots/editor.webp)
 
-- Create, save, reopen, and export `.tlmproject` files.
-- Import PNG, JPEG, BMP, GIF first frames, and WebP when the Qt image plugin is available.
-- Open the gallery, then drag imported images into tier rows.
-- Rename, reorder, recolor, add, and remove tier rows.
-- Spacebar image preview with a Quick Look-style overlay.
-- Recent projects page with search and missing-file markers.
-- Preferences for language, appearance, import behavior, autosave, and update checks.
-- Local-first behavior with no telemetry by default.
+Arrange images directly on the tier board, customize tiers and backgrounds, and keep unranked
+images ready in the project gallery.
 
-## Build
+## Gallery Overview
 
-Install Qt 6.6+, CMake 3.24+, and initialize submodules, then configure with a local Qt prefix path:
+![Anime Girls v5 shown in Gallery Overview](docs/screenshots/gallery-overview.webp)
 
-```bash
-git submodule update --init --recursive
-cmake -S . -B build/default -G Ninja \
-  -DCMAKE_BUILD_TYPE=Debug \
-  -DCMAKE_PREFIX_PATH="/path/to/Qt/6.x.x/platform"
-cmake --build build/default
-```
+Gallery Overview brings the full image collection into one balanced canvas for quick scanning,
+selection, and preview.
 
-You can copy `CMakeUserPresets.json.example` to `CMakeUserPresets.json` and set your local paths there. The user preset is ignored by Git.
+## Image Preview
 
-## Run
+![An Anime Girls v5 image shown in Preview](docs/screenshots/image-preview.webp)
 
-```bash
-./build/default/TierListMaker
-```
-
-On macOS with a bundle generator:
-
-```bash
-open build/default/TierListMaker.app
-```
-
-## Test
-
-```bash
-ctest --test-dir build/default --output-on-failure
-```
-
-## Runtime Requirements
-
-- Qt 6 Core, Gui, Widgets, Svg, Network, and Concurrent modules.
-- QWindowKit 1.5.1 and VkUI 0.1.0, pinned as submodules under `third_party/`.
-- A desktop platform supported by Qt 6.
-
-## Third-Party Dependencies
-
-- Qt 6, licensed by The Qt Company under GPL/LGPL/commercial terms.
-- QWindowKit, licensed under Apache-2.0.
-- VkUI, licensed under MIT.
-
-## Privacy
-
-TierListMaker is local-first. It does not upload user images or projects and does not include telemetry by default. See [docs/privacy.md](docs/privacy.md).
-
-## License
-
-MIT. See [LICENSE](LICENSE).
+Preview presents the selected image against the project background without leaving the current
+workspace.

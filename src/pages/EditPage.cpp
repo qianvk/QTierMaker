@@ -1,6 +1,7 @@
 #include "pages/EditPage.h"
 
 #include "assets/CoverImageCache.h"
+#include "assets/ImageLoader.h"
 #include "widgets/DestructiveActionDialog.h"
 
 #include "logging/Logger.h"
@@ -38,6 +39,7 @@
 #include <QPixmap>
 #include <QPointer>
 #include <QPushButton>
+#include <QScreen>
 #include <QScrollArea>
 #include <QSignalBlocker>
 #include <QSizePolicy>
@@ -66,6 +68,14 @@ constexpr int kTierBoardOuterMargin = 16;
 constexpr int kTierBoardShadowExtent = 18;
 constexpr auto kDefaultBackgroundIconPath = ":/images/app-icon.png";
 constexpr qreal kDefaultBackgroundIconVisibility = 0.22;
+
+QSize displayDecodeTarget(const QWidget* context) {
+    QScreen* screen = context ? context->screen() : QApplication::primaryScreen();
+    const QSize logicalSize = screen ? screen->availableGeometry().size() : QSize(1920, 1080);
+    const qreal devicePixelRatio = screen ? screen->devicePixelRatio() : 1.0;
+    return QSize(qMax(1, qCeil(logicalSize.width() * devicePixelRatio)),
+                 qMax(1, qCeil(logicalSize.height() * devicePixelRatio)));
+}
 
 class TierBoardShadowLayer final : public QWidget {
 public:
@@ -1126,25 +1136,13 @@ void EditPage::deleteSelectedImage() {
 }
 
 void EditPage::previewSelectedImage() {
-    const QPixmap pixmap = pixmapForImage(m_selectedImageId);
-    if (!pixmap.isNull()) {
-        QRect source = m_board ? m_board->imageSourceRect(m_selectedImageId) : QRect();
-        if (!source.isValid() && m_galleryPopover) {
-            source = m_galleryPopover->imageSourceRect(m_selectedImageId);
-        }
-        if (!source.isValid()) {
-            const QRect fallback(width() / 2 - 20, height() / 2 - 20, 40, 40);
-            source = QRect(mapTo(window(), fallback.topLeft()), fallback.size());
-        }
-        Logger::info(
-            QStringLiteral("tier.edit.preview.request source=space imageId=%1 rect=(%2,%3,%4,%5)")
-                .arg(m_selectedImageId)
-                .arg(source.x())
-                .arg(source.y())
-                .arg(source.width())
-                .arg(source.height()));
-        emit imagePreviewRequested(source, pixmap);
+    QRect source = m_board ? m_board->imageSourceRect(m_selectedImageId) : QRect();
+    bool fromGallery = false;
+    if (!source.isValid() && m_galleryPopover && m_galleryPopover->isOpen()) {
+        source = m_galleryPopover->imageSourceRect(m_selectedImageId);
+        fromGallery = source.isValid();
     }
+    requestImagePreview(m_selectedImageId, source, fromGallery);
 }
 
 bool EditPage::confirmSaveIfDirty() {
@@ -1244,18 +1242,12 @@ void EditPage::toggleGallery(QWidget* anchor) {
         connect(popover, &ImageGalleryPopover::dragActiveChanged, this, [](bool active) {
             Logger::debug(QStringLiteral("tier.gallery.drag.active active=%1").arg(active));
         });
-        connect(popover, &ImageGalleryPopover::imageSelected, this, [this](const QString& imageId) {
-            m_selectedImageId = imageId;
-            refreshUi();
-        });
+        connect(popover, &ImageGalleryPopover::imageSelected, this,
+                [this](const QString& imageId) { setSelectedImageId(imageId); });
         connect(popover, &ImageGalleryPopover::imagePreviewRequested, this,
                 [this](const QString& imageId, const QRect& source) {
-                    m_selectedImageId = imageId;
-                    const QPixmap pixmap = pixmapForImage(imageId);
-                    if (!pixmap.isNull()) {
-                        emit imagePreviewRequested(source, pixmap);
-                    }
-                    refreshUi();
+                    setSelectedImageId(imageId);
+                    requestImagePreview(imageId, source, true);
                 });
         connect(popover, &ImageGalleryPopover::imageEditRequested, this, &EditPage::editImage);
         connect(popover, &ImageGalleryPopover::imageRemoveRequested, this,
@@ -1300,6 +1292,15 @@ void EditPage::toggleGalleryMissionControlMode() {
     if (m_board) {
         m_board->toggleGalleryMissionControlMode();
     }
+}
+
+void EditPage::restoreGalleryAfterPreview() {
+    if (!m_galleryPopover || !m_galleryPopover->restoreAfterPreview()) {
+        return;
+    }
+    m_activePopover = TransientPopover::Gallery;
+    Logger::debug(
+        QStringLiteral("tier.gallery.popover.preview.restore imageId=%1").arg(m_selectedImageId));
 }
 
 void EditPage::layoutOverlays() {
@@ -1356,6 +1357,14 @@ void EditPage::buildUi() {
         m_board->setToolTipsEnabled(m_settings->tierListToolTipsEnabled());
         connect(m_settings, &AppSettings::tierListToolTipsEnabledChanged, m_board,
                 &TierBoardWidget::setToolTipsEnabled);
+        m_board->setOverviewBackdropEffect(m_settings->overviewBackdropEffect());
+        connect(m_settings, &AppSettings::overviewBackdropEffectChanged, m_board,
+                &TierBoardWidget::setOverviewBackdropEffect);
+        m_board->setLiquidGlassParameters(m_settings->liquidGlassParameters());
+        connect(m_settings, &AppSettings::liquidGlassParametersChanged, m_board,
+                [this]() {
+                    m_board->setLiquidGlassParameters(m_settings->liquidGlassParameters());
+                });
     }
 
     connect(m_board, &TierBoardWidget::imageDropped, this, &EditPage::moveImageToRow);
@@ -1374,25 +1383,11 @@ void EditPage::buildUi() {
             &EditPage::removeImageFromTierRow);
     connect(m_board, &TierBoardWidget::imageRemoveFromGalleryRequested, this,
             &EditPage::removeImageFromGallery);
-    connect(m_board, &TierBoardWidget::imageSelected, this, [this](const QString& imageId) {
-        if (m_selectedImageId == imageId) {
-            return;
-        }
-        m_selectedImageId = imageId;
-        if (m_board) {
-            m_board->setSelectedImageId(imageId);
-        }
-        if (m_galleryPopover) {
-            m_galleryPopover->setSelectedImageId(imageId);
-        }
-    });
+    connect(m_board, &TierBoardWidget::imageSelected, this, &EditPage::setSelectedImageId);
     connect(m_board, &TierBoardWidget::imagePreviewRequested, this,
             [this](const QString& imageId, const QRect& source) {
-                m_selectedImageId = imageId;
-                const QPixmap pixmap = pixmapForImage(imageId);
-                if (!pixmap.isNull()) {
-                    emit imagePreviewRequested(source, pixmap);
-                }
+                setSelectedImageId(imageId);
+                requestImagePreview(imageId, source, false);
             });
 
     layoutOverlays();
@@ -2177,12 +2172,63 @@ bool EditPage::hasImagesInRows() const {
                        [](const TierRow& row) { return !row.imageIds.isEmpty(); });
 }
 
+void EditPage::setSelectedImageId(const QString& imageId) {
+    if (m_selectedImageId == imageId) {
+        return;
+    }
+    m_selectedImageId = imageId;
+    if (m_board) {
+        m_board->setSelectedImageId(imageId);
+    }
+    if (m_galleryPopover) {
+        m_galleryPopover->setSelectedImageId(imageId);
+    }
+}
+
+void EditPage::requestImagePreview(const QString& imageId, QRect sourceRect, bool fromGallery) {
+    const QPixmap pixmap = pixmapForImage(imageId);
+    if (pixmap.isNull()) {
+        return;
+    }
+    if (!sourceRect.isValid()) {
+        const QRect fallback(width() / 2 - 20, height() / 2 - 20, 40, 40);
+        sourceRect = QRect(mapTo(window(), fallback.topLeft()), fallback.size());
+    }
+
+    const bool gallerySuspended =
+        fromGallery && m_galleryPopover && m_galleryPopover->suspendForPreview();
+    Logger::info(
+        QStringLiteral("tier.edit.preview.request imageId=%1 source=(%2,%3,%4,%5) gallery=%6 "
+                       "projectBackground=%7")
+            .arg(imageId)
+            .arg(sourceRect.x())
+            .arg(sourceRect.y())
+            .arg(sourceRect.width())
+            .arg(sourceRect.height())
+            .arg(gallerySuspended)
+            .arg(!m_project.canvas.value(QStringLiteral("backgroundImagePath"))
+                      .toString()
+                      .isEmpty()));
+    const QString projectBackgroundPath = resolvedCanvasImagePath(
+        m_project, m_project.canvas.value(QStringLiteral("backgroundImagePath")).toString());
+    emit imagePreviewRequested(sourceRect, pixmap, projectBackgroundPath,
+                               canvasBackgroundVisibility(m_project.canvas));
+}
+
 QPixmap EditPage::pixmapForImage(const QString& imageId) const {
     const TierImage* image = m_project.imageById(imageId);
     if (!image) {
         return {};
     }
-    return QPixmap(m_assetManager->resolvedImagePath(m_project, *image));
+    const QString path = m_assetManager->resolvedImagePath(m_project, *image);
+    auto loaded = ImageLoader::load(path, displayDecodeTarget(this));
+    if (!loaded) {
+        Logger::warn(
+            QStringLiteral("tier.image.display.load.failed imageId=%1 path=\"%2\" error=\"%3\"")
+                .arg(imageId, path, loaded.error().details));
+        return {};
+    }
+    return QPixmap::fromImage(loaded.takeValue());
 }
 
 } // namespace tlm

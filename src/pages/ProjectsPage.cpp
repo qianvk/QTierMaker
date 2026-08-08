@@ -1,7 +1,6 @@
 #include "pages/ProjectsPage.h"
 
-#include "widgets/DestructiveActionDialog.h"
-
+#include "assets/ThumbnailCache.h"
 #include "logging/Logger.h"
 #include "pages/ProjectLocationDialog.h"
 #include "persistence/ProjectRepository.h"
@@ -9,14 +8,16 @@
 #include "settings/AppSettings.h"
 #include "theme/Theme.h"
 #include "tier/CropEditorWidget.h"
+#include "widgets/DestructiveActionDialog.h"
 #include "window/AppDialog.h"
+#include "window/AppMessageDialog.h"
 
 #include <QAbstractItemView>
 #include <QAbstractListModel>
 #include <QAction>
+#include <QApplication>
 #include <QComboBox>
 #include <QCoreApplication>
-#include <QCursor>
 #include <QDateTime>
 #include <QDialogButtonBox>
 #include <QDir>
@@ -26,18 +27,17 @@
 #include <QFormLayout>
 #include <QHBoxLayout>
 #include <QImage>
-#include <QItemSelectionModel>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QLabel>
 #include <QLineEdit>
 #include <QListView>
 #include <QMenu>
-#include "window/AppMessageDialog.h"
 #include <QPainter>
 #include <QPainterPath>
 #include <QPixmap>
 #include <QPushButton>
+#include <QSet>
 #include <QSignalBlocker>
 #include <QStandardPaths>
 #include <QStyledItemDelegate>
@@ -47,6 +47,7 @@
 #include <QVBoxLayout>
 
 #include <algorithm>
+#include <utility>
 
 #include <vkui/core/VkIcon.h>
 #include <vkui/widgets/VkComboBox.h>
@@ -61,8 +62,8 @@ enum ProjectRole {
     RowCountRole,
     ImageCountRole,
     ExistsRole,
-    CoverPathRole,
-    BackgroundPathRole
+    DisplayImagePathRole,
+    ThumbnailKeyRole
 };
 
 QString resolveProjectRelativePath(const QString& projectPath, const QString& storedPath) {
@@ -214,15 +215,14 @@ bool sameFilePath(const QString& left, const QString& right) {
 #endif
 }
 
-bool indexIsUnderCursor(const QStyleOptionViewItem& option, const QModelIndex& index) {
-    const auto* viewport = qobject_cast<const QWidget*>(option.widget);
-    const auto* view =
-        qobject_cast<const QAbstractItemView*>(viewport ? viewport->parentWidget() : nullptr);
-    if (!viewport || !view) {
-        return option.state.testFlag(QStyle::State_MouseOver);
+QString projectThumbnailKey(const QString& path) {
+    const QFileInfo file(path);
+    if (!file.isFile()) {
+        return {};
     }
-    const QPoint localPos = viewport->mapFromGlobal(QCursor::pos());
-    return viewport->rect().contains(localPos) && view->indexAt(localPos) == index;
+    return QStringLiteral("projects.cover|%1|%2|%3")
+        .arg(QDir::cleanPath(file.absoluteFilePath()), QString::number(file.size()),
+             QString::number(file.lastModified().toMSecsSinceEpoch()));
 }
 
 QString standardProjectFolderForPath(const QString& projectPath) {
@@ -282,17 +282,43 @@ QRect cropSourceRect(const QRectF& normalized, const QSize& sourceSize) {
 } // namespace
 
 class RecentProjectsModel : public QAbstractListModel {
+    struct ProjectListEntry {
+        RecentProjectEntry entry;
+        bool exists{false};
+        QString displayImagePath;
+        QString thumbnailKey;
+    };
+
 public:
     enum SortMode { LastEdited, Name, Created, Path };
     explicit RecentProjectsModel(QObject* parent = nullptr) : QAbstractListModel(parent) {}
 
     void setEntries(QVector<RecentProjectEntry> entries) {
+        // Resolve filesystem-backed roles once; delegate painting must remain bounded and pure.
+        QVector<ProjectListEntry> prepared;
+        prepared.reserve(entries.size());
         for (RecentProjectEntry& entry : entries) {
-            if (entry.backgroundImagePath.isEmpty() && QFileInfo::exists(entry.filePath)) {
+            const bool exists = QFileInfo::exists(entry.filePath);
+            if (entry.backgroundImagePath.isEmpty() && exists) {
                 entry.backgroundImagePath = backgroundPathFromProjectFile(entry.filePath);
             }
+            const QString coverPath =
+                resolveProjectRelativePath(entry.filePath, entry.thumbnailPath);
+            const QString backgroundPath =
+                resolveProjectRelativePath(entry.filePath, entry.backgroundImagePath);
+            const QString displayImagePath = QFileInfo::exists(coverPath)
+                                                 ? coverPath
+                                                 : (QFileInfo::exists(backgroundPath)
+                                                        ? backgroundPath
+                                                        : QString());
+            prepared.append(ProjectListEntry{
+                std::move(entry),
+                exists,
+                displayImagePath,
+                projectThumbnailKey(displayImagePath),
+            });
         }
-        m_all = std::move(entries);
+        m_all = std::move(prepared);
         rebuild();
     }
 
@@ -314,7 +340,8 @@ public:
         if (!index.isValid() || index.row() < 0 || index.row() >= m_entries.size()) {
             return {};
         }
-        const RecentProjectEntry& entry = m_entries[index.row()];
+        const ProjectListEntry& item = m_entries[index.row()];
+        const RecentProjectEntry& entry = item.entry;
         switch (role) {
         case Qt::DisplayRole:
             return entry.name;
@@ -329,11 +356,11 @@ public:
         case ImageCountRole:
             return entry.imageCount;
         case ExistsRole:
-            return QFileInfo::exists(entry.filePath);
-        case CoverPathRole:
-            return resolveProjectRelativePath(entry.filePath, entry.thumbnailPath);
-        case BackgroundPathRole:
-            return resolveProjectRelativePath(entry.filePath, entry.backgroundImagePath);
+            return item.exists;
+        case DisplayImagePathRole:
+            return item.displayImagePath;
+        case ThumbnailKeyRole:
+            return item.thumbnailKey;
         default:
             return {};
         }
@@ -343,21 +370,23 @@ public:
         if (!index.isValid() || index.row() < 0 || index.row() >= m_entries.size()) {
             return {};
         }
-        return m_entries[index.row()];
+        return m_entries[index.row()].entry;
     }
 
 private:
     void rebuild() {
         beginResetModel();
         m_entries.clear();
-        for (const RecentProjectEntry& entry : m_all) {
-            const QString term = m_filter.trimmed();
-            if (term.isEmpty() || entry.name.contains(term, Qt::CaseInsensitive)) {
-                m_entries.append(entry);
+        const QString term = m_filter.trimmed();
+        for (const ProjectListEntry& item : m_all) {
+            if (term.isEmpty() || item.entry.name.contains(term, Qt::CaseInsensitive)) {
+                m_entries.append(item);
             }
         }
         std::sort(m_entries.begin(), m_entries.end(),
-                  [this](const RecentProjectEntry& lhs, const RecentProjectEntry& rhs) {
+                  [this](const ProjectListEntry& lhsItem, const ProjectListEntry& rhsItem) {
+                      const RecentProjectEntry& lhs = lhsItem.entry;
+                      const RecentProjectEntry& rhs = rhsItem.entry;
                       switch (m_sortMode) {
                       case Name:
                           return lhs.name.localeAwareCompare(rhs.name) < 0;
@@ -373,15 +402,20 @@ private:
         endResetModel();
     }
 
-    QVector<RecentProjectEntry> m_all;
-    QVector<RecentProjectEntry> m_entries;
+    QVector<ProjectListEntry> m_all;
+    QVector<ProjectListEntry> m_entries;
     QString m_filter;
     SortMode m_sortMode{LastEdited};
 };
 
 class ProjectDelegate : public QStyledItemDelegate {
 public:
-    using QStyledItemDelegate::QStyledItemDelegate;
+    explicit ProjectDelegate(ThumbnailCache* thumbnailCache, QObject* parent = nullptr)
+        : QStyledItemDelegate(parent), m_thumbnailCache(thumbnailCache) {}
+
+    void markThumbnailFailed(const QString& key) {
+        m_failedThumbnailKeys.insert(key);
+    }
 
     void paint(QPainter* painter, const QStyleOptionViewItem& option,
                const QModelIndex& index) const override {
@@ -390,8 +424,7 @@ public:
         painter->setRenderHint(QPainter::SmoothPixmapTransform);
         const QRect r = option.rect.adjusted(8, 6, -8, -6);
         const bool selected = option.state.testFlag(QStyle::State_Selected);
-        const bool hovered =
-            option.state.testFlag(QStyle::State_MouseOver) && indexIsUnderCursor(option, index);
+        const bool hovered = option.state.testFlag(QStyle::State_MouseOver);
         const ThemeTokens& colors = activeThemeTokens();
         const QColor fill = selected
                                 ? colors.selection
@@ -406,10 +439,20 @@ public:
         painter->setBrush(colors.controlFill);
         painter->drawRoundedRect(thumb, 8, 8);
 
-        const QString coverPath = index.data(CoverPathRole).toString();
-        const QString backgroundPath = index.data(BackgroundPathRole).toString();
-        const QString displayImagePath = !coverPath.isEmpty() ? coverPath : backgroundPath;
-        const QPixmap cover(displayImagePath);
+        const QString displayImagePath = index.data(DisplayImagePathRole).toString();
+        const QString thumbnailKey = index.data(ThumbnailKeyRole).toString();
+        const qreal devicePixelRatio =
+            option.widget ? option.widget->devicePixelRatioF() : qApp->devicePixelRatio();
+        const QSize targetPixelSize(qCeil(thumb.width() * devicePixelRatio),
+                                    qCeil(thumb.height() * devicePixelRatio));
+        QPixmap cover;
+        if (m_thumbnailCache && !thumbnailKey.isEmpty()) {
+            if (!m_thumbnailCache->hasThumbnail(thumbnailKey, targetPixelSize) &&
+                !m_failedThumbnailKeys.contains(thumbnailKey)) {
+                m_thumbnailCache->requestThumbnail(thumbnailKey, displayImagePath, targetPixelSize);
+            }
+            cover = m_thumbnailCache->thumbnail(thumbnailKey, targetPixelSize);
+        }
         if (!cover.isNull()) {
             QPainterPath clip;
             clip.addRoundedRect(thumb, 8, 8);
@@ -478,6 +521,10 @@ public:
     QSize sizeHint(const QStyleOptionViewItem&, const QModelIndex&) const override {
         return QSize(400, 92);
     }
+
+private:
+    ThumbnailCache* m_thumbnailCache{nullptr};
+    QSet<QString> m_failedThumbnailKeys;
 };
 
 class ProjectCoverDialog final : public AppDialog {
@@ -629,9 +676,9 @@ private:
 };
 
 ProjectsPage::ProjectsPage(ProjectRepository* repository, RecentProjectsStore* recentProjects,
-                           AppSettings* settings, QWidget* parent)
+                           ThumbnailCache* thumbnailCache, AppSettings* settings, QWidget* parent)
     : QWidget(parent), m_repository(repository), m_recentProjects(recentProjects),
-      m_settings(settings) {
+      m_thumbnailCache(thumbnailCache), m_settings(settings) {
     auto* root = new QVBoxLayout(this);
     root->setContentsMargins(22, 18, 22, 18);
     root->setSpacing(12);
@@ -663,10 +710,13 @@ ProjectsPage::ProjectsPage(ProjectRepository* repository, RecentProjectsStore* r
     root->addLayout(top);
 
     m_view = new QListView(this);
+    m_view->setObjectName(QStringLiteral("ProjectsList"));
     m_model = new RecentProjectsModel(this);
     m_view->setModel(m_model);
-    m_view->setItemDelegate(new ProjectDelegate(m_view));
+    auto* projectDelegate = new ProjectDelegate(m_thumbnailCache, m_view);
+    m_view->setItemDelegate(projectDelegate);
     m_view->setFrameShape(QFrame::NoFrame);
+    m_view->setUniformItemSizes(true);
     m_view->setSelectionMode(QAbstractItemView::SingleSelection);
     m_view->setEditTriggers(QAbstractItemView::NoEditTriggers);
     m_view->setContextMenuPolicy(Qt::CustomContextMenu);
@@ -687,12 +737,23 @@ ProjectsPage::ProjectsPage(ProjectRepository* repository, RecentProjectsStore* r
             emit openProjectRequested(entry.filePath);
         }
     });
-    connect(m_view, &QListView::pressed, this,
-            [this](const QModelIndex&) { m_view->viewport()->update(); });
-    connect(m_view, &QListView::entered, this,
-            [this](const QModelIndex&) { m_view->viewport()->update(); });
-    connect(m_view->selectionModel(), &QItemSelectionModel::currentChanged, this,
-            [this](const QModelIndex&, const QModelIndex&) { m_view->viewport()->update(); });
+    if (m_thumbnailCache) {
+        connect(m_thumbnailCache, &ThumbnailCache::thumbnailReady, m_view,
+                [this](const QString& key) {
+                    // A completed decode invalidates one row, never the entire viewport.
+                    for (int row = 0; row < m_model->rowCount(); ++row) {
+                        const QModelIndex index = m_model->index(row, 0);
+                        if (index.data(ThumbnailKeyRole).toString() == key) {
+                            m_view->update(index);
+                            break;
+                        }
+                    }
+                });
+        connect(m_thumbnailCache, &ThumbnailCache::thumbnailFailed, projectDelegate,
+                [projectDelegate](const QString& key, const QString&) {
+                    projectDelegate->markThumbnailFailed(key);
+                });
+    }
     connect(m_view, &QListView::customContextMenuRequested, this,
             &ProjectsPage::showProjectContextMenu);
 
@@ -773,7 +834,7 @@ void ProjectsPage::showProjectContextMenu(const QPoint& point) {
     }
 
     QAction* chosen = menu.exec(m_view->viewport()->mapToGlobal(point));
-    m_view->viewport()->update();
+    m_view->update(index);
     if (chosen == openAction) {
         openSelectedProject();
     } else if (chosen == saveAsAction) {

@@ -1,0 +1,510 @@
+{
+  "app": {
+    "name": "TierListMaker",
+    "version": "0.1.0"
+  },
+  "images": [
+    {
+      "assetPath": "assets/6dde856a-ec14-517b-bf8c-298eeb14ed89.jpg",
+      "assignedTierRowId": null,
+      "displayName": "Emilia",
+      "height": 1069,
+      "id": "6b8fc571-c8d2-5cef-86a4-3770cc85d26f",
+      "order": 0,
+      "originalFileName": "01-emilia-8159508.png",
+      "sourcePath": "https://danbooru.donmai.us/posts/8159508",
+      "thumbnailPath": "",
+      "width": 1900
+    },
+    {
+      "assetPath": "assets/3b64a1b0-a019-5d17-8553-96c79f82ae31.jpg",
+      "assignedTierRowId": null,
+      "displayName": "Mikasa Ackerman",
+      "height": 1920,
+      "id": "e00cbff6-3387-504c-8690-e2c0448fa13e",
+      "order": 1,
+      "originalFileName": "02-mikasa-ackerman-9795005.jpg",
+      "sourcePath": "https://danbooru.donmai.us/posts/9795005",
+      "thumbnailPath": "",
+      "width": 1357
+    },
+    {
+      "assetPath": "assets/8531a42d-af88-57e6-8bf2-d44eb690021b.jpg",
+      "assignedTierRowId": "aa54d631-9eb7-526e-ab9b-e5583977b3f5",
+      "displayName": "Kurisu Makise",
+      "height": 1920,
+      "id": "c1403eb4-c4e3-57f8-a8f2-43ff7a8afae8",
+      "order": 0,
+      "originalFileName": "03-kurisu-makise-5273941.jpg",
+      "sourcePath": "https://danbooru.donmai.us/posts/5273941",
+      "thumbnailPath": "",
+      "width": 1539
+    },
+    {
+      "assetPath": "assets/55e7fcfa-37db-548f-bb3b-ca9018164f14.jpg",
+      "assignedTierRowId": null,
+      "displayName": "Makima",
+      "height": 1052,
+      "id": "02ecad5c-8216-526c-b471-dee7ee222853",
+      "order": 2,
+      "originalFileName": "04-makima-9dm55k.jpg",
+      "sourcePath": "https://wallhaven.cc/w/9dm55k",
+      "thumbnailPath": "",
+      "width": 1920
+    },
+    {
+      "assetPath": "assets/8b81b8b0-697b-582b-a2ae-7d1b68313502.jpg",
+      "assignedTierRowId": null,
+      "displayName": "Mai Sakurajima",
+      "height": 1080,
+      "id": "46d6e45d-4a70-5066-b074-90dcd7068666",
+      "order": 3,
+      "originalFileName": "05-mai-sakurajima-p8o7k9.jpg",
+      "sourcePath": "https://wallhaven.cc/w/p8o7k9",
+      "thumbnailPath": "",
+      "width": 1920
+    },
+    {
+      "assetPath": "assets/14e00b1c-81fa-5a30-b6fc-63a22c3a14c3.jpg",
+      "assignedTierRowId": null,
+      "displayName": "Frieren",
+      "height": 1920,
+      "id": "2b065f7d-3ba6-5e57-b455-541b207aa7fd",
+      "order": 4,
+      "originalFileName": "06-frieren-11788272.jpg",
+      "sourcePath": "https://danbooru.donmai.us/posts/11788272",
+      "thumbnailPath": "",
+      "width": 1200
+    },
+    {
+      "assetPath": "assets/d572f4da-ed9d-57ac-acdf-a67c7f2bf55f.jpg",
+      "assignedTierRowId": null,
+      "displayName": "Maomao",
+      "height": 1128,
+      "id": "688e145d-b840-54c4-8f74-4ec00bf8e88f",
+      "order": 5,
+      "originalFileName": "07-maomao-qzv6rd.jpg",
+      "sourcePath": "https://wallhaven.cc/w/qzv6rd",
+      "thumbnailPath": "",
+      "width": 1920
+    },
+    {
+      "assetPath": "assets/a72bf079-7cde-53f9-8fd1-4fd46836417f.jpg",
+      "assignedTierRowId": "8157dab1-cd7e-5fdb-bd28-c0389d4607ad",
+      "displayName": "Kaguya Shinomiya",
+      "height": 1920,
+      "id": "bacba09b-961a-5df0-9ebd-90313e881fdd",
+      "order": 1,
+      "originalFileName": "08-kaguya-shinomiya-10624265.png",
+      "sourcePath": "https://danbooru.donmai.us/posts/10624265",
+      "thumbnailPath": "",
+      "width": 1294
+    },
+    {
+      "assetPath": "assets/4955d919-9bfb-50d6-8cd7-f95e45a8eaa6.jpg",
+      "assignedTierRowId": "754e4df5-44a4-54c0-b3ff-d43806384741",
+      "displayName": "Violet Evergarden",
+      "height": 1412,
+      "id": "109f7118-dcd1-5e3f-ade1-8df6b8cf5303",
+      "order": 1,
+      "originalFileName": "09-violet-evergarden-gpdj37.jpg",
+      "sourcePath": "https://wallhaven.cc/w/gpdj37",
+      "thumbnailPath": "",
+      "width": 1920
+    },
+    {
+      "assetPath": "assets/19f0c2b0-209c-5833-a1c5-0eb695780df6.jpg",
+      "assignedTierRowId": "1215a865-1d24-5461-96ea-a7a6b723ce86",
+      "displayName": "Power",
+      "height": 1920,
+      "id": "203af901-fad3-5419-890e-d9aba8b7423d",
+      "order": 1,
+      "originalFileName": "10-power-11577508.jpg",
+      "sourcePath": "https://danbooru.donmai.us/posts/11577508",
+      "thumbnailPath": "",
+      "width": 1536
+    },
+    {
+      "assetPath": "assets/bd802add-7fa5-5f0f-a2a3-968dcf71d158.jpg",
+      "assignedTierRowId": null,
+      "displayName": "Sakura Matou",
+      "height": 1920,
+      "id": "f3385ae8-658b-5742-80ce-b6925eed4ec3",
+      "order": 6,
+      "originalFileName": "11-sakura-matou-10800605.png",
+      "sourcePath": "https://danbooru.donmai.us/posts/10800605",
+      "thumbnailPath": "",
+      "width": 1297
+    },
+    {
+      "assetPath": "assets/d8665231-fb1c-5559-9cc8-f63e7138ace9.jpg",
+      "assignedTierRowId": null,
+      "displayName": "Megumin",
+      "height": 1152,
+      "id": "e0d61f13-8368-5c23-984d-fa2c10876b2d",
+      "order": 7,
+      "originalFileName": "12-megumin-11801979.jpg",
+      "sourcePath": "https://danbooru.donmai.us/posts/11801979",
+      "thumbnailPath": "",
+      "width": 1920
+    },
+    {
+      "assetPath": "assets/7126f268-44cc-58a5-ab97-9283faff856b.jpg",
+      "assignedTierRowId": null,
+      "displayName": "Marin Kitagawa",
+      "height": 1920,
+      "id": "73f6e916-9cdf-5cf4-bc79-dcaf56de30a0",
+      "order": 8,
+      "originalFileName": "13-marin-kitagawa-11357228.png",
+      "sourcePath": "https://danbooru.donmai.us/posts/11357228",
+      "thumbnailPath": "",
+      "width": 1262
+    },
+    {
+      "assetPath": "assets/c1d274f1-e384-52e3-addf-d611c534bbc6.jpg",
+      "assignedTierRowId": null,
+      "displayName": "Chika Fujiwara",
+      "height": 1920,
+      "id": "54424542-f214-5058-b13f-52cd294576c2",
+      "order": 9,
+      "originalFileName": "14-chika-fujiwara-8988576.png",
+      "sourcePath": "https://danbooru.donmai.us/posts/8988576",
+      "thumbnailPath": "",
+      "width": 1266
+    },
+    {
+      "assetPath": "assets/75e86887-04f6-52e1-bfa4-f9cf1f437cc9.jpg",
+      "assignedTierRowId": "1215a865-1d24-5461-96ea-a7a6b723ce86",
+      "displayName": "Rem",
+      "height": 1920,
+      "id": "69243f6d-5374-5576-8828-a204e6466d6e",
+      "order": 0,
+      "originalFileName": "15-rem-11048894.jpg",
+      "sourcePath": "https://danbooru.donmai.us/posts/11048894",
+      "thumbnailPath": "",
+      "width": 1536
+    },
+    {
+      "assetPath": "assets/dcb11929-0cd3-5110-9a04-136dab70486b.jpg",
+      "assignedTierRowId": null,
+      "displayName": "Ichigo",
+      "height": 1920,
+      "id": "7d487e01-47d3-524e-9e87-ccece097ac53",
+      "order": 10,
+      "originalFileName": "16-ichigo-6179853.jpg",
+      "sourcePath": "https://danbooru.donmai.us/posts/6179853",
+      "thumbnailPath": "",
+      "width": 1286
+    },
+    {
+      "assetPath": "assets/89d8e79b-f248-5d8a-9ac4-bce5856f10a3.jpg",
+      "assignedTierRowId": "754e4df5-44a4-54c0-b3ff-d43806384741",
+      "displayName": "Nezuko Kamado",
+      "height": 1053,
+      "id": "5715c877-44aa-5606-8794-91287ee87be8",
+      "order": 0,
+      "originalFileName": "17-nezuko-kamado-6oog7q.jpg",
+      "sourcePath": "https://wallhaven.cc/w/6oog7q",
+      "thumbnailPath": "",
+      "width": 1920
+    },
+    {
+      "assetPath": "assets/bfd5ac9c-0eec-571b-92a9-9ab82dea3814.jpg",
+      "assignedTierRowId": null,
+      "displayName": "Itsuki Nakano",
+      "height": 1920,
+      "id": "6c3c3b7f-1cee-57d2-8547-ccd3c68ccb17",
+      "order": 11,
+      "originalFileName": "18-itsuki-nakano-11140722.jpg",
+      "sourcePath": "https://danbooru.donmai.us/posts/11140722",
+      "thumbnailPath": "",
+      "width": 1536
+    },
+    {
+      "assetPath": "assets/28452edf-bd1f-53f8-a5e6-f2e06746c29d.jpg",
+      "assignedTierRowId": null,
+      "displayName": "Zero Two",
+      "height": 1920,
+      "id": "40c64bce-e3e6-556c-936a-cedc2d7a61e3",
+      "order": 12,
+      "originalFileName": "19-zero-two-10523498.jpg",
+      "sourcePath": "https://danbooru.donmai.us/posts/10523498",
+      "thumbnailPath": "",
+      "width": 1280
+    },
+    {
+      "assetPath": "assets/aca2c583-2681-5079-9acb-50a54059f639.jpg",
+      "assignedTierRowId": null,
+      "displayName": "Miko Iino",
+      "height": 1360,
+      "id": "8b88dec2-c903-5e41-af8a-51e22d8b8d14",
+      "order": 13,
+      "originalFileName": "20-miko-iino-7442651.jpg",
+      "sourcePath": "https://danbooru.donmai.us/posts/7442651",
+      "thumbnailPath": "",
+      "width": 1920
+    },
+    {
+      "assetPath": "assets/253bf03b-aaaf-54eb-9440-7f2681a80dd1.jpg",
+      "assignedTierRowId": null,
+      "displayName": "Hitagi Senjougahara",
+      "height": 1920,
+      "id": "af5bb412-0038-5f75-a8bc-030361647927",
+      "order": 14,
+      "originalFileName": "21-hitagi-senjougahara-11740957.jpg",
+      "sourcePath": "https://danbooru.donmai.us/posts/11740957",
+      "thumbnailPath": "",
+      "width": 1357
+    },
+    {
+      "assetPath": "assets/581251e7-2e78-53dd-8a56-54018f98501a.jpg",
+      "assignedTierRowId": null,
+      "displayName": "Asuka Langley Souryuu",
+      "height": 1242,
+      "id": "70013232-635c-5d7c-aca8-5ab282e0a994",
+      "order": 15,
+      "originalFileName": "22-asuka-langley-souryuu-11261702.jpg",
+      "sourcePath": "https://danbooru.donmai.us/posts/11261702",
+      "thumbnailPath": "",
+      "width": 1920
+    },
+    {
+      "assetPath": "assets/3c91f03d-ce65-5796-b5af-504493475fb6.jpg",
+      "assignedTierRowId": null,
+      "displayName": "Robin Nico",
+      "height": 1920,
+      "id": "8a4b1d6a-13b9-56ab-ab4e-18607605d51e",
+      "order": 16,
+      "originalFileName": "23-robin-nico-11725511.jpg",
+      "sourcePath": "https://danbooru.donmai.us/posts/11725511",
+      "thumbnailPath": "",
+      "width": 1493
+    },
+    {
+      "assetPath": "assets/8f798ed6-260a-5455-950a-76ecbbdea5b5.jpg",
+      "assignedTierRowId": null,
+      "displayName": "Yor Forger",
+      "height": 1078,
+      "id": "fac9db7b-1c4b-5445-887e-25fa3de4923d",
+      "order": 17,
+      "originalFileName": "24-yor-forger-x8gkvz.jpg",
+      "sourcePath": "https://wallhaven.cc/w/x8gkvz",
+      "thumbnailPath": "",
+      "width": 1920
+    },
+    {
+      "assetPath": "assets/91f1b3cb-b231-58fd-9a28-4bf8297226c3.jpg",
+      "assignedTierRowId": null,
+      "displayName": "Nobara Kugisaki",
+      "height": 1920,
+      "id": "e34814d4-1fee-58e2-9081-1996a7a0505a",
+      "order": 18,
+      "originalFileName": "25-nobara-kugisaki-8434212.jpg",
+      "sourcePath": "https://danbooru.donmai.us/posts/8434212",
+      "thumbnailPath": "",
+      "width": 1348
+    },
+    {
+      "assetPath": "assets/c93f15ed-91bd-5cc8-b99e-0983ed960766.jpg",
+      "assignedTierRowId": "cc21b40f-5829-5dcc-9b85-a4e645f68cdd",
+      "displayName": "Shinobu Oshino",
+      "height": 1920,
+      "id": "59a54e26-598e-5ead-9cee-6a08a3c329e6",
+      "order": 2,
+      "originalFileName": "26-shinobu-oshino-11348089.jpg",
+      "sourcePath": "https://danbooru.donmai.us/posts/11348089",
+      "thumbnailPath": "",
+      "width": 1358
+    },
+    {
+      "assetPath": "assets/5c799cda-3574-50e7-ab78-56e8e3cc1944.jpg",
+      "assignedTierRowId": null,
+      "displayName": "Anya Forger",
+      "height": 1697,
+      "id": "ed522ccc-e35b-5db3-9976-3bd5f17e7cbf",
+      "order": 19,
+      "originalFileName": "27-anya-forger-9318949.jpg",
+      "sourcePath": "https://danbooru.donmai.us/posts/9318949",
+      "thumbnailPath": "",
+      "width": 1200
+    },
+    {
+      "assetPath": "assets/a35d2236-bc1a-5f9d-b22e-15006759a6a2.jpg",
+      "assignedTierRowId": null,
+      "displayName": "Maki Zenin",
+      "height": 1771,
+      "id": "70f2afc1-a47d-556b-9458-a9ccc347f7f1",
+      "order": 20,
+      "originalFileName": "28-maki-zenin-11523410.jpg",
+      "sourcePath": "https://danbooru.donmai.us/posts/11523410",
+      "thumbnailPath": "",
+      "width": 1254
+    },
+    {
+      "assetPath": "assets/30024252-0912-5994-aacd-170ea0b4ed2e.jpg",
+      "assignedTierRowId": null,
+      "displayName": "Rin Tohsaka",
+      "height": 1920,
+      "id": "17b3ba60-e299-5294-88e3-184e21e8c9d5",
+      "order": 21,
+      "originalFileName": "29-rin-tohsaka-11173072.jpg",
+      "sourcePath": "https://danbooru.donmai.us/posts/11173072",
+      "thumbnailPath": "",
+      "width": 1182
+    },
+    {
+      "assetPath": "assets/f4e3d496-92ae-5b99-a1dc-fdf15573b9fa.jpg",
+      "assignedTierRowId": "8157dab1-cd7e-5fdb-bd28-c0389d4607ad",
+      "displayName": "Shouko Nishimiya",
+      "height": 1920,
+      "id": "ec8501d0-919d-521b-8735-c4fea89ff886",
+      "order": 2,
+      "originalFileName": "30-shouko-nishimiya-6455903.jpg",
+      "sourcePath": "https://danbooru.donmai.us/posts/6455903",
+      "thumbnailPath": "",
+      "width": 1440
+    },
+    {
+      "assetPath": "assets/e225b8fa-5a62-57d2-9b78-45d171645459.jpg",
+      "assignedTierRowId": null,
+      "displayName": "Artoria Pendragon",
+      "height": 1920,
+      "id": "7f59fd10-56c1-5faa-987f-6b3c82864948",
+      "order": 22,
+      "originalFileName": "31-artoria-pendragon-11447282.jpg",
+      "sourcePath": "https://danbooru.donmai.us/posts/11447282",
+      "thumbnailPath": "",
+      "width": 1080
+    },
+    {
+      "assetPath": "assets/d5c983ee-4f8d-5583-97e2-3e7c11ba6df9.jpg",
+      "assignedTierRowId": "cc21b40f-5829-5dcc-9b85-a4e645f68cdd",
+      "displayName": "Kyouko Hori",
+      "height": 1920,
+      "id": "22e7ec12-5a99-5723-8914-c9f91da5781f",
+      "order": 0,
+      "originalFileName": "32-kyouko-hori-8537450.jpg",
+      "sourcePath": "https://danbooru.donmai.us/posts/8537450",
+      "thumbnailPath": "",
+      "width": 1920
+    },
+    {
+      "assetPath": "assets/e165db1c-851c-5a6d-8575-d14d6b72ac79.jpg",
+      "assignedTierRowId": "cc21b40f-5829-5dcc-9b85-a4e645f68cdd",
+      "displayName": "Miku Nakano",
+      "height": 1920,
+      "id": "a4dd9b14-1645-5527-957a-776ab7773236",
+      "order": 1,
+      "originalFileName": "33-miku-nakano-8897642.png",
+      "sourcePath": "https://danbooru.donmai.us/posts/8897642",
+      "thumbnailPath": "",
+      "width": 1076
+    },
+    {
+      "assetPath": "assets/0b07eecd-86fa-5ef8-b41f-39b9a5d39c82.jpg",
+      "assignedTierRowId": null,
+      "displayName": "Hitori Gotou",
+      "height": 1920,
+      "id": "e62baaef-722d-58a9-b0d3-3ddd550a3f2e",
+      "order": 23,
+      "originalFileName": "34-hitori-gotou-11816635.jpg",
+      "sourcePath": "https://danbooru.donmai.us/posts/11816635",
+      "thumbnailPath": "",
+      "width": 1334
+    },
+    {
+      "assetPath": "assets/5495458c-114c-5aa6-a2dc-98931f009854.jpg",
+      "assignedTierRowId": null,
+      "displayName": "Homura Akemi",
+      "height": 1181,
+      "id": "a9f53245-0211-5d96-99ff-7785015f0cf6",
+      "order": 24,
+      "originalFileName": "35-homura-akemi-10064167.png",
+      "sourcePath": "https://danbooru.donmai.us/posts/10064167",
+      "thumbnailPath": "",
+      "width": 1920
+    },
+    {
+      "assetPath": "assets/278cd550-e26d-5dbe-9b93-eb3e1ff5a29d.jpg",
+      "assignedTierRowId": "8157dab1-cd7e-5fdb-bd28-c0389d4607ad",
+      "displayName": "Roxy Migurdia",
+      "height": 1080,
+      "id": "12866a6c-3191-58bf-b64d-ed198879669a",
+      "order": 0,
+      "originalFileName": "36-roxy-migurdia-x6vlw3.jpg",
+      "sourcePath": "https://wallhaven.cc/w/x6vlw3",
+      "thumbnailPath": "",
+      "width": 1920
+    }
+  ],
+  "project": {
+    "canvas": {
+      "backgroundImagePath": "assets/d6cca373-1063-4841-9cf7-6df0ed7f267f.jpg",
+      "backgroundVisibility": 1
+    },
+    "createdAt": "2026-07-20T07:29:25.961Z",
+    "id": "47222eb5-7908-581b-b401-3e6c62038fe8",
+    "name": "Anime Girls v5",
+    "updatedAt": "2026-08-08T16:01:02.127Z"
+  },
+  "schemaVersion": 1,
+  "settings": {},
+  "tiers": [
+    {
+      "color": "#ff7b7b",
+      "height": 88,
+      "id": "754e4df5-44a4-54c0-b3ff-d43806384741",
+      "imageIds": [
+        "5715c877-44aa-5606-8794-91287ee87be8",
+        "109f7118-dcd1-5e3f-ade1-8df6b8cf5303"
+      ],
+      "label": "S",
+      "order": 0
+    },
+    {
+      "color": "#ffc36b",
+      "height": 88,
+      "id": "8157dab1-cd7e-5fdb-bd28-c0389d4607ad",
+      "imageIds": [
+        "12866a6c-3191-58bf-b64d-ed198879669a",
+        "bacba09b-961a-5df0-9ebd-90313e881fdd",
+        "ec8501d0-919d-521b-8735-c4fea89ff886"
+      ],
+      "label": "A",
+      "order": 1
+    },
+    {
+      "color": "#ffe17d",
+      "height": 88,
+      "id": "cc21b40f-5829-5dcc-9b85-a4e645f68cdd",
+      "imageIds": [
+        "22e7ec12-5a99-5723-8914-c9f91da5781f",
+        "a4dd9b14-1645-5527-957a-776ab7773236",
+        "59a54e26-598e-5ead-9cee-6a08a3c329e6"
+      ],
+      "label": "B",
+      "order": 2
+    },
+    {
+      "color": "#8bdc8b",
+      "height": 88,
+      "id": "1215a865-1d24-5461-96ea-a7a6b723ce86",
+      "imageIds": [
+        "69243f6d-5374-5576-8828-a204e6466d6e",
+        "203af901-fad3-5419-890e-d9aba8b7423d"
+      ],
+      "label": "C",
+      "order": 3
+    },
+    {
+      "color": "#82b7ff",
+      "height": 88,
+      "id": "aa54d631-9eb7-526e-ab9b-e5583977b3f5",
+      "imageIds": [
+        "c1403eb4-c4e3-57f8-a8f2-43ff7a8afae8"
+      ],
+      "label": "D",
+      "order": 4
+    }
+  ]
+}
