@@ -54,8 +54,15 @@ set(CMAKE_AUTOUIC ON)
 set(TLM_CORE_SOURCES
     src/assets/AssetManager.cpp
     src/assets/AssetManager.h
+    src/assets/BackdropEffect.h
+    src/assets/BackdropMaterial.cpp
+    src/assets/BackdropMaterial.h
     src/assets/CoverImageCache.cpp
     src/assets/CoverImageCache.h
+    src/assets/FocusBackdrop.cpp
+    src/assets/FocusBackdrop.h
+    src/assets/LiquidGlassBackdrop.cpp
+    src/assets/LiquidGlassBackdrop.h
     src/assets/ImageLoader.cpp
     src/assets/ImageLoader.h
     src/assets/ThumbnailCache.cpp
@@ -78,6 +85,8 @@ set(TLM_CORE_SOURCES
     src/persistence/ProjectSerializer.h
     src/persistence/RecentProjectsStore.cpp
     src/persistence/RecentProjectsStore.h
+    src/persistence/SampleProjectSeeder.cpp
+    src/persistence/SampleProjectSeeder.h
     src/persistence/Result.h
     src/platform/Platform.cpp
     src/platform/Platform.h

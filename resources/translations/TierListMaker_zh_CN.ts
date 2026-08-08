@@ -1011,6 +1011,61 @@ The project may not have published update metadata yet.</source>
         <translation>预览背景</translation>
     </message>
     <message>
+        <location filename="../../src/pages/PreferencesPage.cpp" line="481"/>
+        <source>Preview effect</source>
+        <translation>预览效果</translation>
+    </message>
+    <message>
+        <location filename="../../src/pages/PreferencesPage.cpp" line="474"/>
+        <source>Depth Soft Focus</source>
+        <translation>柔焦景深</translation>
+    </message>
+    <message>
+        <location filename="../../src/pages/PreferencesPage.cpp" line="476"/>
+        <source>Liquid Glass</source>
+        <translation>液态玻璃</translation>
+    </message>
+    <message>
+        <location filename="../../src/pages/PreferencesPage.cpp" line="701"/>
+        <source>%1 px</source>
+        <translation>%1 像素</translation>
+    </message>
+    <message>
+        <location filename="../../src/pages/PreferencesPage.cpp" line="715"/>
+        <source>Corner radius</source>
+        <translation>圆角</translation>
+    </message>
+    <message>
+        <location filename="../../src/pages/PreferencesPage.cpp" line="716"/>
+        <source>Blur radius</source>
+        <translation>模糊半径</translation>
+    </message>
+    <message>
+        <location filename="../../src/pages/PreferencesPage.cpp" line="718"/>
+        <source>Refraction height</source>
+        <translation>折射高度</translation>
+    </message>
+    <message>
+        <location filename="../../src/pages/PreferencesPage.cpp" line="720"/>
+        <source>Refraction amount</source>
+        <translation>折射量</translation>
+    </message>
+    <message>
+        <location filename="../../src/pages/PreferencesPage.cpp" line="722"/>
+        <source>Chromatic aberration</source>
+        <translation>色散</translation>
+    </message>
+    <message>
+        <location filename="../../src/pages/PreferencesPage.cpp" line="758"/>
+        <source>Reset</source>
+        <translation>重置</translation>
+    </message>
+    <message>
+        <location filename="../../src/pages/PreferencesPage.cpp" line="487"/>
+        <source>Overview background material</source>
+        <translation>总览背景材质</translation>
+    </message>
+    <message>
         <location filename="../../src/pages/PreferencesPage.cpp" line="474"/>
         <source>Open Gallery Overview</source>
         <translation>打开图库总览</translation>

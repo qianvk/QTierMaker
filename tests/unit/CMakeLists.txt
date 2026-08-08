@@ -7,7 +7,12 @@ endfunction()
 
 add_tlm_unit_test(tst_ProjectSerializer tst_ProjectSerializer.cpp)
 add_tlm_unit_test(tst_RecentProjectsStore tst_RecentProjectsStore.cpp)
+add_tlm_unit_test(tst_SampleProjectSeeder tst_SampleProjectSeeder.cpp)
 add_tlm_unit_test(tst_AssetManager tst_AssetManager.cpp)
+add_tlm_unit_test(tst_FocusBackdrop tst_FocusBackdrop.cpp)
+add_tlm_unit_test(tst_LiquidGlassBackdrop tst_LiquidGlassBackdrop.cpp)
+add_tlm_unit_test(tst_BackdropMaterial tst_BackdropMaterial.cpp)
+add_tlm_unit_test(tst_ImageLoader tst_ImageLoader.cpp)
 add_tlm_unit_test(tst_ThemeManager tst_ThemeManager.cpp)
 add_tlm_unit_test(tst_ThumbnailCache tst_ThumbnailCache.cpp)
 add_tlm_unit_test(tst_AppUpdater
@@ -51,6 +56,17 @@ qt_add_executable(tst_PreviewOverlay
 target_link_libraries(tst_PreviewOverlay PRIVATE tierlistmaker_core QWindowKit::Widgets Qt6::Test)
 target_include_directories(tst_PreviewOverlay PRIVATE "${PROJECT_SOURCE_DIR}/src")
 add_test(NAME tst_PreviewOverlay COMMAND tst_PreviewOverlay)
+
+qt_add_executable(tst_ImageGalleryPopover
+    tst_ImageGalleryPopover.cpp
+    "${PROJECT_SOURCE_DIR}/src/tier/ImageGalleryPopover.cpp"
+    "${PROJECT_SOURCE_DIR}/src/tier/ImageGalleryPopover.h"
+    "${PROJECT_SOURCE_DIR}/src/tier/TierDragController.cpp"
+    "${PROJECT_SOURCE_DIR}/src/tier/TierDragController.h"
+)
+target_link_libraries(tst_ImageGalleryPopover PRIVATE tierlistmaker_core VkUI::Widgets Qt6::Test)
+target_include_directories(tst_ImageGalleryPopover PRIVATE "${PROJECT_SOURCE_DIR}/src")
+add_test(NAME tst_ImageGalleryPopover COMMAND tst_ImageGalleryPopover)
 
 qt_add_executable(tst_WindowResizePolicy tst_WindowResizePolicy.cpp)
 target_link_libraries(tst_WindowResizePolicy PRIVATE QWindowKit::Widgets Qt6::Test)

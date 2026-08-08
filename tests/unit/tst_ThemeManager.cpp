@@ -76,6 +76,59 @@ private slots:
         settings.setTierListToolTipsEnabled(original);
     }
 
+    void overviewBackdropSettingPersistsAndSignals() {
+        QStandardPaths::setTestModeEnabled(true);
+        AppSettings settings;
+        const BackdropEffect original = settings.overviewBackdropEffect();
+        const BackdropEffect changedEffect = original == BackdropEffect::DepthSoftFocus
+                                                 ? BackdropEffect::LiquidGlass
+                                                 : BackdropEffect::DepthSoftFocus;
+        QSignalSpy changed(&settings, &AppSettings::overviewBackdropEffectChanged);
+
+        settings.setOverviewBackdropEffect(changedEffect);
+        QCOMPARE(settings.overviewBackdropEffect(), changedEffect);
+        QCOMPARE(changed.count(), 1);
+
+        settings.setOverviewBackdropEffect(original);
+    }
+
+    void previewEffectSettingPersistsAndSignals() {
+        QStandardPaths::setTestModeEnabled(true);
+        AppSettings settings;
+        const BackdropEffect original = settings.previewEffect();
+        const BackdropEffect changedEffect = original == BackdropEffect::DepthSoftFocus
+                                                 ? BackdropEffect::LiquidGlass
+                                                 : BackdropEffect::DepthSoftFocus;
+        QSignalSpy changed(&settings, &AppSettings::previewEffectChanged);
+
+        settings.setPreviewEffect(changedEffect);
+        QCOMPARE(settings.previewEffect(), changedEffect);
+        QCOMPARE(changed.count(), 1);
+
+        settings.setPreviewEffect(original);
+    }
+
+    void liquidGlassParametersPersistAndSignal() {
+        QStandardPaths::setTestModeEnabled(true);
+        AppSettings settings;
+        const LiquidGlassParameters original = settings.liquidGlassParameters();
+        LiquidGlassParameters modified = original;
+        modified.cornerRadius = 12.0;
+        modified.blurRadius = 12.5;
+        modified.refractionHeightFraction = 0.35;
+        modified.refractionAmountFraction = 0.45;
+        modified.chromaticAberration = 1.0;
+        QSignalSpy changed(&settings, &AppSettings::liquidGlassParametersChanged);
+
+        settings.setLiquidGlassParameters(modified);
+        QVERIFY(settings.liquidGlassParameters() == modified);
+        QCOMPARE(changed.count(), 1);
+
+        settings.setLiquidGlassParameters(modified);
+        QCOMPARE(changed.count(), 1);
+        settings.setLiquidGlassParameters(original);
+    }
+
     void updateChecksAreScheduledPerApplicationVersion() {
         QStandardPaths::setTestModeEnabled(true);
         AppSettings settings;

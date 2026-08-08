@@ -9,6 +9,7 @@
 #include <QDrag>
 #include <QDragEnterEvent>
 #include <QDropEvent>
+#include <QKeyEvent>
 #include <QMenu>
 #include <QMimeData>
 #include <QMouseEvent>
@@ -16,6 +17,7 @@
 #include <QPainterPath>
 #include <QPointer>
 #include <QScreen>
+#include <QShortcut>
 #include <QUrl>
 
 #include <algorithm>
@@ -93,6 +95,7 @@ QStringList filePathsFromMimeData(const QMimeData* mimeData) {
 class GalleryGridWidget final : public QWidget {
 public:
     explicit GalleryGridWidget(ImageGalleryPopover* owner) : QWidget(owner), m_owner(owner) {
+        setObjectName(QStringLiteral("ImageGalleryGrid"));
         setAcceptDrops(true);
         setFocusPolicy(Qt::StrongFocus);
         setMouseTracking(true);
@@ -236,16 +239,22 @@ protected:
         const QStringList ids = m_owner->imageIds();
         const int index = m_owner->cellIndexAt(event->pos());
         if (index >= 0 && index < ids.size()) {
-            const QString imageId = ids.at(index);
-            const QRect source = imageSourceRect(imageId);
-            Logger::info(
-                QStringLiteral("tier.gallery.preview.request source=double-click imageId=%1")
-                    .arg(imageId));
-            emit m_owner->imagePreviewRequested(imageId, source);
+            m_owner->requestPreview(ids.at(index),
+                                    ImageGalleryPopover::PreviewTrigger::DoubleClick);
             event->accept();
             return;
         }
         QWidget::mouseDoubleClickEvent(event);
+    }
+
+    void keyPressEvent(QKeyEvent* event) override {
+        if (m_owner && event->key() == Qt::Key_Space && !event->isAutoRepeat() &&
+            m_owner->requestPreview(m_owner->m_selectedImageId,
+                                    ImageGalleryPopover::PreviewTrigger::Space)) {
+            event->accept();
+            return;
+        }
+        QWidget::keyPressEvent(event);
     }
 
     void contextMenuEvent(QContextMenuEvent* event) override {
@@ -368,7 +377,16 @@ ImageGalleryPopover::ImageGalleryPopover(QWidget* parent)
     setObjectName(QStringLiteral("ImageGalleryPopover"));
     m_popover->setPreferredPlacement(vkui::VkPopoverPlacement::Below);
     m_popover->setContentWidget(this);
-    connect(m_popover, &vkui::VkPopover::closed, this, &ImageGalleryPopover::closed);
+    connect(m_popover, &vkui::VkPopover::closed, this, [this]() {
+        if (!m_suspendedForPreview) {
+            emit closed();
+        }
+    });
+    auto* previewShortcut = new QShortcut(QKeySequence(Qt::Key_Space), m_popover);
+    previewShortcut->setObjectName(QStringLiteral("ImageGalleryPreviewShortcut"));
+    previewShortcut->setContext(Qt::WindowShortcut);
+    connect(previewShortcut, &QShortcut::activated, this,
+            [this]() { requestPreview(m_selectedImageId, PreviewTrigger::Space); });
 }
 
 void ImageGalleryPopover::setData(const TierProject* project, const AssetManager* assetManager,
@@ -431,6 +449,7 @@ void ImageGalleryPopover::openFor(QWidget* anchor) {
     if (!anchor || !m_popover) {
         return;
     }
+    m_suspendedForPreview = false;
     m_anchor = anchor;
     QScreen* screen = anchor->screen();
     const QRect available = screen ? screen->availableGeometry().adjusted(10, 10, -10, -10)
@@ -449,15 +468,50 @@ void ImageGalleryPopover::openFor(QWidget* anchor) {
 }
 
 void ImageGalleryPopover::closeAnimated() {
+    const bool wasSuspended = m_suspendedForPreview;
+    m_suspendedForPreview = false;
     if (m_popover) {
         m_popover->closeAnimated();
+    }
+    if (wasSuspended && (!m_popover || !m_popover->isOpen())) {
+        emit closed();
     }
 }
 
 void ImageGalleryPopover::closeImmediately() {
+    const bool wasSuspended = m_suspendedForPreview;
+    m_suspendedForPreview = false;
     if (m_popover) {
         m_popover->closeImmediately();
     }
+    if (wasSuspended && (!m_popover || !m_popover->isOpen())) {
+        emit closed();
+    }
+}
+
+bool ImageGalleryPopover::suspendForPreview() {
+    if (m_suspendedForPreview) {
+        return true;
+    }
+    if (!m_popover || !m_popover->isOpen() || !m_anchor) {
+        return false;
+    }
+    m_suspendedForPreview = true;
+    m_popover->closeImmediately();
+    return true;
+}
+
+bool ImageGalleryPopover::restoreAfterPreview() {
+    if (!m_suspendedForPreview) {
+        return false;
+    }
+    m_suspendedForPreview = false;
+    if (!m_anchor || !m_anchor->isVisible()) {
+        emit closed();
+        return false;
+    }
+    openFor(m_anchor);
+    return isOpen();
 }
 
 bool ImageGalleryPopover::isOpen() const {
@@ -491,6 +545,18 @@ QStringList ImageGalleryPopover::imageIds() const {
         }
     }
     return ids;
+}
+
+bool ImageGalleryPopover::requestPreview(const QString& imageId, PreviewTrigger trigger) {
+    if (imageId.isEmpty() || !imageIds().contains(imageId)) {
+        return false;
+    }
+    Logger::info(QStringLiteral("tier.gallery.preview.request source=%1 imageId=%2")
+                     .arg(trigger == PreviewTrigger::Space ? QStringLiteral("space")
+                                                           : QStringLiteral("double-click"),
+                          imageId));
+    emit imagePreviewRequested(imageId, imageSourceRect(imageId));
+    return true;
 }
 
 const TierImage* ImageGalleryPopover::imageForId(const QString& imageId) const {
