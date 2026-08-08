@@ -66,6 +66,7 @@ public slots:
     void toggleMissionControlMode();
     void toggleGallery(QWidget* anchor = nullptr);
     void toggleGalleryMissionControlMode();
+    void restoreGalleryAfterPreview();
 
 signals:
     void titleChanged(const QString& title);
@@ -74,7 +75,9 @@ signals:
     void projectSaved();
     void projectOpened(const QString& filePath);
     void galleryMissionControlRequested();
-    void imagePreviewRequested(const QRect& sourceRectInWindow, const QPixmap& pixmap);
+    void imagePreviewRequested(const QRect& sourceRectInWindow, const QPixmap& pixmap,
+                               const QString& projectBackgroundPath,
+                               qreal projectBackgroundVisibility);
     void imagePreviewCloseRequested();
 
 protected:
@@ -119,6 +122,8 @@ private:
     void removeImageFromRows(const QString& imageId);
     void layoutOverlays();
     bool hasImagesInRows() const;
+    void setSelectedImageId(const QString& imageId);
+    void requestImagePreview(const QString& imageId, QRect sourceRect, bool fromGallery);
     QPixmap pixmapForImage(const QString& imageId) const;
 
     ProjectRepository* m_repository{nullptr};

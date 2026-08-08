@@ -1,5 +1,8 @@
 #pragma once
 
+#include "assets/BackdropEffect.h"
+#include "assets/LiquidGlassBackdrop.h"
+
 #include <QDateTime>
 #include <QObject>
 #include <QSettings>
@@ -32,6 +35,8 @@ public:
     void setDefaultProjectDirectory(const QString& path);
     QString defaultTemplateId() const;
     void setDefaultTemplateId(const QString& id);
+    bool hasSeededSampleProject(const QString& id) const;
+    void recordSeededSampleProject(const QString& id);
 
     bool autoUpdateEnabled() const;
     void setAutoUpdateEnabled(bool enabled);
@@ -47,8 +52,14 @@ public:
     void setBlankLongPressAction(BlankAreaAction action);
     bool tierListToolTipsEnabled() const;
     void setTierListToolTipsEnabled(bool enabled);
+    BackdropEffect overviewBackdropEffect() const;
+    void setOverviewBackdropEffect(BackdropEffect effect);
     PreviewBackgroundMode previewBackgroundMode() const;
     void setPreviewBackgroundMode(PreviewBackgroundMode mode);
+    BackdropEffect previewEffect() const;
+    void setPreviewEffect(BackdropEffect effect);
+    LiquidGlassParameters liquidGlassParameters() const;
+    void setLiquidGlassParameters(const LiquidGlassParameters& parameters);
 
     QString defaultExportFormat() const;
     void setDefaultExportFormat(const QString& format);
@@ -71,7 +82,10 @@ signals:
     void blankDoubleClickActionChanged(BlankAreaAction action);
     void blankLongPressActionChanged(BlankAreaAction action);
     void tierListToolTipsEnabledChanged(bool enabled);
+    void overviewBackdropEffectChanged(BackdropEffect effect);
     void previewBackgroundModeChanged(PreviewBackgroundMode mode);
+    void previewEffectChanged(BackdropEffect effect);
+    void liquidGlassParametersChanged();
 
 private:
     QSettings m_settings;

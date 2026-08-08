@@ -1,5 +1,6 @@
 #pragma once
 
+#include "assets/BackdropMaterial.h"
 #include "assets/CoverImageCache.h"
 #include "settings/AppSettings.h"
 
@@ -65,6 +66,8 @@ public:
     void setBlankAreaActions(BlankAreaAction doubleClickAction, BlankAreaAction longPressAction);
     void setTierFocusMode(bool enabled);
     void setToolTipsEnabled(bool enabled);
+    void setOverviewBackdropEffect(BackdropEffect effect);
+    void setLiquidGlassParameters(const LiquidGlassParameters& parameters);
     void updateImageVisual(const QString& imageId);
     Q_INVOKABLE QString toolTipTextAt(QPoint viewportPoint) const;
 
@@ -180,6 +183,7 @@ private:
     QRect viewportImageRect(const QModelIndex& index, const QString& imageId) const;
     bool acceptsTierDrag(const QMimeData* mimeData) const;
     void paintCanvasBackground(QPainter* painter);
+    void paintMissionBackdrop(QPainter* painter);
     QString resolvedCanvasBackgroundPath() const;
 
     PressKind m_pressKind{PressKind::None};
@@ -215,6 +219,7 @@ private:
     bool m_imageDragSynchronousFeedback{false};
 
     CoverImageCache m_canvasBackgroundCache;
+    BackdropMaterialCache m_missionBackdropCache;
     QPixmap m_defaultBackgroundIcon;
     bool m_missionControlActive{false};
     bool m_missionFromGallery{false};
@@ -232,6 +237,8 @@ private:
     bool m_suppressBlankDoubleClick{false};
     BlankAreaAction m_blankDoubleClickAction{BlankAreaAction::GalleryMissionControl};
     BlankAreaAction m_blankLongPressAction{BlankAreaAction::TierMissionControl};
+    BackdropEffect m_overviewBackdropEffect{BackdropEffect::DepthSoftFocus};
+    LiquidGlassParameters m_liquidGlassParameters;
     bool m_tierFocusMode{false};
     bool m_toolTipsEnabled{true};
     mutable bool m_missionLayoutDirty{true};
@@ -239,6 +246,10 @@ private:
     mutable QStringList m_missionLayoutImageIds;
     mutable QVector<MissionTile> m_missionTiles;
     mutable QHash<QString, QSize> m_missionSourceSizeCache;
+    mutable QString m_missionHoverLayoutCacheImageId;
+    mutable QSize m_missionHoverLayoutCacheViewportSize;
+    mutable qreal m_missionHoverLayoutCacheProgress{-1.0};
+    mutable QVector<QRectF> m_missionHoverLayoutCacheRects;
 };
 
 } // namespace tlm

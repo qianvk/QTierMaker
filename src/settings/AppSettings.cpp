@@ -5,6 +5,7 @@
 #include <QDir>
 #include <QFileInfo>
 #include <QStandardPaths>
+#include <QStringList>
 
 namespace tlm {
 
@@ -64,6 +65,22 @@ QString previewBackgroundModeToString(PreviewBackgroundMode mode) {
 PreviewBackgroundMode previewBackgroundModeFromString(const QString& value) {
     return value == QStringLiteral("selfImage") ? PreviewBackgroundMode::SelfImage
                                                 : PreviewBackgroundMode::None;
+}
+
+QString backdropEffectToString(BackdropEffect effect) {
+    return effect == BackdropEffect::LiquidGlass ? QStringLiteral("liquidGlass")
+                                                  : QStringLiteral("depthSoftFocus");
+}
+
+BackdropEffect backdropEffectFromString(const QString& value) {
+    return value == QStringLiteral("liquidGlass") ? BackdropEffect::LiquidGlass
+                                                   : BackdropEffect::DepthSoftFocus;
+}
+
+qreal realSetting(const QSettings& settings, QStringView key, qreal fallback) {
+    bool converted = false;
+    const qreal value = settings.value(key.toString(), fallback).toDouble(&converted);
+    return converted ? value : fallback;
 }
 
 QString fallbackProjectDirectory() {
@@ -161,6 +178,25 @@ void AppSettings::setDefaultTemplateId(const QString& id) {
     emit changed();
 }
 
+bool AppSettings::hasSeededSampleProject(const QString& id) const {
+    const QString clean = id.trimmed();
+    return !clean.isEmpty() &&
+           m_settings.value(settings_keys::seededSampleProjects.toString())
+               .toStringList()
+               .contains(clean);
+}
+
+void AppSettings::recordSeededSampleProject(const QString& id) {
+    const QString clean = id.trimmed();
+    QStringList seeded =
+        m_settings.value(settings_keys::seededSampleProjects.toString()).toStringList();
+    if (clean.isEmpty() || seeded.contains(clean)) {
+        return;
+    }
+    seeded.append(clean);
+    m_settings.setValue(settings_keys::seededSampleProjects.toString(), seeded);
+}
+
 bool AppSettings::autoUpdateEnabled() const {
     return m_settings.value(settings_keys::autoUpdateEnabled.toString(), false).toBool();
 }
@@ -253,6 +289,24 @@ void AppSettings::setTierListToolTipsEnabled(bool enabled) {
     emit changed();
 }
 
+BackdropEffect AppSettings::overviewBackdropEffect() const {
+    return backdropEffectFromString(
+        m_settings
+            .value(settings_keys::overviewBackdropEffect.toString(),
+                   QStringLiteral("depthSoftFocus"))
+            .toString());
+}
+
+void AppSettings::setOverviewBackdropEffect(BackdropEffect effect) {
+    if (overviewBackdropEffect() == effect) {
+        return;
+    }
+    m_settings.setValue(settings_keys::overviewBackdropEffect.toString(),
+                        backdropEffectToString(effect));
+    emit overviewBackdropEffectChanged(effect);
+    emit changed();
+}
+
 PreviewBackgroundMode AppSettings::previewBackgroundMode() const {
     return previewBackgroundModeFromString(
         m_settings.value(settings_keys::previewBackgroundMode.toString(), QStringLiteral("none"))
@@ -266,6 +320,60 @@ void AppSettings::setPreviewBackgroundMode(PreviewBackgroundMode mode) {
     m_settings.setValue(settings_keys::previewBackgroundMode.toString(),
                         previewBackgroundModeToString(mode));
     emit previewBackgroundModeChanged(mode);
+    emit changed();
+}
+
+BackdropEffect AppSettings::previewEffect() const {
+    return backdropEffectFromString(
+        m_settings
+            .value(settings_keys::previewEffect.toString(), QStringLiteral("depthSoftFocus"))
+            .toString());
+}
+
+void AppSettings::setPreviewEffect(BackdropEffect effect) {
+    if (previewEffect() == effect) {
+        return;
+    }
+    m_settings.setValue(settings_keys::previewEffect.toString(), backdropEffectToString(effect));
+    emit previewEffectChanged(effect);
+    emit changed();
+}
+
+LiquidGlassParameters AppSettings::liquidGlassParameters() const {
+    LiquidGlassParameters parameters;
+    parameters.cornerRadius =
+        realSetting(m_settings, settings_keys::liquidGlassCornerRadius,
+                    parameters.cornerRadius);
+    parameters.blurRadius =
+        realSetting(m_settings, settings_keys::liquidGlassBlurRadius, parameters.blurRadius);
+    parameters.refractionHeightFraction =
+        realSetting(m_settings, settings_keys::liquidGlassRefractionHeight,
+                    parameters.refractionHeightFraction);
+    parameters.refractionAmountFraction =
+        realSetting(m_settings, settings_keys::liquidGlassRefractionAmount,
+                    parameters.refractionAmountFraction);
+    parameters.chromaticAberration =
+        realSetting(m_settings, settings_keys::liquidGlassChromaticAberration,
+                    parameters.chromaticAberration);
+    return normalizedLiquidGlassParameters(parameters);
+}
+
+void AppSettings::setLiquidGlassParameters(const LiquidGlassParameters& parameters) {
+    const LiquidGlassParameters normalized = normalizedLiquidGlassParameters(parameters);
+    if (liquidGlassParameters() == normalized) {
+        return;
+    }
+
+    m_settings.setValue(settings_keys::liquidGlassCornerRadius.toString(),
+                        normalized.cornerRadius);
+    m_settings.setValue(settings_keys::liquidGlassBlurRadius.toString(), normalized.blurRadius);
+    m_settings.setValue(settings_keys::liquidGlassRefractionHeight.toString(),
+                        normalized.refractionHeightFraction);
+    m_settings.setValue(settings_keys::liquidGlassRefractionAmount.toString(),
+                        normalized.refractionAmountFraction);
+    m_settings.setValue(settings_keys::liquidGlassChromaticAberration.toString(),
+                        normalized.chromaticAberration);
+    emit liquidGlassParametersChanged();
     emit changed();
 }
 

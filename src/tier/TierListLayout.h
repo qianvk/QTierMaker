@@ -35,6 +35,16 @@ struct MissionControlLayoutMetrics {
     qreal verticalOccupancy{0.0};
 };
 
+/** Local, gap-preserving magnification result for Mission Control hover. */
+struct MissionControlHoverLayoutMetrics {
+    QVector<QRectF> itemRects;
+    int localNeighborCount{0};
+    int affectedNeighborCount{0};
+    int changedNeighborCount{0};
+    qreal appliedProgress{0.0};
+    bool constrained{false};
+};
+
 /** Computes a non-scrolling board layout that keeps every tile inside its tier row. */
 class TierListLayout final {
 public:
@@ -44,6 +54,11 @@ public:
                                            const QSize& viewportSize, int labelWidth);
     static MissionControlLayoutMetrics fitMissionControl(const QVector<QSizeF>& sourceSizes,
                                                          const QRectF& bounds, qreal gap);
+    // Animation timing remains a view concern; easedProgress is normalized to [0, 1].
+    static MissionControlHoverLayoutMetrics
+    applyMissionControlHover(const QVector<QRectF>& baseRects, int hoverIndex,
+                             const QRectF& hoverTarget, const QRectF& movementBounds,
+                             qreal easedProgress, qreal gap);
 };
 
 } // namespace tlm

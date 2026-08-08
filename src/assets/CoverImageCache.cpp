@@ -4,6 +4,11 @@
 
 namespace tlm {
 
+const QImage& CoverImageCache::sourceImage(const QString& path) {
+    ensureSource(path);
+    return m_source;
+}
+
 const QPixmap& CoverImageCache::pixmap(const QString& path, QSize logicalSize,
                                        qreal devicePixelRatio) {
     logicalSize = logicalSize.expandedTo(QSize(1, 1));

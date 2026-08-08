@@ -31,6 +31,8 @@ public:
     void openFor(QWidget* anchor);
     void closeAnimated();
     void closeImmediately();
+    bool suspendForPreview();
+    bool restoreAfterPreview();
     bool isOpen() const;
     QRect imageSourceRect(const QString& imageId) const;
     QSize sizeHint() const override;
@@ -50,8 +52,10 @@ protected:
 
 private:
     friend class GalleryGridWidget;
+    enum class PreviewTrigger { DoubleClick, Space };
 
     QStringList imageIds() const;
+    bool requestPreview(const QString& imageId, PreviewTrigger trigger);
     const TierImage* imageForId(const QString& imageId) const;
     QString resolvedPathForImage(const TierImage& image) const;
     QPixmap pixmapForImage(const QString& imageId, QSize requestedSize) const;
@@ -73,6 +77,7 @@ private:
     int m_columns{1};
     int m_rows{1};
     bool m_outsideDismissSuspended{false};
+    bool m_suspendedForPreview{false};
 };
 
 } // namespace tlm

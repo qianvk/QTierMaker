@@ -20,7 +20,9 @@
 #include <QPainter>
 #include <QPushButton>
 #include <QResizeEvent>
+#include <QScrollArea>
 #include <QSizePolicy>
+#include <QSlider>
 #include <QSpinBox>
 #include <QStackedWidget>
 #include <QStyledItemDelegate>
@@ -28,6 +30,8 @@
 #include <QTimer>
 #include <QVBoxLayout>
 #include <QVariantAnimation>
+
+#include <functional>
 
 #include <vkui/core/VkIcon.h>
 #include <vkui/widgets/VkComboBox.h>
@@ -45,6 +49,18 @@ namespace tlm {
 
 namespace {
 constexpr int kUpdateBadgeRole = Qt::UserRole + 41;
+constexpr int kGeneralPageIndex = 0;
+constexpr int kLiquidGlassPageIndex = 1;
+constexpr int kUpdatePageIndex = 2;
+constexpr int kAboutPageIndex = 3;
+
+struct ParameterSlider final {
+    QWidget* widget{nullptr};
+    QSlider* slider{nullptr};
+    QLabel* valueLabel{nullptr};
+    qreal maximum{1.0};
+    int steps{1000};
+};
 
 template <typename Enum> int enumIndex(Enum value) {
     return static_cast<int>(value);
@@ -178,6 +194,45 @@ QWidget* createSettingRow(const QString& title, QWidget* control, QWidget* paren
     layout->addWidget(control, 0, Qt::AlignRight);
     return row;
 }
+
+ParameterSlider createParameterSlider(qreal value, qreal maximum, int steps,
+                                      const std::function<QString(qreal)>& formatter,
+                                      QWidget* parent) {
+    auto* field = new QWidget(parent);
+    auto* layout = new QHBoxLayout(field);
+    layout->setContentsMargins(0, 0, 0, 0);
+    layout->setSpacing(10);
+
+    auto* slider = new QSlider(Qt::Horizontal, field);
+    slider->setRange(0, steps);
+    slider->setTracking(false);
+    slider->setValue(qRound(qBound<qreal>(0.0, value, maximum) / maximum * steps));
+    slider->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+
+    auto* valueLabel = new QLabel(field);
+    valueLabel->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
+    valueLabel->setMinimumWidth(62);
+    valueLabel->setText(formatter(value));
+
+    const auto updateLabel = [valueLabel, formatter, maximum, steps](int sliderValue) {
+        valueLabel->setText(formatter(maximum * sliderValue / steps));
+    };
+    QObject::connect(slider, &QSlider::sliderMoved, valueLabel, updateLabel);
+    QObject::connect(slider, &QSlider::valueChanged, valueLabel, updateLabel);
+
+    layout->addWidget(slider, 1);
+    layout->addWidget(valueLabel);
+    return {field, slider, valueLabel, maximum, steps};
+}
+
+qreal parameterSliderValue(const ParameterSlider& control) {
+    return control.maximum * control.slider->value() / control.steps;
+}
+
+void setParameterSliderValue(const ParameterSlider& control, qreal value) {
+    control.slider->setValue(
+        qRound(qBound<qreal>(0.0, value, control.maximum) / control.maximum * control.steps));
+}
 } // namespace
 
 PreferencesPage::PreferencesPage(AppSettings* settings, LanguageManager* languageManager,
@@ -193,7 +248,7 @@ PreferencesPage::PreferencesPage(AppSettings* settings, LanguageManager* languag
     body->setSpacing(18);
 
     m_nav = new QListWidget(this);
-    m_nav->addItems({tr("General"), tr("Updates"), tr("About")});
+    m_nav->addItems({tr("General"), tr("Liquid Glass"), tr("Updates"), tr("About")});
     m_nav->setMinimumWidth(150);
     m_nav->setMaximumWidth(300);
     m_nav->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
@@ -208,9 +263,10 @@ PreferencesPage::PreferencesPage(AppSettings* settings, LanguageManager* languag
 
     m_stack = new QStackedWidget(this);
     m_stack->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-    m_stack->addWidget(createGeneralPage());
-    m_stack->addWidget(createUpdatePage());
-    m_stack->addWidget(createAboutPage());
+    m_stack->addWidget(createScrollablePage(createGeneralPage()));
+    m_stack->addWidget(createScrollablePage(createLiquidGlassPage()));
+    m_stack->addWidget(createScrollablePage(createUpdatePage()));
+    m_stack->addWidget(createScrollablePage(createAboutPage()));
 
     body->addWidget(m_nav);
     body->addWidget(m_stack, 1);
@@ -276,7 +332,12 @@ PreferencesPage::PreferencesPage(AppSettings* settings, LanguageManager* languag
             setUpdateNotificationVisible(m_updater && m_updater->hasUpdateAvailable());
             refreshUpdatePolicyText();
         });
+        connect(m_settings, &AppSettings::previewEffectChanged, this,
+                [this](BackdropEffect) { refreshLiquidGlassAvailability(); });
+        connect(m_settings, &AppSettings::overviewBackdropEffectChanged, this,
+                [this](BackdropEffect) { refreshLiquidGlassAvailability(); });
     }
+    refreshLiquidGlassAvailability();
     updateNavWidth();
     QTimer::singleShot(0, this, &PreferencesPage::updateNavWidth);
 }
@@ -298,22 +359,28 @@ void PreferencesPage::retranslateUi() {
     if (!m_nav || !m_stack) {
         return;
     }
-    const int row = qBound(0, m_nav->currentRow(), 2);
-    m_nav->item(0)->setText(tr("General"));
-    m_nav->item(1)->setText(tr("Updates"));
-    m_nav->item(2)->setText(tr("About"));
+    int row = qBound(0, m_nav->currentRow(), kAboutPageIndex);
+    m_nav->item(kGeneralPageIndex)->setText(tr("General"));
+    m_nav->item(kLiquidGlassPageIndex)->setText(tr("Liquid Glass"));
+    m_nav->item(kUpdatePageIndex)->setText(tr("Updates"));
+    m_nav->item(kAboutPageIndex)->setText(tr("About"));
     rebuildPreferencePages();
+    refreshLiquidGlassAvailability();
+    if (row == kLiquidGlassPageIndex && m_nav->item(row)->isHidden()) {
+        row = kGeneralPageIndex;
+    }
     m_nav->setCurrentRow(row);
     m_stack->setCurrentIndex(row);
     updateNavWidth();
 }
 
 void PreferencesPage::setUpdateNotificationVisible(bool visible) {
-    if (!m_nav || m_nav->count() < 2) {
+    if (!m_nav || m_nav->count() <= kUpdatePageIndex) {
         return;
     }
-    m_nav->item(1)->setData(kUpdateBadgeRole,
-                            visible && (!m_settings || m_settings->autoUpdateEnabled()));
+    m_nav->item(kUpdatePageIndex)
+        ->setData(kUpdateBadgeRole,
+                  visible && (!m_settings || m_settings->autoUpdateEnabled()));
     m_nav->viewport()->update();
 }
 
@@ -330,9 +397,24 @@ void PreferencesPage::rebuildPreferencePages() {
     m_checkUpdateButton = nullptr;
     m_installUpdateButton = nullptr;
     m_openUpdateButton = nullptr;
-    m_stack->addWidget(createGeneralPage());
-    m_stack->addWidget(createUpdatePage());
-    m_stack->addWidget(createAboutPage());
+    m_stack->addWidget(createScrollablePage(createGeneralPage()));
+    m_stack->addWidget(createScrollablePage(createLiquidGlassPage()));
+    m_stack->addWidget(createScrollablePage(createUpdatePage()));
+    m_stack->addWidget(createScrollablePage(createAboutPage()));
+}
+
+QWidget* PreferencesPage::createScrollablePage(QWidget* content) {
+    auto* scrollArea = new QScrollArea(this);
+    scrollArea->setFrameShape(QFrame::NoFrame);
+    scrollArea->setWidgetResizable(true);
+    scrollArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    scrollArea->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+    scrollArea->setAutoFillBackground(false);
+    scrollArea->viewport()->setAutoFillBackground(false);
+    content->setAutoFillBackground(false);
+    content->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+    scrollArea->setWidget(content);
+    return scrollArea;
 }
 
 void PreferencesPage::updateNavWidth() {
@@ -342,6 +424,9 @@ void PreferencesPage::updateNavWidth() {
     QFontMetrics metrics(m_nav->font());
     int width = 150;
     for (int i = 0; i < m_nav->count(); ++i) {
+        if (m_nav->item(i)->isHidden()) {
+            continue;
+        }
         width = qMax(width, metrics.horizontalAdvance(m_nav->item(i)->text()) + 62);
     }
     const int availableWidth = qMax(1, this->width());
@@ -361,6 +446,21 @@ void PreferencesPage::updateNavWidth() {
 
 void PreferencesPage::refreshPreferenceControlStyles() {
     update();
+}
+
+void PreferencesPage::refreshLiquidGlassAvailability() {
+    if (!m_nav || m_nav->count() <= kLiquidGlassPageIndex) {
+        return;
+    }
+    const bool available =
+        !m_settings || m_settings->previewEffect() == BackdropEffect::LiquidGlass ||
+        m_settings->overviewBackdropEffect() == BackdropEffect::LiquidGlass;
+    QListWidgetItem* item = m_nav->item(kLiquidGlassPageIndex);
+    item->setHidden(!available);
+    if (!available && m_nav->currentRow() == kLiquidGlassPageIndex) {
+        m_nav->setCurrentRow(kGeneralPageIndex);
+    }
+    updateNavWidth();
 }
 
 void PreferencesPage::refreshUpdateActions() {
@@ -427,7 +527,7 @@ void PreferencesPage::applyUpdateFailure(const QString& reason) {
 
 QWidget* PreferencesPage::createGeneralPage() {
     auto* page = new QWidget(this);
-    page->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    page->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
     auto* layout = new QVBoxLayout(page);
     layout->setContentsMargins(16, 0, 0, 0);
     layout->setSpacing(16);
@@ -458,17 +558,50 @@ QWidget* PreferencesPage::createGeneralPage() {
             [this](int index) { m_settings->setAppearance(static_cast<AppearanceMode>(index)); });
     settingsLayout->addWidget(createSettingRow(tr("Appearance"), appearance, page));
 
+    const auto createBackdropEffectCombo = [this, page](BackdropEffect effect) {
+        auto* combo = new QComboBox(page);
+        combo->addItem(tr("Depth Soft Focus"),
+                       static_cast<int>(BackdropEffect::DepthSoftFocus));
+        combo->addItem(tr("Liquid Glass"), static_cast<int>(BackdropEffect::LiquidGlass));
+        combo->setCurrentIndex(qMax(0, combo->findData(static_cast<int>(effect))));
+        return combo;
+    };
+
+    auto* previewEffect = createBackdropEffectCombo(m_settings->previewEffect());
+    settingsLayout->addWidget(createSettingRow(tr("Preview effect"), previewEffect, page));
+
     auto* previewBackground = new QComboBox(page);
     previewBackground->addItem(tr("None"), static_cast<int>(PreviewBackgroundMode::None));
     previewBackground->addItem(tr("Image"), static_cast<int>(PreviewBackgroundMode::SelfImage));
     previewBackground->setCurrentIndex(qMax(
         0, previewBackground->findData(static_cast<int>(m_settings->previewBackgroundMode()))));
+    QWidget* previewBackgroundRow =
+        createSettingRow(tr("Preview background"), previewBackground, page);
+    settingsLayout->addWidget(previewBackgroundRow);
+    setSettingRowExpanded(previewBackgroundRow,
+                          m_settings->previewEffect() == BackdropEffect::DepthSoftFocus, false);
     connect(previewBackground, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
             [this, previewBackground](int index) {
-                m_settings->setPreviewBackgroundMode(
-                    static_cast<PreviewBackgroundMode>(previewBackground->itemData(index).toInt()));
+                m_settings->setPreviewBackgroundMode(static_cast<PreviewBackgroundMode>(
+                    previewBackground->itemData(index).toInt()));
             });
-    settingsLayout->addWidget(createSettingRow(tr("Preview background"), previewBackground, page));
+    connect(previewEffect, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
+            [this, previewEffect, previewBackgroundRow](int index) {
+                const auto effect =
+                    static_cast<BackdropEffect>(previewEffect->itemData(index).toInt());
+                m_settings->setPreviewEffect(effect);
+                setSettingRowExpanded(previewBackgroundRow,
+                                      effect == BackdropEffect::DepthSoftFocus, true);
+            });
+
+    auto* overviewBackdrop = createBackdropEffectCombo(m_settings->overviewBackdropEffect());
+    connect(overviewBackdrop, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
+            [this, overviewBackdrop](int index) {
+                m_settings->setOverviewBackdropEffect(static_cast<BackdropEffect>(
+                    overviewBackdrop->itemData(index).toInt()));
+            });
+    settingsLayout->addWidget(
+        createSettingRow(tr("Overview background material"), overviewBackdrop, page));
 
     const auto addBlankAreaActionItems = [](QComboBox* combo) {
         combo->addItem(tr("Open Gallery Overview"),
@@ -590,9 +723,104 @@ QWidget* PreferencesPage::createGeneralPage() {
     return page;
 }
 
+QWidget* PreferencesPage::createLiquidGlassPage() {
+    auto* page = new QWidget(this);
+    page->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+    auto* layout = new QVBoxLayout(page);
+    layout->setContentsMargins(16, 0, 0, 0);
+    layout->setSpacing(16);
+
+    auto* settingsLayout = new QVBoxLayout;
+    settingsLayout->setContentsMargins(0, 0, 0, 0);
+    settingsLayout->setSpacing(12);
+
+    const LiquidGlassParameters parameters =
+        m_settings ? m_settings->liquidGlassParameters() : LiquidGlassParameters{};
+    const auto fractionFormatter = [](qreal value) {
+        return QStringLiteral("%1%").arg(value * 100.0, 0, 'f', 1);
+    };
+    const auto pixelFormatter = [this](qreal value) {
+        return tr("%1 px").arg(value, 0, 'f', 1);
+    };
+
+    const ParameterSlider cornerRadius =
+        createParameterSlider(parameters.cornerRadius, 128.0, 1280, pixelFormatter, page);
+    const ParameterSlider blurRadius =
+        createParameterSlider(parameters.blurRadius, 32.0, 3200, pixelFormatter, page);
+    const ParameterSlider refractionHeight = createParameterSlider(
+        parameters.refractionHeightFraction, 1.0, 1000, fractionFormatter, page);
+    const ParameterSlider refractionAmount = createParameterSlider(
+        parameters.refractionAmountFraction, 1.0, 1000, fractionFormatter, page);
+    const ParameterSlider chromaticAberration = createParameterSlider(
+        parameters.chromaticAberration, 1.0, 1000, fractionFormatter, page);
+
+    settingsLayout->addWidget(createSettingRow(tr("Corner radius"), cornerRadius.widget, page));
+    settingsLayout->addWidget(createSettingRow(tr("Blur radius"), blurRadius.widget, page));
+    settingsLayout->addWidget(
+        createSettingRow(tr("Refraction height"), refractionHeight.widget, page));
+    settingsLayout->addWidget(
+        createSettingRow(tr("Refraction amount"), refractionAmount.widget, page));
+    settingsLayout->addWidget(
+        createSettingRow(tr("Chromatic aberration"), chromaticAberration.widget, page));
+
+    const auto bindParameter = [this](const ParameterSlider& control,
+                                      qreal LiquidGlassParameters::*member) {
+        connect(control.slider, &QSlider::valueChanged, this, [this, control, member]() {
+            if (!m_settings) {
+                return;
+            }
+            LiquidGlassParameters updated = m_settings->liquidGlassParameters();
+            updated.*member = parameterSliderValue(control);
+            m_settings->setLiquidGlassParameters(updated);
+        });
+    };
+    bindParameter(cornerRadius, &LiquidGlassParameters::cornerRadius);
+    bindParameter(blurRadius, &LiquidGlassParameters::blurRadius);
+    bindParameter(refractionHeight, &LiquidGlassParameters::refractionHeightFraction);
+    bindParameter(refractionAmount, &LiquidGlassParameters::refractionAmountFraction);
+    bindParameter(chromaticAberration, &LiquidGlassParameters::chromaticAberration);
+
+    if (m_settings) {
+        connect(m_settings, &AppSettings::liquidGlassParametersChanged, page,
+                [this, cornerRadius, blurRadius, refractionHeight, refractionAmount,
+                 chromaticAberration]() {
+                    const LiquidGlassParameters current = m_settings->liquidGlassParameters();
+                    setParameterSliderValue(cornerRadius, current.cornerRadius);
+                    setParameterSliderValue(blurRadius, current.blurRadius);
+                    setParameterSliderValue(refractionHeight,
+                                            current.refractionHeightFraction);
+                    setParameterSliderValue(refractionAmount,
+                                            current.refractionAmountFraction);
+                    setParameterSliderValue(chromaticAberration,
+                                            current.chromaticAberration);
+                });
+    }
+
+    auto* reset =
+        new QPushButton(vkui::icon(vkui::VkSymbol::Reset), tr("Reset"), page);
+    reset->setAutoDefault(false);
+    reset->setDefault(false);
+    connect(reset, &QPushButton::clicked, this, [this]() {
+        if (m_settings) {
+            m_settings->setLiquidGlassParameters(LiquidGlassParameters{});
+        }
+    });
+
+    auto* actions = new QHBoxLayout;
+    actions->setContentsMargins(0, 4, 0, 0);
+    actions->addStretch(1);
+    actions->addWidget(reset);
+
+    layout->addWidget(new SectionHeader(tr("Liquid Glass"), page));
+    layout->addLayout(settingsLayout);
+    layout->addLayout(actions);
+    layout->addStretch();
+    return page;
+}
+
 QWidget* PreferencesPage::createUpdatePage() {
     auto* page = new QWidget(this);
-    page->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    page->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
     auto* layout = new QVBoxLayout(page);
     layout->setContentsMargins(16, 0, 0, 0);
     layout->setSpacing(12);
@@ -651,7 +879,7 @@ QWidget* PreferencesPage::createUpdatePage() {
 
 QWidget* PreferencesPage::createAboutPage() {
     auto* page = new QWidget(this);
-    page->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    page->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
     auto* layout = new QVBoxLayout(page);
     layout->setContentsMargins(16, 0, 0, 0);
     layout->setSpacing(12);

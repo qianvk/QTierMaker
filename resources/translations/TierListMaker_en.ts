@@ -850,6 +850,61 @@ The project may not have published update metadata yet.</translation>
         <translation>Preview background</translation>
     </message>
     <message>
+        <location filename="../../src/pages/PreferencesPage.cpp" line="481"/>
+        <source>Preview effect</source>
+        <translation>Preview effect</translation>
+    </message>
+    <message>
+        <location filename="../../src/pages/PreferencesPage.cpp" line="474"/>
+        <source>Depth Soft Focus</source>
+        <translation>Depth Soft Focus</translation>
+    </message>
+    <message>
+        <location filename="../../src/pages/PreferencesPage.cpp" line="476"/>
+        <source>Liquid Glass</source>
+        <translation>Liquid Glass</translation>
+    </message>
+    <message>
+        <location filename="../../src/pages/PreferencesPage.cpp" line="701"/>
+        <source>%1 px</source>
+        <translation>%1 px</translation>
+    </message>
+    <message>
+        <location filename="../../src/pages/PreferencesPage.cpp" line="715"/>
+        <source>Corner radius</source>
+        <translation>Corner radius</translation>
+    </message>
+    <message>
+        <location filename="../../src/pages/PreferencesPage.cpp" line="716"/>
+        <source>Blur radius</source>
+        <translation>Blur radius</translation>
+    </message>
+    <message>
+        <location filename="../../src/pages/PreferencesPage.cpp" line="718"/>
+        <source>Refraction height</source>
+        <translation>Refraction height</translation>
+    </message>
+    <message>
+        <location filename="../../src/pages/PreferencesPage.cpp" line="720"/>
+        <source>Refraction amount</source>
+        <translation>Refraction amount</translation>
+    </message>
+    <message>
+        <location filename="../../src/pages/PreferencesPage.cpp" line="722"/>
+        <source>Chromatic aberration</source>
+        <translation>Chromatic aberration</translation>
+    </message>
+    <message>
+        <location filename="../../src/pages/PreferencesPage.cpp" line="758"/>
+        <source>Reset</source>
+        <translation>Reset</translation>
+    </message>
+    <message>
+        <location filename="../../src/pages/PreferencesPage.cpp" line="487"/>
+        <source>Overview background material</source>
+        <translation>Overview background material</translation>
+    </message>
+    <message>
         <location filename="../../src/pages/PreferencesPage.cpp" line="474"/>
         <source>Open Gallery Overview</source>
         <translation>Open Gallery Overview</translation>
