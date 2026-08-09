@@ -14,6 +14,7 @@ private slots:
     void selectsLocalizedChangelog();
     void parsesGitHubReleaseFeed();
     void requiresSecurePackageMetadata();
+    void usesRateLimitIndependentDefaultFeed();
 };
 
 void AppUpdaterTest::comparesSemanticVersions_data() {
@@ -243,6 +244,14 @@ void AppUpdaterTest::requiresSecurePackageMetadata() {
         AppUpdater::parseUpdatePayload(manifest, QStringLiteral("0.2.0"), &error);
     QVERIFY(!error.isEmpty());
     QVERIFY(!result.updateAvailable);
+}
+
+void AppUpdaterTest::usesRateLimitIndependentDefaultFeed() {
+    const QUrl url = AppUpdater::defaultUpdateDefinitionUrl();
+    QCOMPARE(url.scheme(), QStringLiteral("https"));
+    QCOMPARE(url.host(), QStringLiteral("github.com"));
+    QVERIFY(url.path().endsWith(QStringLiteral("/releases/latest/download/updates.json")));
+    QVERIFY(url.query().isEmpty());
 }
 
 QTEST_MAIN(AppUpdaterTest)

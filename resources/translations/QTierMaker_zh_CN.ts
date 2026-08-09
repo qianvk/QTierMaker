@@ -254,9 +254,23 @@
         <translation>更新包大于预期大小。</translation>
     </message>
     <message>
-        <location filename="../../src/update/AppUpdater.cpp" line="844"/>
-        <location filename="../../src/update/AppUpdater.cpp" line="924"/>
-        <location filename="../../src/update/AppUpdater.cpp" line="1100"/>
+        <location filename="../../src/update/AppUpdater.cpp" line="85"/>
+        <source>The update service is temporarily rate-limited. Please try again later.</source>
+        <translation>更新服务暂时受到频率限制，请稍后重试。</translation>
+    </message>
+    <message>
+        <location filename="../../src/update/AppUpdater.cpp" line="89"/>
+        <source>No update metadata is published for this channel.</source>
+        <translation>当前更新通道尚未发布更新元数据。</translation>
+    </message>
+    <message>
+        <location filename="../../src/update/AppUpdater.cpp" line="93"/>
+        <source>The update service denied the request (HTTP 403).</source>
+        <translation>更新服务拒绝了请求（HTTP 403）。</translation>
+    </message>
+    <message>
+        <location filename="../../src/update/AppUpdater.cpp" line="100"/>
+        <location filename="../../src/update/AppUpdater.cpp" line="1122"/>
         <source>The update server returned HTTP %1.</source>
         <translation>更新服务器返回了 HTTP %1。</translation>
     </message>
@@ -808,11 +822,9 @@
         <translation>QTierMaker 已是最新版本。当前版本：%1</translation>
     </message>
     <message>
-        <location filename="../../src/pages/PreferencesPage.cpp" line="523"/>
-        <source>Update check failed: %1
-The project may not have published update metadata yet.</source>
-        <translation>检查更新失败：%1
-项目可能还没有发布更新元数据。</translation>
+        <location filename="../../src/pages/PreferencesPage.cpp" line="522"/>
+        <source>Update check failed: %1</source>
+        <translation>检查更新失败：%1</translation>
     </message>
     <message>
         <location filename="../../src/pages/PreferencesPage.cpp" line="556"/>

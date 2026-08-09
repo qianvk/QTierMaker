@@ -519,9 +519,7 @@ void PreferencesPage::applyUpdateResult(const UpdateCheckResult& result) {
 
 void PreferencesPage::applyUpdateFailure(const QString& reason) {
     if (m_updateStatusLabel) {
-        m_updateStatusLabel->setText(
-            tr("Update check failed: %1\nThe project may not have published update metadata yet.")
-                .arg(reason));
+        m_updateStatusLabel->setText(tr("Update check failed: %1").arg(reason));
     }
     refreshUpdateActions();
 }

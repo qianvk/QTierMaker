@@ -39,7 +39,7 @@
 
 #ifndef QTM_UPDATE_MANIFEST_URL
 #define QTM_UPDATE_MANIFEST_URL                                                                    \
-    "https://api.github.com/repos/qianvk/QTierMaker/releases?per_page=20"
+    "https://github.com/qianvk/QTierMaker/releases/latest/download/updates.json"
 #endif
 
 namespace qtm {
@@ -51,6 +51,57 @@ constexpr qsizetype kMaximumManifestBytes = 1024 * 1024;
 constexpr qint64 kMaximumPackageBytes = 1024LL * 1024LL * 1024LL;
 constexpr int kManifestTimeoutMs = 15'000;
 constexpr int kPackageTimeoutMs = 30'000;
+
+void configureManifestRequest(QNetworkRequest& request, const QUrl& url) {
+    request.setHeader(QNetworkRequest::UserAgentHeader,
+                      QStringLiteral("QTierMaker/%1 (%2)")
+                          .arg(QStringLiteral(QTM_APP_VERSION),
+                               QStringLiteral(QTM_UPDATE_CHANNEL)));
+    request.setRawHeader("Accept", "application/json");
+    if (url.host().compare(QStringLiteral("api.github.com"), Qt::CaseInsensitive) == 0) {
+        request.setRawHeader("X-GitHub-Api-Version", "2022-11-28");
+    }
+    request.setAttribute(QNetworkRequest::RedirectPolicyAttribute,
+                         QNetworkRequest::NoLessSafeRedirectPolicy);
+    request.setAttribute(QNetworkRequest::CacheLoadControlAttribute,
+                         QNetworkRequest::AlwaysNetwork);
+    request.setTransferTimeout(kManifestTimeoutMs);
+}
+
+QString manifestReplyFailure(QNetworkReply* reply) {
+    QString failure = reply->property("tlmFailure").toString();
+    if (!failure.isEmpty()) {
+        return failure;
+    }
+
+    const int status = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+    const QByteArray remaining = reply->rawHeader("X-RateLimit-Remaining").trimmed();
+    const bool rateLimited = status == 429 ||
+                             (status == 403 &&
+                              (remaining == "0" || !reply->rawHeader("Retry-After").isEmpty()));
+    if (rateLimited) {
+        return QCoreApplication::translate(
+            "qtm::AppUpdater",
+            "The update service is temporarily rate-limited. Please try again later.");
+    }
+    if (status == 404) {
+        return QCoreApplication::translate(
+            "qtm::AppUpdater", "No update metadata is published for this channel.");
+    }
+    if (status == 403) {
+        return QCoreApplication::translate(
+            "qtm::AppUpdater", "The update service denied the request (HTTP 403).");
+    }
+    if (reply->error() != QNetworkReply::NoError) {
+        return reply->errorString();
+    }
+    if (status != 0 && (status < 200 || status >= 300)) {
+        return QCoreApplication::translate("qtm::AppUpdater",
+                                           "The update server returned HTTP %1.")
+            .arg(status);
+    }
+    return {};
+}
 
 struct SemanticVersion {
     QVector<quint64> core;
@@ -759,16 +810,7 @@ void AppUpdater::checkForUpdates(const QUrl& definitionUrl) {
     }
 
     QNetworkRequest request(url);
-    request.setHeader(QNetworkRequest::UserAgentHeader,
-                      QStringLiteral("QTierMaker/%1 (%2)")
-                          .arg(QStringLiteral(QTM_APP_VERSION), updateChannel()));
-    request.setRawHeader("Accept", "application/json");
-    request.setRawHeader("X-GitHub-Api-Version", "2022-11-28");
-    request.setAttribute(QNetworkRequest::RedirectPolicyAttribute,
-                         QNetworkRequest::NoLessSafeRedirectPolicy);
-    request.setAttribute(QNetworkRequest::CacheLoadControlAttribute,
-                         QNetworkRequest::AlwaysNetwork);
-    request.setTransferTimeout(kManifestTimeoutMs);
+    configureManifestRequest(request, url);
 
     m_checkPayload.clear();
     m_pendingReleaseResult.reset();
@@ -835,14 +877,8 @@ void AppUpdater::finishCheckReply() {
     m_checkPayload.append(reply->readAll());
     const QUrl url = reply->url();
     const int status = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
-    QString failure = reply->property("tlmFailure").toString();
-    if (failure.isEmpty() && reply->error() != QNetworkReply::NoError) {
-        failure = reply->errorString();
-    }
+    const QString failure = manifestReplyFailure(reply);
     reply->deleteLater();
-    if (failure.isEmpty() && status != 0 && (status < 200 || status >= 300)) {
-        failure = tr("The update server returned HTTP %1.").arg(status);
-    }
 
     if (!failure.isEmpty()) {
         m_checkPayload.clear();
@@ -881,15 +917,7 @@ void AppUpdater::beginMetadataCheck(const UpdateCheckResult& releaseResult) {
     m_checkPayload.clear();
 
     QNetworkRequest request(releaseResult.metadataUrl);
-    request.setHeader(QNetworkRequest::UserAgentHeader,
-                      QStringLiteral("QTierMaker/%1 (%2)")
-                          .arg(QStringLiteral(QTM_APP_VERSION), updateChannel()));
-    request.setRawHeader("Accept", "application/json");
-    request.setAttribute(QNetworkRequest::RedirectPolicyAttribute,
-                         QNetworkRequest::NoLessSafeRedirectPolicy);
-    request.setAttribute(QNetworkRequest::CacheLoadControlAttribute,
-                         QNetworkRequest::AlwaysNetwork);
-    request.setTransferTimeout(kManifestTimeoutMs);
+    configureManifestRequest(request, releaseResult.metadataUrl);
 
     Logger::debug(QStringLiteral("app.update.metadata.start url=\"%1\"")
                       .arg(releaseResult.metadataUrl.toString()));
@@ -915,14 +943,8 @@ void AppUpdater::finishMetadataReply() {
     m_checkPayload.append(reply->readAll());
     const QUrl url = reply->url();
     const int status = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
-    QString failure = reply->property("tlmFailure").toString();
-    if (failure.isEmpty() && reply->error() != QNetworkReply::NoError) {
-        failure = reply->errorString();
-    }
+    const QString failure = manifestReplyFailure(reply);
     reply->deleteLater();
-    if (failure.isEmpty() && status != 0 && (status < 200 || status >= 300)) {
-        failure = tr("The update server returned HTTP %1.").arg(status);
-    }
 
     QString parseError;
     UpdateCheckResult metadataResult;

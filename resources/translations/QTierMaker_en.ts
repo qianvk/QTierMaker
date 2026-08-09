@@ -254,9 +254,23 @@
         <translation>The update package is larger than expected.</translation>
     </message>
     <message>
-        <location filename="../../src/update/AppUpdater.cpp" line="844"/>
-        <location filename="../../src/update/AppUpdater.cpp" line="924"/>
-        <location filename="../../src/update/AppUpdater.cpp" line="1100"/>
+        <location filename="../../src/update/AppUpdater.cpp" line="85"/>
+        <source>The update service is temporarily rate-limited. Please try again later.</source>
+        <translation>The update service is temporarily rate-limited. Please try again later.</translation>
+    </message>
+    <message>
+        <location filename="../../src/update/AppUpdater.cpp" line="89"/>
+        <source>No update metadata is published for this channel.</source>
+        <translation>No update metadata is published for this channel.</translation>
+    </message>
+    <message>
+        <location filename="../../src/update/AppUpdater.cpp" line="93"/>
+        <source>The update service denied the request (HTTP 403).</source>
+        <translation>The update service denied the request (HTTP 403).</translation>
+    </message>
+    <message>
+        <location filename="../../src/update/AppUpdater.cpp" line="100"/>
+        <location filename="../../src/update/AppUpdater.cpp" line="1122"/>
         <source>The update server returned HTTP %1.</source>
         <translation>The update server returned HTTP %1.</translation>
     </message>
@@ -798,11 +812,9 @@
         <translation>QTierMaker is up to date. Current version: %1</translation>
     </message>
     <message>
-        <location filename="../../src/pages/PreferencesPage.cpp" line="523"/>
-        <source>Update check failed: %1
-The project may not have published update metadata yet.</source>
-        <translation>Update check failed: %1
-The project may not have published update metadata yet.</translation>
+        <location filename="../../src/pages/PreferencesPage.cpp" line="522"/>
+        <source>Update check failed: %1</source>
+        <translation>Update check failed: %1</translation>
     </message>
     <message>
         <location filename="../../src/pages/PreferencesPage.cpp" line="541"/>
