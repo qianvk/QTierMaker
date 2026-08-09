@@ -22,8 +22,8 @@ xcrun notarytool submit QTierMaker-*.dmg --keychain-profile QTierMaker --wait
 xcrun stapler staple QTierMaker-*.dmg
 ```
 
-The `Platform Installers` workflow runs the same build for tags and manual dispatches. With the
+The `Platform Installers` workflow runs an arm64 build for tags and manual dispatches. With the
 signing and App Store Connect secrets listed in the parent packaging README, it imports the
 certificate into an ephemeral keychain, signs the deployed app and DMG, submits the DMG to Apple's
-notary service, and staples the ticket. A `vX.Y.Z` tag publishes the notarized DMG and its SHA-256
-checksum to the matching GitHub Release.
+notary service, and staples the ticket. A `vX.Y.Z` tag publishes the notarized arm64 DMG; its
+SHA-256 hash is recorded in `updates.json`.

@@ -20,6 +20,9 @@
 #include <algorithm>
 
 #include <vkui/core/VkIcon.h>
+#if !defined(Q_OS_MACOS) && !defined(Q_OS_MAC)
+#include <vkui/window/VkWindowAgent.h>
+#endif
 
 namespace qtm {
 
@@ -430,8 +433,8 @@ void AppTitleBar::updateTitleGeometry() {
         m_unsavedIndicator->raise();
     }
 
-    const int totalActionWidth = actionButtonsWidth();
 #if defined(Q_OS_MACOS) || defined(Q_OS_MAC)
+    const int totalActionWidth = actionButtonsWidth();
     int actionX = pos().x() + width() - kTitleBarHorizontalMargin - totalActionWidth;
 #else
     int actionX = pos().x() + kTitleBarHorizontalMargin + m_leadingReservedWidth;

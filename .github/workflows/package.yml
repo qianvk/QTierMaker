@@ -370,11 +370,18 @@ jobs:
             release_flags+=(--prerelease)
           fi
           if gh release view "${GITHUB_REF_NAME}" >/dev/null 2>&1; then
-            gh release upload "${GITHUB_REF_NAME}" release-assets/* --clobber
+            gh release upload "${GITHUB_REF_NAME}" \
+              release-assets/*.exe \
+              release-assets/*.dmg \
+              release-assets/updates.json \
+              --clobber
             gh release edit "${GITHUB_REF_NAME}" "${release_flags[@]}" \
               --title "QTierMaker ${GITHUB_REF_NAME}"
           else
-            gh release create "${GITHUB_REF_NAME}" release-assets/* \
+            gh release create "${GITHUB_REF_NAME}" \
+              release-assets/*.exe \
+              release-assets/*.dmg \
+              release-assets/updates.json \
               --verify-tag \
               --generate-notes \
               "${release_flags[@]}" \
