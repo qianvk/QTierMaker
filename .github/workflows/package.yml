@@ -387,3 +387,16 @@ jobs:
               "${release_flags[@]}" \
               --title "QTierMaker ${GITHUB_REF_NAME}"
           fi
+
+          if [[ "${GITHUB_REF_NAME#v}" == *-* ]]; then
+            beta_feed_tag="beta-feed"
+            if gh release view "${beta_feed_tag}" >/dev/null 2>&1; then
+              gh release upload "${beta_feed_tag}" release-assets/updates.json --clobber
+            else
+              gh release create "${beta_feed_tag}" release-assets/updates.json \
+                --target "${GITHUB_SHA}" \
+                --prerelease \
+                --title "QTierMaker Beta Update Feed" \
+                --notes "Rolling update manifest for QTierMaker prereleases."
+            fi
+          fi

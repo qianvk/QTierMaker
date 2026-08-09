@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.24)
 
 project(QTierMaker
-    VERSION 0.2.1
+    VERSION 0.2.2
     DESCRIPTION "A native Qt 6 desktop tier-list editor"
     HOMEPAGE_URL "https://github.com/qianvk/QTierMaker"
     LANGUAGES CXX
@@ -31,9 +31,23 @@ endif()
 set(QTM_UPDATE_CHANNEL "${_qtm_default_update_channel}" CACHE STRING
     "Update feed channel embedded in the application")
 set_property(CACHE QTM_UPDATE_CHANNEL PROPERTY STRINGS stable beta)
-set(QTM_UPDATE_MANIFEST_URL
-    "https://api.github.com/repos/qianvk/QTierMaker/releases?per_page=20"
-    CACHE STRING "HTTPS release feed embedded in the application")
+set(_qtm_legacy_update_manifest_url
+    "https://api.github.com/repos/qianvk/QTierMaker/releases?per_page=20")
+if(DEFINED QTM_UPDATE_MANIFEST_URL AND
+   QTM_UPDATE_MANIFEST_URL STREQUAL "${_qtm_legacy_update_manifest_url}")
+    unset(QTM_UPDATE_MANIFEST_URL CACHE)
+endif()
+set(QTM_UPDATE_MANIFEST_URL "" CACHE STRING
+    "Optional custom HTTPS update manifest URL; empty selects the channel feed")
+if(QTM_UPDATE_MANIFEST_URL)
+    set(_qtm_effective_update_manifest_url "${QTM_UPDATE_MANIFEST_URL}")
+elseif(QTM_UPDATE_CHANNEL STREQUAL "beta")
+    set(_qtm_effective_update_manifest_url
+        "https://github.com/qianvk/QTierMaker/releases/download/beta-feed/updates.json")
+else()
+    set(_qtm_effective_update_manifest_url
+        "https://github.com/qianvk/QTierMaker/releases/latest/download/updates.json")
+endif()
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
@@ -230,7 +244,7 @@ target_compile_definitions(QTierMaker PRIVATE
     QTM_APP_VERSION="${QTM_PACKAGE_VERSION}"
     QTM_GIT_COMMIT="${QTM_GIT_COMMIT}"
     QTM_UPDATE_CHANNEL="${QTM_UPDATE_CHANNEL}"
-    QTM_UPDATE_MANIFEST_URL="${QTM_UPDATE_MANIFEST_URL}"
+    QTM_UPDATE_MANIFEST_URL="${_qtm_effective_update_manifest_url}"
     QTM_UPDATE_RUNTIME_VERSION="${QTM_UPDATE_RUNTIME_VERSION}"
 )
 qt_add_translations(QTierMaker
