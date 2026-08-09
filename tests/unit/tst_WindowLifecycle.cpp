@@ -128,6 +128,9 @@ void WindowLifecycleTest::dialogClosePreservesWindowInput() {
     for (int cycle = 0; cycle < 12; ++cycle) {
         QPointer<AppDialog> dialog = new AppDialog(QStringLiteral("Lifecycle"), &host);
         dialog->setAttribute(Qt::WA_DeleteOnClose);
+        // App dialogs hide caption controls by default; this regression exercises the native
+        // close path explicitly.
+        dialog->setCloseButtonPlacement(AppDialog::CloseButtonPlacement::Platform);
         dialog->resize(520, 360);
 
         // Installing custom caption controls must not create the platform window before show().
