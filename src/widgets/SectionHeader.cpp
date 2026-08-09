@@ -1,6 +1,6 @@
 #include "widgets/SectionHeader.h"
 
-namespace tlm {
+namespace qtm {
 
 SectionHeader::SectionHeader(const QString& text, QWidget* parent) : QLabel(text, parent) {
     QFont f = font();
@@ -9,5 +9,5 @@ SectionHeader::SectionHeader(const QString& text, QWidget* parent) : QLabel(text
     setFont(f);
 }
 
-} // namespace tlm
+} // namespace qtm
 

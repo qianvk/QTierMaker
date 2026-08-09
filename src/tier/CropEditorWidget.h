@@ -9,7 +9,7 @@ class QMouseEvent;
 class QPaintEvent;
 class QWheelEvent;
 
-namespace tlm {
+namespace qtm {
 
 /** Fixed-frame image crop editor shared by image and project-cover dialogs. */
 class CropEditorWidget final : public QWidget {
@@ -38,4 +38,4 @@ private:
     QRectF m_dragStartCrop;
 };
 
-} // namespace tlm
+} // namespace qtm

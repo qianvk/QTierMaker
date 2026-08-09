@@ -12,7 +12,7 @@
 
 #include <algorithm>
 
-namespace tlm {
+namespace qtm {
 
 namespace {
 QString canonicalOrAbsolute(const QString& path) {
@@ -150,9 +150,23 @@ Result<void> RecentProjectsStore::save() const {
 }
 
 QString RecentProjectsStore::defaultStorePath() {
-    const QString base =
-        QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
-    return QDir(base).filePath(QStringLiteral("recent-projects.json"));
+    const QString base = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
+    const QString storePath = QDir(base).filePath(QStringLiteral("recent-projects.json"));
+    if (QFileInfo::exists(storePath) || base.isEmpty()) {
+        return storePath;
+    }
+
+    // QStandardPaths includes the application name. Look beside the new directory for the
+    // pre-rename store and copy it once, preserving old project paths exactly as recorded.
+    QDir parent(base);
+    if (parent.cdUp()) {
+        const QString legacyPath =
+            parent.filePath(QStringLiteral("TierListMaker/recent-projects.json"));
+        if (QFileInfo::exists(legacyPath) && QDir().mkpath(base)) {
+            QFile::copy(legacyPath, storePath);
+        }
+    }
+    return storePath;
 }
 
 int RecentProjectsStore::indexOf(const QString& filePath) const {
@@ -165,4 +179,4 @@ int RecentProjectsStore::indexOf(const QString& filePath) const {
     return -1;
 }
 
-} // namespace tlm
+} // namespace qtm

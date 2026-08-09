@@ -6,7 +6,7 @@
 #include <QSize>
 #include <QVector>
 
-namespace tlm {
+namespace qtm {
 
 /** Read-only list model exposing persisted tier rows to the tier list view. */
 class TierListModel : public QAbstractListModel {
@@ -48,4 +48,4 @@ private:
     QVector<int> m_rowUnits;
 };
 
-} // namespace tlm
+} // namespace qtm

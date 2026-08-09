@@ -19,13 +19,13 @@
 
 #include <vkui/core/VkIcon.h>
 
-namespace tlm {
+namespace qtm {
 
 namespace {
 QString documentsOrHome() {
     const QString documents = QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation);
     const QString base = documents.isEmpty() ? QDir::homePath() : documents;
-    return QDir(base).filePath(QStringLiteral("TierListMaker"));
+    return QDir(base).filePath(QStringLiteral("QTierMaker"));
 }
 } // namespace
 
@@ -112,7 +112,7 @@ QString ProjectLocationDialog::projectFilePath() const {
         return {};
     }
     const QString stem = sanitizedFileStem(projectName());
-    return QDir(QDir(parent).filePath(stem)).filePath(stem + QStringLiteral(".tlmproject"));
+    return QDir(QDir(parent).filePath(stem)).filePath(stem + QStringLiteral(".qtmproject"));
 }
 
 bool ProjectLocationDialog::shouldUseAsDefaultDirectory() const {
@@ -162,4 +162,4 @@ QString ProjectLocationDialog::sanitizedFileStem(const QString& value) {
     return stem.isEmpty() ? QObject::tr("Untitled Tier List") : stem;
 }
 
-} // namespace tlm
+} // namespace qtm

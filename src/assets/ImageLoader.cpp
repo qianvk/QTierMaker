@@ -2,7 +2,7 @@
 
 #include <QImageReader>
 
-namespace tlm {
+namespace qtm {
 
 Result<QImage> ImageLoader::load(const QString& filePath, QSize targetSize) {
     QImageReader reader(filePath);
@@ -24,4 +24,4 @@ QStringList ImageLoader::supportedNameFilters() {
     return {QObject::tr("Images (*.png *.jpg *.jpeg *.bmp *.gif *.webp)")};
 }
 
-} // namespace tlm
+} // namespace qtm

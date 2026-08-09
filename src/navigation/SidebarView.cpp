@@ -5,7 +5,7 @@
 #include <QAbstractItemDelegate>
 #include <QStyleOptionViewItem>
 
-namespace tlm {
+namespace qtm {
 
 SidebarView::SidebarView(QWidget* parent) : QListView(parent) {
     setItemDelegate(new SidebarDelegate(this));
@@ -46,4 +46,4 @@ void SidebarView::setAvailableWidth(int width) {
     }
 }
 
-} // namespace tlm
+} // namespace qtm

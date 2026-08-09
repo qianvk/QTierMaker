@@ -4,7 +4,7 @@
 #include <QTemporaryDir>
 #include <QTest>
 
-using namespace tlm;
+using namespace qtm;
 
 class ImageLoaderTest final : public QObject {
     Q_OBJECT

@@ -37,7 +37,7 @@ jobs:
           fi
           cmake -S . -B build \
             -DCMAKE_BUILD_TYPE=Release \
-            -DTLM_BUILD_TESTS=ON \
+            -DQTM_BUILD_TESTS=ON \
             "${platform_args[@]}"
 
       - name: Build native window policy test

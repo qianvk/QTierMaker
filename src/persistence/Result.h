@@ -5,7 +5,7 @@
 #include <utility>
 #include <variant>
 
-namespace tlm {
+namespace qtm {
 
 /** Describes a recoverable operation failure with a user-facing message. */
 struct Error {
@@ -58,5 +58,5 @@ private:
     Error m_error;
 };
 
-} // namespace tlm
+} // namespace qtm
 

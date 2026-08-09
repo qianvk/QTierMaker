@@ -8,7 +8,7 @@
 #include <QTimer>
 #include <QVBoxLayout>
 
-namespace tlm {
+namespace qtm {
 
 TierBoardWidget::TierBoardWidget(QWidget* parent) : QWidget(parent) {
     setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
@@ -35,6 +35,8 @@ TierBoardWidget::TierBoardWidget(QWidget* parent) : QWidget(parent) {
             &TierBoardWidget::imageRemoveFromTierRowRequested);
     connect(m_view, &TierListView::imageRemoveFromGalleryRequested, this,
             &TierBoardWidget::imageRemoveFromGalleryRequested);
+    connect(m_view, &TierListView::imagePresentationModeRequested, this,
+            &TierBoardWidget::imagePresentationModeRequested);
     connect(m_view, &TierListView::rowEditRequested, this, &TierBoardWidget::rowEditRequested);
     connect(m_view, &TierListView::rowClearRequested, this, &TierBoardWidget::rowClearRequested);
     connect(m_view, &TierListView::rowDeleteRequested, this, &TierBoardWidget::rowDeleteRequested);
@@ -145,4 +147,4 @@ void TierBoardWidget::setLiquidGlassParameters(const LiquidGlassParameters& para
     }
 }
 
-} // namespace tlm
+} // namespace qtm

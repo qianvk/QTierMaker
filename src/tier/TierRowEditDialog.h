@@ -7,7 +7,7 @@
 class QLineEdit;
 class QPushButton;
 
-namespace tlm {
+namespace qtm {
 
 /** Edits the visible tier label and color for existing or newly inserted rows. */
 class TierRowEditDialog final : public AppDialog {
@@ -30,4 +30,4 @@ private:
     QColor m_color;
 };
 
-} // namespace tlm
+} // namespace qtm

@@ -1,6 +1,6 @@
 # Architecture
 
-TierListMaker is split into small modules:
+QTierMaker is split into small modules:
 
 - `app` owns startup and service construction.
 - `window` owns the frameless shell, app title bar, routing, and shortcuts.

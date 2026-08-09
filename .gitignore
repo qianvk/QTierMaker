@@ -36,9 +36,14 @@ ui_*.h
 *.qm
 
 # Local app data and user projects
+*.qtmproject
+!samples/**/*.qtmproject
+*.qtmproject.assets/
+*.qtmtemplate
+# Legacy project data remains private even though the app can still import it.
 *.tlmproject
-!samples/**/*.tlmproject
 *.tlmproject.assets/
+*.tlmtemplate
 /assets/
 thumbnails/
 logs/

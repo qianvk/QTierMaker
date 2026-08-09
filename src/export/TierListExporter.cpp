@@ -9,7 +9,7 @@
 
 #include <algorithm>
 
-namespace tlm {
+namespace qtm {
 
 namespace {
 constexpr int kBaseWidth = 1200;
@@ -162,4 +162,4 @@ Result<void> TierListExporter::exportProject(const TierProject& project, const Q
     return Result<void>::success();
 }
 
-} // namespace tlm
+} // namespace qtm

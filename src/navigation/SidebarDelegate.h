@@ -2,7 +2,7 @@
 
 #include <QStyledItemDelegate>
 
-namespace tlm {
+namespace qtm {
 
 /** Custom delegate that paints rounded macOS-like sidebar selection pills. */
 class SidebarDelegate : public QStyledItemDelegate {
@@ -16,5 +16,5 @@ public:
     QSize sizeHint(const QStyleOptionViewItem& option, const QModelIndex& index) const override;
 };
 
-} // namespace tlm
+} // namespace qtm
 

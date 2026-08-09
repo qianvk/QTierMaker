@@ -37,7 +37,7 @@
 
 #include <cmath>
 
-namespace tlm {
+namespace qtm {
 
 namespace {
 QString bundledSampleProjectDirectory() {
@@ -49,7 +49,7 @@ QString bundledSampleProjectDirectory() {
         QStringLiteral("../Resources/samples/%1").arg(sampleName)));
 #endif
     candidates.append(applicationDirectory.absoluteFilePath(
-        QStringLiteral("../share/TierListMaker/samples/%1").arg(sampleName)));
+        QStringLiteral("../share/QTierMaker/samples/%1").arg(sampleName)));
     candidates.append(
         applicationDirectory.absoluteFilePath(QStringLiteral("samples/%1").arg(sampleName)));
 
@@ -264,7 +264,7 @@ Application::Application(int& argc, char** argv) : QApplication(argc, argv) {
     });
     const auto recordSuccessfulUpdateCheck = [this](const UpdateCheckResult&) {
         if (m_settings) {
-            m_settings->recordSuccessfulUpdateCheck(QStringLiteral(TLM_APP_VERSION),
+            m_settings->recordSuccessfulUpdateCheck(QStringLiteral(QTM_APP_VERSION),
                                                     QDateTime::currentDateTimeUtc());
         }
     };
@@ -297,11 +297,11 @@ int Application::run() {
 }
 
 void Application::configureApplication() {
-    setOrganizationName(QStringLiteral("TierListMaker"));
-    setOrganizationDomain(QStringLiteral("tierlistmaker.local"));
-    setApplicationName(QStringLiteral("TierListMaker"));
-    setApplicationDisplayName(QStringLiteral("TierListMaker"));
-    setApplicationVersion(QStringLiteral(TLM_APP_VERSION));
+    setOrganizationName(QStringLiteral("QTierMaker"));
+    setOrganizationDomain(QStringLiteral("qtiermaker.local"));
+    setApplicationName(QStringLiteral("QTierMaker"));
+    setApplicationDisplayName(QStringLiteral("QTierMaker"));
+    setApplicationVersion(QStringLiteral(QTM_APP_VERSION));
     setWindowIcon(QIcon(QStringLiteral(":/images/app-icon.png")));
     setQuitOnLastWindowClosed(true);
     installEventFilter(new TextOnlyToolTipFilter(this));
@@ -329,7 +329,7 @@ void Application::seedBundledSampleProject() {
 
     auto seeded = SampleProjectSeeder::seed(
         sourceDirectory, m_settings->defaultProjectDirectory(), QStringLiteral("Anime Girls v5"),
-        QStringLiteral("Anime Girls v5.tlmproject"));
+        QStringLiteral("Anime Girls v5.qtmproject"));
     if (!seeded) {
         Logger::warn(QStringLiteral("sample.project.seed.failed message=\"%1\" details=\"%2\"")
                          .arg(seeded.error().message, seeded.error().details));
@@ -369,7 +369,7 @@ void Application::scheduleAutoUpdateCheck(bool resetCycle) {
         }
         return;
     }
-    if (!resetCycle && !m_settings->shouldRunAutoUpdateCheck(QStringLiteral(TLM_APP_VERSION))) {
+    if (!resetCycle && !m_settings->shouldRunAutoUpdateCheck(QStringLiteral(QTM_APP_VERSION))) {
         return;
     }
     // A short, cancellable delay mirrors native updaters: it keeps startup responsive and lets
@@ -377,4 +377,4 @@ void Application::scheduleAutoUpdateCheck(bool resetCycle) {
     m_updateCheckTimer->start(resetCycle ? 750 : 1500);
 }
 
-} // namespace tlm
+} // namespace qtm

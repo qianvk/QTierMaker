@@ -9,6 +9,7 @@
 #include "tier/TierListModel.h"
 
 #include <QAction>
+#include <QActionGroup>
 #include <QApplication>
 #include <QContextMenuEvent>
 #include <QCursor>
@@ -41,7 +42,7 @@
 
 #include <vkui/core/VkIcon.h>
 
-namespace tlm {
+namespace qtm {
 
 namespace {
 constexpr int kRowReorderAnimationMs = 190;
@@ -577,19 +578,24 @@ void TierListView::refreshLayoutMetrics() {
 
     const int labelWidth =
         tierDelegate() ? tierDelegate()->labelWidth() : TierListDelegate::minimumLabelWidth();
-    QVector<int> imageCounts;
-    imageCounts.reserve(rows);
+    const TierProject* project = model->project();
+    QVector<QVector<QSize>> imageSizes;
+    imageSizes.reserve(rows);
     for (int row = 0; row < rows; ++row) {
-        if (m_imageDragActive) {
-            imageCounts.append(previewImageCountForRow(row));
-            continue;
+        QVector<QSize> rowSizes;
+        const QStringList imageIds = previewImageIdsForRow(row);
+        rowSizes.reserve(imageIds.size());
+        for (const QString& imageId : imageIds) {
+            const TierImage* image = project ? project->imageById(imageId) : nullptr;
+            rowSizes.append(image && image->size().isValid() ? image->size() : QSize(1, 1));
         }
-        const TierRow* tierRow = model->tierRowAt(row);
-        imageCounts.append(tierRow ? static_cast<int>(tierRow->imageIds.size()) : 0);
+        imageSizes.append(std::move(rowSizes));
     }
 
-    TierBoardLayoutMetrics metrics =
-        TierListLayout::fitBoard(imageCounts, viewport()->size(), labelWidth);
+    const ImagePresentationMode mode =
+        project ? project->imagePresentationMode() : ImagePresentationMode::Square;
+    TierBoardLayoutMetrics metrics = TierListLayout::fitBoard(
+        imageSizes, viewport()->size(), labelWidth, mode);
     model->setLayoutMetrics(std::move(metrics.rowHeights), std::move(metrics.rowUnits));
     doItemsLayout();
     invalidateMissionControlLayout();
@@ -1009,14 +1015,42 @@ void TierListView::contextMenuEvent(QContextMenuEvent* event) {
     }
 
     QString imageId;
+    QModelIndex pointedIndex;
     if (m_missionControlActive) {
         imageId = missionImageAt(event->pos());
     } else {
-        const QModelIndex index = indexAt(event->pos());
-        if (index.isValid()) {
-            imageId = delegate->imageIdAt(index, visualRect(index), event->pos());
+        pointedIndex = indexAt(event->pos());
+        if (pointedIndex.isValid()) {
+            imageId = delegate->imageIdAt(pointedIndex, visualRect(pointedIndex), event->pos());
         }
     }
+
+    if (!m_missionControlActive && imageId.isEmpty() && pointedIndex.isValid() &&
+        !delegate->labelRect(visualRect(pointedIndex)).contains(event->pos())) {
+        QMenu menu(this);
+        QMenu* appearanceMenu = menu.addMenu(tr("Image Appearance"));
+        auto* group = new QActionGroup(appearanceMenu);
+        group->setExclusive(true);
+        QAction* squareAction = appearanceMenu->addAction(tr("Square"));
+        squareAction->setCheckable(true);
+        squareAction->setActionGroup(group);
+        QAction* noCropAction = appearanceMenu->addAction(tr("No Crop"));
+        noCropAction->setCheckable(true);
+        noCropAction->setActionGroup(group);
+        const ImagePresentationMode currentMode = project->imagePresentationMode();
+        squareAction->setChecked(currentMode == ImagePresentationMode::Square);
+        noCropAction->setChecked(currentMode == ImagePresentationMode::NoCrop);
+
+        QAction* chosen = menu.exec(event->globalPos());
+        if (chosen == squareAction && currentMode != ImagePresentationMode::Square) {
+            emit imagePresentationModeRequested(ImagePresentationMode::Square);
+        } else if (chosen == noCropAction && currentMode != ImagePresentationMode::NoCrop) {
+            emit imagePresentationModeRequested(ImagePresentationMode::NoCrop);
+        }
+        event->accept();
+        return;
+    }
+
     const TierImage* image = project->imageById(imageId);
     if (!image) {
         QListView::contextMenuEvent(event);
@@ -1160,10 +1194,15 @@ void TierListView::paintEvent(QPaintEvent* event) {
             if (!pixmap.isNull()) {
                 painter.save();
                 painter.setOpacity(0.38);
-                painter.drawPixmap(
-                    placeholder, pixmap,
-                    image ? image->thumbnailSourceRect(pixmap.size(), placeholder.size().toSize())
-                          : centeredPixmapCropRect(pixmap, placeholder.size().toSize()));
+                const bool noCrop = project && project->imagePresentationMode() ==
+                                                   ImagePresentationMode::NoCrop;
+                painter.drawPixmap(placeholder, pixmap,
+                                   noCrop ? QRect(QPoint(0, 0), pixmap.size())
+                                          : (image ? image->thumbnailSourceRect(
+                                                         pixmap.size(), placeholder.size().toSize())
+                                                   : centeredPixmapCropRect(
+                                                         pixmap,
+                                                         placeholder.size().toSize())));
                 painter.restore();
             }
         }
@@ -1628,11 +1667,23 @@ void TierListView::updateImageDropIntent(const QModelIndex& target, int insertio
 
     applyImagePreviewTargetRow(target.row());
 
+    const bool sameLogicalIntent = m_imageDropIndex == target &&
+                                   m_imageDropInsertionIndex == insertionIndex;
+    const TierProject* project = tierModel() ? tierModel()->project() : nullptr;
+    if (!sameLogicalIntent && project && project->imagePresentationMode() ==
+                                              ImagePresentationMode::NoCrop) {
+        // In no-crop mode, insertion order can change wrapping because item widths vary. Publish
+        // the new logical intent before reflowing so row height, placeholder, and hit testing all
+        // observe the same sequence.
+        m_imageDropIndex = QPersistentModelIndex(target);
+        m_imageDropInsertionIndex = insertionIndex;
+        refreshLayoutMetrics();
+    }
+
     QRectF placeholderRect;
     const QHash<QString, QPointF> targets =
         targetImageOffsets(target, insertionIndex, &placeholderRect);
-    const bool sameIntent = m_imageDropIndex == target &&
-                            m_imageDropInsertionIndex == insertionIndex &&
+    const bool sameIntent = sameLogicalIntent &&
                             m_imagePlaceholderRect.isValid() &&
                             qAbs(m_imagePlaceholderRect.x() - placeholderRect.x()) < 0.5 &&
                             qAbs(m_imagePlaceholderRect.y() - placeholderRect.y()) < 0.5 &&
@@ -1746,6 +1797,35 @@ int TierListView::previewImageCountForRow(int row) const {
     return qMax(0, count);
 }
 
+QStringList TierListView::previewImageIdsForRow(int row) const {
+    TierListModel* model = tierModel();
+    const TierRow* tierRow = model ? model->tierRowAt(row) : nullptr;
+    if (!tierRow) {
+        return {};
+    }
+
+    QStringList imageIds = tierRow->imageIds;
+    if (!m_imageDragActive || m_imageDragId.isEmpty()) {
+        return imageIds;
+    }
+
+    const int sourceIndex = static_cast<int>(imageIds.indexOf(m_imageDragId));
+    if (sourceIndex >= 0) {
+        imageIds.removeAt(sourceIndex);
+    }
+    if (m_imagePreviewTargetRow == row) {
+        int insertionIndex = m_imageDropInsertionIndex;
+        if (row == m_imageDragSourceRow && sourceIndex >= 0 && sourceIndex < insertionIndex) {
+            --insertionIndex;
+        }
+        insertionIndex = insertionIndex < 0 ? static_cast<int>(imageIds.size())
+                                            : qBound(0, insertionIndex,
+                                                     static_cast<int>(imageIds.size()));
+        imageIds.insert(insertionIndex, m_imageDragId);
+    }
+    return imageIds;
+}
+
 int TierListView::imageInsertionIndexForPosition(const QModelIndex& target,
                                                  const QPoint& point) const {
     TierListDelegate* delegate = tierDelegate();
@@ -1755,13 +1835,12 @@ int TierListView::imageInsertionIndexForPosition(const QModelIndex& target,
 
     const QStringList imageIds = target.data(TierListModel::ImageIdsRole).toStringList();
     const int sourceIndex = static_cast<int>(imageIds.indexOf(m_imageDragId));
-    int visualCount = static_cast<int>(imageIds.size());
+    QStringList visualIds = imageIds;
     if (sourceIndex >= 0) {
-        --visualCount;
+        visualIds.removeAt(sourceIndex);
     }
-
-    int visualInsertion = delegate->insertionIndexForPosition(target, visualRect(target), point,
-                                                              qMax(0, visualCount));
+    int visualInsertion =
+        delegate->insertionIndexForPosition(target, visualRect(target), point, visualIds);
     if (target.row() == m_imageDragSourceRow && sourceIndex >= 0 && visualInsertion > sourceIndex) {
         ++visualInsertion;
     }
@@ -1949,8 +2028,8 @@ QHash<QString, QPointF> TierListView::targetImageOffsets(const QModelIndex& targ
             visualIds.insert(placeholderIndex, QString());
         }
 
-        const QVector<QRect> targetRects =
-            delegate->tileRectsForCount(index, rowRect, static_cast<int>(visualIds.size()));
+        const QVector<QRect> targetRects = delegate->tileRectsForImageIds(
+            index, rowRect, visualIds, m_imageDragId);
         for (int i = 0; i < visualIds.size() && i < targetRects.size(); ++i) {
             const QString id = visualIds.at(i);
             if (id.isEmpty()) {
@@ -2650,7 +2729,8 @@ QRect TierListView::tierRowImageRectForLift(const QString& imageId) const {
         if (!index.isValid() || !rowRect.isValid()) {
             continue;
         }
-        const QVector<QRect> rects = delegate->tileRectsForCount(index, rowRect, 1);
+        const QVector<QRect> rects =
+            delegate->tileRectsForImageIds(index, rowRect, {imageId});
         if (!rects.isEmpty() && rects.constFirst().isValid()) {
             const QRect rect = delegate->tileImageRect(rects.constFirst());
             Logger::debug(QStringLiteral("tier.list.mission.lift.target imageId=%1 row=%2 "
@@ -3274,4 +3354,4 @@ bool TierListView::acceptsTierDrag(const QMimeData* mimeData) const {
                         mimeData->hasFormat(TierDragController::imageMimeType()));
 }
 
-} // namespace tlm
+} // namespace qtm

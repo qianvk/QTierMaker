@@ -6,7 +6,7 @@
 #include <QSet>
 #include <QSize>
 
-namespace tlm {
+namespace qtm {
 
 /**
  * Multi-resolution image cache that decodes only as much quality as the current paint size needs.
@@ -54,4 +54,4 @@ private:
     quint64 m_generation{0};
 };
 
-} // namespace tlm
+} // namespace qtm

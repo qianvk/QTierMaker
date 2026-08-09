@@ -3,7 +3,7 @@
 #include <QTemporaryDir>
 #include <QtTest>
 
-using namespace tlm;
+using namespace qtm;
 
 class tst_ProjectSaveOpen : public QObject {
     Q_OBJECT
@@ -15,7 +15,7 @@ private slots:
         ProjectRepository repository;
         TierProject project = TierProject::createUntitled();
         project.name = QStringLiteral("Round Trip");
-        const QString path = dir.filePath(QStringLiteral("roundtrip.tlmproject"));
+        const QString path = dir.filePath(QStringLiteral("roundtrip.qtmproject"));
         QVERIFY(repository.saveProject(project, path));
         auto opened = repository.openProject(path);
         QVERIFY(opened);

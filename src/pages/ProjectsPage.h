@@ -11,7 +11,7 @@ class QComboBox;
 class QLineEdit;
 class QToolButton;
 
-namespace tlm {
+namespace qtm {
 
 class AppSettings;
 class ProjectRepository;
@@ -59,4 +59,4 @@ private:
     RecentProjectsModel* m_model{nullptr};
 };
 
-} // namespace tlm
+} // namespace qtm

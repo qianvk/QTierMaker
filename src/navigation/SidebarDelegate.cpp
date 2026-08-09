@@ -7,7 +7,7 @@
 #include <QPainter>
 #include <vkui/core/VkIcon.h>
 
-namespace tlm {
+namespace qtm {
 
 SidebarDelegate::SidebarDelegate(QObject* parent) : QStyledItemDelegate(parent) {}
 
@@ -68,4 +68,4 @@ QSize SidebarDelegate::sizeHint(const QStyleOptionViewItem& option,
     return QSize(qMax(160, textWidth + 40 + 30 + 28), 38);
 }
 
-} // namespace tlm
+} // namespace qtm

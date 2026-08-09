@@ -17,7 +17,7 @@
 
 #include <algorithm>
 
-namespace tlm {
+namespace qtm {
 
 namespace {
 constexpr int kImageCornerRadius = 16;
@@ -66,6 +66,9 @@ bool isBlockingInputEvent(QEvent::Type type) {
     case QEvent::MouseButtonPress:
     case QEvent::MouseButtonRelease:
     case QEvent::MouseButtonDblClick:
+    case QEvent::NonClientAreaMouseButtonPress:
+    case QEvent::NonClientAreaMouseButtonRelease:
+    case QEvent::NonClientAreaMouseButtonDblClick:
     case QEvent::MouseMove:
     case QEvent::Wheel:
     case QEvent::ContextMenu:
@@ -97,6 +100,7 @@ PreviewOverlay::PreviewOverlay(QWidget* parent)
     setAttribute(Qt::WA_NoSystemBackground);
     setFocusPolicy(Qt::StrongFocus);
     setMouseTracking(true);
+    setAttribute(Qt::WA_NoMousePropagation, true);
     setCursor(Qt::ArrowCursor);
     setToolTip(tr("Click outside to close. Double-click image to close."));
     setProperty("tlmToolTipProvider", QVariant::fromValue(static_cast<QObject*>(this)));
@@ -328,7 +332,11 @@ bool PreviewOverlay::eventFilter(QObject* watched, QEvent* event) {
         return QWidget::eventFilter(watched, event);
     }
 
-    if (event->type() == QEvent::Shortcut) {
+    if (event->type() == QEvent::MouseButtonPress || event->type() == QEvent::MouseButtonDblClick ||
+        event->type() == QEvent::NonClientAreaMouseButtonPress ||
+        event->type() == QEvent::NonClientAreaMouseButtonDblClick) {
+        handleLeakedPointerEvent(event);
+    } else if (event->type() == QEvent::Shortcut) {
         auto* shortcutEvent = static_cast<QShortcutEvent*>(event);
         const QKeySequence key = shortcutEvent->key();
         if (key.matches(QKeySequence(Qt::Key_Escape)) == QKeySequence::ExactMatch ||
@@ -425,12 +433,7 @@ void PreviewOverlay::paintEvent(QPaintEvent*) {
 }
 
 void PreviewOverlay::mousePressEvent(QMouseEvent* event) {
-    if (event->button() == Qt::LeftButton && !m_previewGeometry.contains(event->pos())) {
-        Logger::info(QStringLiteral("ui.preview.close.request source=outside-click pos=(%1,%2)")
-                         .arg(event->position().x())
-                         .arg(event->position().y()));
-        closePreview();
-    }
+    requestCloseForPointer(event->type(), event->button(), event->globalPosition().toPoint());
     event->accept();
 }
 
@@ -447,13 +450,7 @@ void PreviewOverlay::mouseMoveEvent(QMouseEvent* event) {
 }
 
 void PreviewOverlay::mouseDoubleClickEvent(QMouseEvent* event) {
-    if (event->button() == Qt::LeftButton && m_previewGeometry.contains(event->pos())) {
-        Logger::info(QStringLiteral("ui.preview.close.request source=image-double-click "
-                                    "pos=(%1,%2)")
-                         .arg(event->position().x())
-                         .arg(event->position().y()));
-        closePreview();
-    }
+    requestCloseForPointer(event->type(), event->button(), event->globalPosition().toPoint());
     event->accept();
 }
 
@@ -669,17 +666,40 @@ void PreviewOverlay::setInputBarrierActive(bool active) {
     }
     if (active) {
         qApp->installEventFilter(this);
-        grabMouse();
-        grabKeyboard();
     } else {
-        if (QWidget::mouseGrabber() == this) {
-            releaseMouse();
-        }
-        if (QWidget::keyboardGrabber() == this) {
-            releaseKeyboard();
-        }
         qApp->removeEventFilter(this);
     }
+}
+
+void PreviewOverlay::handleLeakedPointerEvent(QEvent* event) {
+    auto* mouseEvent = static_cast<QMouseEvent*>(event);
+    requestCloseForPointer(event->type(), mouseEvent->button(),
+                           mouseEvent->globalPosition().toPoint());
+}
+
+void PreviewOverlay::requestCloseForPointer(QEvent::Type type, Qt::MouseButton button,
+                                            const QPoint& globalPosition) {
+    if (!m_open || m_closing || button != Qt::LeftButton) {
+        return;
+    }
+    const QPoint position = mapFromGlobal(globalPosition);
+    const bool doubleClick =
+        type == QEvent::MouseButtonDblClick || type == QEvent::NonClientAreaMouseButtonDblClick;
+    const bool outsideClick =
+        (type == QEvent::MouseButtonPress || type == QEvent::NonClientAreaMouseButtonPress) &&
+        !m_previewGeometry.contains(position);
+    if (!doubleClick && !outsideClick) {
+        return;
+    }
+    if (doubleClick && !m_previewGeometry.contains(position)) {
+        return;
+    }
+    Logger::info(QStringLiteral("ui.preview.close.request source=%1 pos=(%2,%3)")
+                     .arg(doubleClick ? QStringLiteral("image-double-click")
+                                      : QStringLiteral("outside-click"))
+                     .arg(position.x())
+                     .arg(position.y()));
+    closePreview();
 }
 
 bool PreviewOverlay::isOverlayDispatchObject(const QObject* object) const {
@@ -698,4 +718,4 @@ bool PreviewOverlay::isOverlayDispatchObject(const QObject* object) const {
     return false;
 }
 
-} // namespace tlm
+} // namespace qtm

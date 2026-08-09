@@ -2,7 +2,7 @@
 
 #include <QUuid>
 
-namespace tlm {
+namespace qtm {
 
 TierRow TierRow::makeDefault(QString label, QColor color, int order) {
     TierRow row;
@@ -13,5 +13,5 @@ TierRow TierRow::makeDefault(QString label, QColor color, int order) {
     return row;
 }
 
-} // namespace tlm
+} // namespace qtm
 

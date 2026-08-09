@@ -1,8 +1,8 @@
 #pragma once
 
-namespace tlm {
+namespace qtm {
 
 /** Visual treatment applied to a content-derived backdrop. */
 enum class BackdropEffect { DepthSoftFocus, LiquidGlass };
 
-} // namespace tlm
+} // namespace qtm

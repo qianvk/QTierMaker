@@ -10,7 +10,7 @@
 #include <QTimer>
 #include <QVBoxLayout>
 
-namespace tlm {
+namespace qtm {
 
 TierRowEditDialog::TierRowEditDialog(const QString& title, const QString& label,
                                      const QColor& color, const QString& placeholder,
@@ -66,4 +66,4 @@ void TierRowEditDialog::applyColorButtonStyle() {
             .arg(m_color.name(QColor::HexRgb), contrastingTextColor(m_color).name(QColor::HexRgb)));
 }
 
-} // namespace tlm
+} // namespace qtm

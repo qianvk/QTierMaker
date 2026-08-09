@@ -6,7 +6,7 @@
 #include <QFileInfo>
 #include <QtTest>
 
-using namespace tlm;
+using namespace qtm;
 
 namespace {
 void writeFile(const QString& path, const QByteArray& contents) {
@@ -27,14 +27,14 @@ private slots:
 
         const QString source = temporary.filePath(QStringLiteral("source"));
         const QString destination = temporary.filePath(QStringLiteral("projects"));
-        writeFile(QDir(source).filePath(QStringLiteral("Anime Girls v5.tlmproject")),
+        writeFile(QDir(source).filePath(QStringLiteral("Anime Girls v5.qtmproject")),
                   QByteArrayLiteral("{}"));
         writeFile(QDir(source).filePath(QStringLiteral("assets/image.jpg")),
                   QByteArrayLiteral("sample-image"));
 
         auto first = SampleProjectSeeder::seed(source, destination,
                                                QStringLiteral("Anime Girls v5"),
-                                               QStringLiteral("Anime Girls v5.tlmproject"));
+                                               QStringLiteral("Anime Girls v5.qtmproject"));
         QVERIFY(first);
         QCOMPARE(first.value().status, SampleProjectSeedStatus::Copied);
         QVERIFY(QFileInfo::exists(first.value().projectPath));
@@ -47,7 +47,7 @@ private slots:
 
         auto second = SampleProjectSeeder::seed(source, destination,
                                                 QStringLiteral("Anime Girls v5"),
-                                                QStringLiteral("Anime Girls v5.tlmproject"));
+                                                QStringLiteral("Anime Girls v5.qtmproject"));
         QVERIFY(second);
         QCOMPARE(second.value().status, SampleProjectSeedStatus::AlreadyExists);
 
@@ -64,7 +64,7 @@ private slots:
 
         const auto result = SampleProjectSeeder::seed(
             source, temporary.filePath(QStringLiteral("projects")),
-            QStringLiteral("Anime Girls v5"), QStringLiteral("Anime Girls v5.tlmproject"));
+            QStringLiteral("Anime Girls v5"), QStringLiteral("Anime Girls v5.qtmproject"));
         QVERIFY(!result);
     }
 };

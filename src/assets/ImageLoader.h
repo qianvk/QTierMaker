@@ -5,7 +5,7 @@
 #include <QImage>
 #include <QString>
 
-namespace tlm {
+namespace qtm {
 
 /** Loads images with Qt image plugins and reports unsupported/corrupt files clearly. */
 class ImageLoader {
@@ -14,4 +14,4 @@ public:
     static QStringList supportedNameFilters();
 };
 
-} // namespace tlm
+} // namespace qtm

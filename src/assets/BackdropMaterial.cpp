@@ -3,7 +3,7 @@
 #include "assets/FocusBackdrop.h"
 #include "assets/LiquidGlassBackdrop.h"
 
-namespace tlm {
+namespace qtm {
 
 struct BackdropMaterialCache::Impl final {
     void selectEffect(BackdropEffect selectedEffect) {
@@ -64,4 +64,4 @@ void BackdropMaterialCache::clear() {
     m_impl->hasEffect = false;
 }
 
-} // namespace tlm
+} // namespace qtm

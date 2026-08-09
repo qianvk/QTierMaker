@@ -25,28 +25,28 @@
 #include <limits>
 #include <utility>
 
-#ifndef TLM_APP_VERSION
-#define TLM_APP_VERSION "0.2.0"
+#ifndef QTM_APP_VERSION
+#define QTM_APP_VERSION "0.2.0"
 #endif
 
-#ifndef TLM_UPDATE_CHANNEL
-#define TLM_UPDATE_CHANNEL "beta"
+#ifndef QTM_UPDATE_CHANNEL
+#define QTM_UPDATE_CHANNEL "beta"
 #endif
 
-#ifndef TLM_UPDATE_RUNTIME_VERSION
-#define TLM_UPDATE_RUNTIME_VERSION "qt-6.10.1-r1"
+#ifndef QTM_UPDATE_RUNTIME_VERSION
+#define QTM_UPDATE_RUNTIME_VERSION "qt-6.10.1-r1"
 #endif
 
-#ifndef TLM_UPDATE_MANIFEST_URL
-#define TLM_UPDATE_MANIFEST_URL                                                                    \
-    "https://api.github.com/repos/qianvk/TierListMaker/releases?per_page=20"
+#ifndef QTM_UPDATE_MANIFEST_URL
+#define QTM_UPDATE_MANIFEST_URL                                                                    \
+    "https://api.github.com/repos/qianvk/QTierMaker/releases?per_page=20"
 #endif
 
-namespace tlm {
+namespace qtm {
 
 namespace {
-constexpr auto kDefaultProjectUrl = "https://github.com/qianvk/TierListMaker";
-constexpr auto kDefaultDefinitionUrl = TLM_UPDATE_MANIFEST_URL;
+constexpr auto kDefaultProjectUrl = "https://github.com/qianvk/QTierMaker";
+constexpr auto kDefaultDefinitionUrl = QTM_UPDATE_MANIFEST_URL;
 constexpr qsizetype kMaximumManifestBytes = 1024 * 1024;
 constexpr qint64 kMaximumPackageBytes = 1024LL * 1024LL * 1024LL;
 constexpr int kManifestTimeoutMs = 15'000;
@@ -666,8 +666,8 @@ UpdateCheckResult parseGitHubReleaseList(const QJsonArray& releases, const QStri
 } // namespace
 
 AppUpdater::AppUpdater(QObject* parent) : QObject(parent) {
-    qRegisterMetaType<tlm::UpdateCheckResult>("tlm::UpdateCheckResult");
-    qRegisterMetaType<tlm::UpdateState>("tlm::UpdateState");
+    qRegisterMetaType<qtm::UpdateCheckResult>("qtm::UpdateCheckResult");
+    qRegisterMetaType<qtm::UpdateState>("qtm::UpdateState");
 }
 
 AppUpdater::~AppUpdater() = default;
@@ -681,11 +681,11 @@ QUrl AppUpdater::defaultProjectUrl() {
 }
 
 QString AppUpdater::updateChannel() {
-    return QStringLiteral(TLM_UPDATE_CHANNEL);
+    return QStringLiteral(QTM_UPDATE_CHANNEL);
 }
 
 QString AppUpdater::runtimeVersion() {
-    return QStringLiteral(TLM_UPDATE_RUNTIME_VERSION);
+    return QStringLiteral(QTM_UPDATE_RUNTIME_VERSION);
 }
 
 int AppUpdater::compareVersions(const QString& left, const QString& right) {
@@ -760,8 +760,8 @@ void AppUpdater::checkForUpdates(const QUrl& definitionUrl) {
 
     QNetworkRequest request(url);
     request.setHeader(QNetworkRequest::UserAgentHeader,
-                      QStringLiteral("TierListMaker/%1 (%2)")
-                          .arg(QStringLiteral(TLM_APP_VERSION), updateChannel()));
+                      QStringLiteral("QTierMaker/%1 (%2)")
+                          .arg(QStringLiteral(QTM_APP_VERSION), updateChannel()));
     request.setRawHeader("Accept", "application/json");
     request.setRawHeader("X-GitHub-Api-Version", "2022-11-28");
     request.setAttribute(QNetworkRequest::RedirectPolicyAttribute,
@@ -856,7 +856,7 @@ void AppUpdater::finishCheckReply() {
     }
 
     QString parseError;
-    UpdateCheckResult result = parseUpdatePayload(m_checkPayload, QStringLiteral(TLM_APP_VERSION),
+    UpdateCheckResult result = parseUpdatePayload(m_checkPayload, QStringLiteral(QTM_APP_VERSION),
                                                   &parseError, m_language);
     m_checkPayload.clear();
     if (!parseError.isEmpty()) {
@@ -882,8 +882,8 @@ void AppUpdater::beginMetadataCheck(const UpdateCheckResult& releaseResult) {
 
     QNetworkRequest request(releaseResult.metadataUrl);
     request.setHeader(QNetworkRequest::UserAgentHeader,
-                      QStringLiteral("TierListMaker/%1 (%2)")
-                          .arg(QStringLiteral(TLM_APP_VERSION), updateChannel()));
+                      QStringLiteral("QTierMaker/%1 (%2)")
+                          .arg(QStringLiteral(QTM_APP_VERSION), updateChannel()));
     request.setRawHeader("Accept", "application/json");
     request.setAttribute(QNetworkRequest::RedirectPolicyAttribute,
                          QNetworkRequest::NoLessSafeRedirectPolicy);
@@ -927,7 +927,7 @@ void AppUpdater::finishMetadataReply() {
     QString parseError;
     UpdateCheckResult metadataResult;
     if (failure.isEmpty()) {
-        metadataResult = parseUpdatePayload(m_checkPayload, QStringLiteral(TLM_APP_VERSION),
+        metadataResult = parseUpdatePayload(m_checkPayload, QStringLiteral(QTM_APP_VERSION),
                                             &parseError, m_language);
     }
     m_checkPayload.clear();
@@ -1033,8 +1033,8 @@ void AppUpdater::beginDownload() {
 
     QNetworkRequest request(m_lastResult.downloadUrl);
     request.setHeader(QNetworkRequest::UserAgentHeader,
-                      QStringLiteral("TierListMaker/%1 (%2)")
-                          .arg(QStringLiteral(TLM_APP_VERSION), updateChannel()));
+                      QStringLiteral("QTierMaker/%1 (%2)")
+                          .arg(QStringLiteral(QTM_APP_VERSION), updateChannel()));
     request.setRawHeader("Accept", "application/octet-stream");
     request.setAttribute(QNetworkRequest::RedirectPolicyAttribute,
                          QNetworkRequest::NoLessSafeRedirectPolicy);
@@ -1183,4 +1183,4 @@ bool AppUpdater::useCachedPackage(const UpdateCheckResult& result) {
     return true;
 }
 
-} // namespace tlm
+} // namespace qtm

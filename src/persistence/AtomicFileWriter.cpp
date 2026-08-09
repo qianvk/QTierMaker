@@ -4,7 +4,7 @@
 #include <QFileInfo>
 #include <QSaveFile>
 
-namespace tlm {
+namespace qtm {
 
 Result<void> AtomicFileWriter::write(const QString& filePath, const QByteArray& data) {
     const QFileInfo info(filePath);
@@ -32,5 +32,5 @@ Result<void> AtomicFileWriter::write(const QString& filePath, const QByteArray& 
     return Result<void>::success();
 }
 
-} // namespace tlm
+} // namespace qtm
 

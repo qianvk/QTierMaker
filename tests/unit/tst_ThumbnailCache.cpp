@@ -7,7 +7,7 @@
 #include <QTemporaryDir>
 #include <QTest>
 
-using namespace tlm;
+using namespace qtm;
 
 class ThumbnailCacheTest final : public QObject {
     Q_OBJECT

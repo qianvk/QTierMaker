@@ -5,7 +5,7 @@
 
 class QApplication;
 
-namespace tlm {
+namespace qtm {
 
 /** Loads Qt translators and emits a signal so widgets can refresh visible strings. */
 class LanguageManager : public QObject {
@@ -28,4 +28,4 @@ private:
     QString m_currentLanguage{QStringLiteral("en")};
 };
 
-} // namespace tlm
+} // namespace qtm

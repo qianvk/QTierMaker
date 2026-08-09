@@ -4,7 +4,7 @@
 
 #include <vkui/core/VkTheme.h>
 
-namespace tlm {
+namespace qtm {
 
 /** Immutable application-specific projection of the active VkUI theme. */
 class Theme {
@@ -36,4 +36,4 @@ QColor withAlpha(QColor color, int alpha);
 QColor withAlphaF(QColor color, qreal alpha);
 QColor contrastingTextColor(const QColor& background);
 
-} // namespace tlm
+} // namespace qtm

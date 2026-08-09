@@ -2,7 +2,7 @@
 
 #include <QLabel>
 
-namespace tlm {
+namespace qtm {
 
 /** Bold section label used to divide compact settings and editor groups. */
 class SectionHeader : public QLabel {
@@ -12,5 +12,5 @@ public:
     explicit SectionHeader(const QString& text, QWidget* parent = nullptr);
 };
 
-} // namespace tlm
+} // namespace qtm
 

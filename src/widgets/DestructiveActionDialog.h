@@ -4,9 +4,9 @@
 
 class QWidget;
 
-namespace tlm {
+namespace qtm {
 
 bool confirmDestructiveAction(QWidget* parent, const QString& title, const QString& text,
                               const QString& confirmText = {});
 
-} // namespace tlm
+} // namespace qtm

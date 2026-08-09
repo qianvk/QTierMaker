@@ -6,7 +6,7 @@
 
 #include <algorithm>
 
-namespace tlm {
+namespace qtm {
 
 namespace {
 QVector<TierRow> makeDefaultRows() {
@@ -29,6 +29,7 @@ TierProject TierProject::createUntitled() {
     project.rows = makeDefaultRows();
     project.settings.insert(QStringLiteral("background"), QStringLiteral("default"));
     project.settings.insert(QStringLiteral("exportScale"), 2);
+    project.canvas.insert(QStringLiteral("imagePresentationMode"), QStringLiteral("square"));
     project.dirty = false;
     return project;
 }
@@ -93,6 +94,43 @@ QVector<const TierImage*> TierProject::imagesForRow(const QString& rowId) const 
     return result;
 }
 
+ImagePresentationMode TierProject::imagePresentationMode() const {
+    return canvas.value(QStringLiteral("imagePresentationMode")).toString() ==
+                   QStringLiteral("noCrop")
+               ? ImagePresentationMode::NoCrop
+               : ImagePresentationMode::Square;
+}
+
+bool TierProject::setImagePresentationMode(ImagePresentationMode mode) {
+    const QString value = mode == ImagePresentationMode::NoCrop ? QStringLiteral("noCrop")
+                                                                : QStringLiteral("square");
+    if (canvas.value(QStringLiteral("imagePresentationMode")).toString(
+            QStringLiteral("square")) == value) {
+        return false;
+    }
+    canvas.insert(QStringLiteral("imagePresentationMode"), value);
+    return true;
+}
+
+int TierProject::customCropCount() const {
+    return static_cast<int>(std::count_if(images.cbegin(), images.cend(),
+                                          [](const TierImage& image) {
+                                              return image.hasCropRect();
+                                          }));
+}
+
+int TierProject::clearCustomCrops() {
+    int cleared = 0;
+    for (TierImage& image : images) {
+        if (!image.hasCropRect()) {
+            continue;
+        }
+        image.cropRect = {};
+        ++cleared;
+    }
+    return cleared;
+}
+
 void TierProject::resetDefaultRows() {
     rows = makeDefaultRows();
     for (TierImage& image : images) {
@@ -138,10 +176,13 @@ QString TierProject::suggestedFileName() const {
         base = QStringLiteral("Untitled Tier List");
     }
     base.replace(QRegularExpression(QStringLiteral(R"([\\/:*?"<>|]+)")), QStringLiteral("-"));
-    if (!base.endsWith(QStringLiteral(".tlmproject"), Qt::CaseInsensitive)) {
-        base += QStringLiteral(".tlmproject");
+    if (base.endsWith(QStringLiteral(".tlmproject"), Qt::CaseInsensitive)) {
+        base.chop(QStringLiteral(".tlmproject").size());
+    }
+    if (!base.endsWith(QStringLiteral(".qtmproject"), Qt::CaseInsensitive)) {
+        base += QStringLiteral(".qtmproject");
     }
     return base;
 }
 
-} // namespace tlm
+} // namespace qtm

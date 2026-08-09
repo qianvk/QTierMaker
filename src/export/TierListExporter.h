@@ -7,7 +7,7 @@
 
 #include <QObject>
 
-namespace tlm {
+namespace qtm {
 
 /** Renders complete tier lists to PNG, JPEG, or PDF without mutating the project. */
 class TierListExporter : public QObject {
@@ -24,5 +24,5 @@ private:
     const AssetManager* m_assetManager{nullptr};
 };
 
-} // namespace tlm
+} // namespace qtm
 

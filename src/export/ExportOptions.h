@@ -3,7 +3,7 @@
 #include <QColor>
 #include <QString>
 
-namespace tlm {
+namespace qtm {
 
 enum class ExportFormat { Png, Jpeg, Pdf };
 
@@ -20,5 +20,5 @@ public:
     static QString suffixForFormat(ExportFormat format);
 };
 
-} // namespace tlm
+} // namespace qtm
 
