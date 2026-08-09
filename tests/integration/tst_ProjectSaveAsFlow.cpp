@@ -6,7 +6,7 @@
 #include <QTemporaryDir>
 #include <QtTest>
 
-using namespace tlm;
+using namespace qtm;
 
 class tst_ProjectSaveAsFlow : public QObject {
     Q_OBJECT
@@ -27,7 +27,7 @@ private slots:
         QVERIFY(imported);
         QVERIFY(QFileInfo(project.images.first().importedAssetPath).isAbsolute());
 
-        const QString projectPath = dir.filePath(QStringLiteral("saved.tlmproject"));
+        const QString projectPath = dir.filePath(QStringLiteral("saved.qtmproject"));
         project.filePath = QFileInfo(projectPath).absoluteFilePath();
         QVERIFY(assets.migrateSessionAssets(project, project.filePath));
         QVERIFY(!QFileInfo(project.images.first().importedAssetPath).isAbsolute());

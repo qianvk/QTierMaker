@@ -8,7 +8,7 @@
 #include <limits>
 #include <utility>
 
-using namespace tlm;
+using namespace qtm;
 
 class TierListLayoutTest final : public QObject {
     Q_OBJECT
@@ -18,6 +18,7 @@ private slots:
     void girlsProjectKeepsEveryImageInsideItsRow();
     void expandedWidthsReflowRows();
     void viewResizeRecomputesLayout();
+    void noCropPreservesAspectAndSharedLineHeight();
     void missionControlBalancesCenteredFreePacking();
     void missionControlHoverKeepsNonLocalTilesFixed();
     void galleryMissionControlHoverPreservesLocalityAndGap();
@@ -188,6 +189,47 @@ void TierListLayoutTest::expandedWidthsReflowRows() {
 
     QVERIFY(normal.rowUnits != collapsed.rowUnits);
     QVERIFY(collapsed.rowUnits.at(3) <= normal.rowUnits.at(3));
+}
+
+void TierListLayoutTest::noCropPreservesAspectAndSharedLineHeight() {
+    const QVector<QVector<QSize>> imageSizes{
+        {QSize(1600, 900), QSize(900, 1200), QSize(1200, 800), QSize(1024, 1024)},
+        {QSize(2400, 1000), QSize(800, 1200), QSize(1280, 720)},
+    };
+    constexpr int labelWidth = 82;
+    const QSize viewport(900, 420);
+    const TierBoardLayoutMetrics layout = TierListLayout::fitBoard(
+        imageSizes, viewport, labelWidth, ImagePresentationMode::NoCrop);
+    QCOMPARE(layout.rowHeights.size(), imageSizes.size());
+    QCOMPARE(layout.rowUnits.size(), imageSizes.size());
+
+    int top = 0;
+    for (int row = 0; row < imageSizes.size(); ++row) {
+        const QRect rowRect(0, top, viewport.width(), layout.rowHeights.at(row));
+        const TierRowGrid grid =
+            TierListLayout::gridForRow(rowRect, layout.rowUnits.at(row), labelWidth);
+        const QVector<QRect> rects =
+            grid.itemRects(imageSizes.at(row), ImagePresentationMode::NoCrop);
+        QCOMPARE(rects.size(), imageSizes.at(row).size());
+        QVERIFY(grid.requiredRows(imageSizes.at(row), ImagePresentationMode::NoCrop) <=
+                layout.rowUnits.at(row));
+        for (int index = 0; index < rects.size(); ++index) {
+            const QRect rect = rects.at(index);
+            QVERIFY(rowRect.contains(rect.topLeft()));
+            QVERIFY(rowRect.contains(rect.bottomRight()));
+            QCOMPARE(rect.height(), grid.lineHeight);
+            const qreal expectedAspect =
+                static_cast<qreal>(imageSizes.at(row).at(index).width()) /
+                imageSizes.at(row).at(index).height();
+            const qreal actualAspect = static_cast<qreal>(rect.width()) / rect.height();
+            QVERIFY(qAbs(actualAspect - expectedAspect) <= 1.0 / grid.lineHeight + 0.01);
+            for (int previous = 0; previous < index; ++previous) {
+                QVERIFY(!rect.intersects(rects.at(previous)));
+            }
+        }
+        top += rowRect.height();
+    }
+    QCOMPARE(top, viewport.height());
 }
 
 void TierListLayoutTest::viewResizeRecomputesLayout() {

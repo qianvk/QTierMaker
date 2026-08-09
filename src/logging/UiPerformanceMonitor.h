@@ -5,7 +5,7 @@
 class QApplication;
 class QEvent;
 
-namespace tlm {
+namespace qtm {
 
 /** Opt-in UI counters used while diagnosing visible-window CPU usage. */
 class UiPerformanceMonitor final : public QObject {
@@ -39,4 +39,4 @@ private:
     Private* d{nullptr};
 };
 
-} // namespace tlm
+} // namespace qtm

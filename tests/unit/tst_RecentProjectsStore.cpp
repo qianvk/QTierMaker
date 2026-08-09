@@ -3,7 +3,7 @@
 #include <QTemporaryDir>
 #include <QtTest>
 
-using namespace tlm;
+using namespace qtm;
 
 class tst_RecentProjectsStore : public QObject {
     Q_OBJECT
@@ -15,7 +15,7 @@ private slots:
         RecentProjectsStore store(dir.filePath(QStringLiteral("recent.json")));
 
         TierProject project = TierProject::createUntitled();
-        project.filePath = dir.filePath(QStringLiteral("a.tlmproject"));
+        project.filePath = dir.filePath(QStringLiteral("a.qtmproject"));
         project.name = QStringLiteral("A");
         QVERIFY(store.addOrUpdate(project));
         QCOMPARE(store.entries().size(), 1);

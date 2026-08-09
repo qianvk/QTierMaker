@@ -2,7 +2,7 @@
 
 #include <QWidget>
 
-namespace tlm {
+namespace qtm {
 
 /** Centered title/subtitle placeholder for empty pages and lists. */
 class EmptyStateWidget : public QWidget {
@@ -12,5 +12,5 @@ public:
     explicit EmptyStateWidget(const QString& title, const QString& subtitle, QWidget* parent = nullptr);
 };
 
-} // namespace tlm
+} // namespace qtm
 

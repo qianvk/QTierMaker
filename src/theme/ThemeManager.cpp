@@ -4,7 +4,7 @@
 #include <vkui/core/VkAppearance.h>
 #include <vkui/core/VkThemeManager.h>
 
-namespace tlm {
+namespace qtm {
 
 ThemeManager::ThemeManager(AppSettings* settings, QObject* parent)
     : QObject(parent), m_settings(settings),
@@ -48,4 +48,4 @@ void ThemeManager::synchronizeTheme() {
     emit themeChanged(m_theme);
 }
 
-} // namespace tlm
+} // namespace qtm

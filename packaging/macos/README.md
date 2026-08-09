@@ -13,13 +13,13 @@ the application and the standard `/Applications` symlink. Signing and notarizati
 local/private and must never be committed.
 
 For distribution outside local testing, configure
-`-DTLM_MACOS_CODESIGN_IDENTITY="Developer ID Application: ..."`, then sign, submit, and staple the
+`-DQTM_MACOS_CODESIGN_IDENTITY="Developer ID Application: ..."`, then sign, submit, and staple the
 DMG with credentials stored in the login keychain:
 
 ```sh
-codesign --force --timestamp --sign "Developer ID Application: ..." TierListMaker-*.dmg
-xcrun notarytool submit TierListMaker-*.dmg --keychain-profile TierListMaker --wait
-xcrun stapler staple TierListMaker-*.dmg
+codesign --force --timestamp --sign "Developer ID Application: ..." QTierMaker-*.dmg
+xcrun notarytool submit QTierMaker-*.dmg --keychain-profile QTierMaker --wait
+xcrun stapler staple QTierMaker-*.dmg
 ```
 
 The `Platform Installers` workflow runs the same build for tags and manual dispatches. With the

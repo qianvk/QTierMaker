@@ -37,15 +37,15 @@
 #include <vkui/widgets/controls/VkSlider.h>
 #include <vkui/widgets/controls/VkSwitch.h>
 
-#ifndef TLM_APP_VERSION
-#define TLM_APP_VERSION "0.2.0"
+#ifndef QTM_APP_VERSION
+#define QTM_APP_VERSION "0.2.0"
 #endif
 
-#ifndef TLM_GIT_COMMIT
-#define TLM_GIT_COMMIT "unknown"
+#ifndef QTM_GIT_COMMIT
+#define QTM_GIT_COMMIT "unknown"
 #endif
 
-namespace tlm {
+namespace qtm {
 
 namespace {
 constexpr int kUpdateBadgeRole = Qt::UserRole + 41;
@@ -511,7 +511,7 @@ void PreferencesPage::applyUpdateResult(const UpdateCheckResult& result) {
                                                       : QStringLiteral("\n\n%1").arg(changelog)));
         } else {
             m_updateStatusLabel->setText(
-                tr("TierListMaker is up to date. Current version: %1").arg(result.currentVersion));
+                tr("QTierMaker is up to date. Current version: %1").arg(result.currentVersion));
         }
     }
     refreshUpdateActions();
@@ -895,18 +895,18 @@ QWidget* PreferencesPage::createAboutPage() {
     layout->setSpacing(12);
     layout->addWidget(new SectionHeader(tr("About"), page));
     auto* text =
-        new QLabel(tr("TierListMaker\nVersion: %1\nLicense: MIT\nQt: %2\nQWindowKit: 1.5.1\n"
-                      "VkUI: 0.1.0\nBuild: %3\nGit: "
-                      "%4\nPlatform: %5\nCopyright: 2026 TierListMaker "
+        new QLabel(tr("QTierMaker\nVersion: %1\nLicense: MIT\nQt: %2\nVkUI: 0.1.0\n"
+                      "Build: %3\nGit: "
+                      "%4\nPlatform: %5\nCopyright: 2026 QTierMaker "
                       "contributors\n\nLinks:\nhttps://github.com/"
-                      "qianvk/TierListMaker")
-                       .arg(QStringLiteral(TLM_APP_VERSION), QString::fromLatin1(qVersion()),
+                      "qianvk/QTierMaker")
+                       .arg(QStringLiteral(QTM_APP_VERSION), QString::fromLatin1(qVersion()),
 #ifdef NDEBUG
                             QStringLiteral("Release"),
 #else
                             QStringLiteral("Debug"),
 #endif
-                            QStringLiteral(TLM_GIT_COMMIT), platform::platformName()),
+                            QStringLiteral(QTM_GIT_COMMIT), platform::platformName()),
                    page);
     text->setTextInteractionFlags(Qt::TextSelectableByMouse);
     text->setWordWrap(true);
@@ -915,4 +915,4 @@ QWidget* PreferencesPage::createAboutPage() {
     return page;
 }
 
-} // namespace tlm
+} // namespace qtm

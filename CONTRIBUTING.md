@@ -1,6 +1,6 @@
 # Contributing
 
-Thank you for improving TierListMaker.
+Thank you for improving QTierMaker.
 
 ## Development
 

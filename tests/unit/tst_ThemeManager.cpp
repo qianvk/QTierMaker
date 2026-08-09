@@ -8,7 +8,7 @@
 #include <vkui/core/VkAppearance.h>
 #include <vkui/core/VkThemeManager.h>
 
-using namespace tlm;
+using namespace qtm;
 
 class tst_ThemeManager : public QObject {
     Q_OBJECT

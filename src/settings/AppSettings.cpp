@@ -7,7 +7,7 @@
 #include <QStandardPaths>
 #include <QStringList>
 
-namespace tlm {
+namespace qtm {
 
 namespace {
 QString appearanceToString(AppearanceMode mode) {
@@ -119,14 +119,33 @@ QString fallbackProjectDirectory() {
     if (path.isEmpty()) {
         path = QDir::homePath();
     }
-    return QDir::cleanPath(QDir(path).filePath(QStringLiteral("TierListMaker")));
+    return QDir::cleanPath(QDir(path).filePath(QStringLiteral("QTierMaker")));
+}
+
+void migrateLegacySettings(QSettings& settings) {
+    if (!settings.allKeys().isEmpty()) {
+        return;
+    }
+
+    // Product renaming must not reset an existing installation. Copy once into the new settings
+    // domain, then let QTierMaker own all subsequent writes.
+    QSettings legacy(QStringLiteral("TierListMaker"), QStringLiteral("TierListMaker"));
+    const QStringList keys = legacy.allKeys();
+    for (const QString& key : keys) {
+        settings.setValue(key, legacy.value(key));
+    }
+    if (!keys.isEmpty()) {
+        settings.sync();
+    }
 }
 } // namespace
 
 AppSettings::AppSettings(QObject* parent)
     : QObject(parent),
-      m_settings(QStringLiteral("TierListMaker"), QStringLiteral("TierListMaker")),
-      m_liquidGlassParameters(readLiquidGlassParameters(m_settings)) {}
+      m_settings(QStringLiteral("QTierMaker"), QStringLiteral("QTierMaker")) {
+    migrateLegacySettings(m_settings);
+    m_liquidGlassParameters = readLiquidGlassParameters(m_settings);
+}
 
 AppSettings::~AppSettings() {
     if (m_liquidGlassParametersDirty) {
@@ -459,4 +478,4 @@ void AppSettings::setLocalOnlyMode(bool enabled) {
     emit changed();
 }
 
-} // namespace tlm
+} // namespace qtm

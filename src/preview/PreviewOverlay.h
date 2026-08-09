@@ -3,6 +3,7 @@
 #include "assets/BackdropMaterial.h"
 #include "assets/CoverImageCache.h"
 
+#include <QEvent>
 #include <QImage>
 #include <QPixmap>
 #include <QWidget>
@@ -10,7 +11,7 @@
 class QParallelAnimationGroup;
 class QPropertyAnimation;
 
-namespace tlm {
+namespace qtm {
 
 enum class PreviewBackgroundMode;
 enum class PreviewBackgroundTreatment { SolidColor, DepthSoftFocus, ProjectImage };
@@ -94,6 +95,9 @@ private:
     void rebuildBackgroundCache();
     void rebuildGlassOverlayCache();
     void setInputBarrierActive(bool active);
+    void handleLeakedPointerEvent(QEvent* event);
+    void requestCloseForPointer(QEvent::Type type, Qt::MouseButton button,
+                                const QPoint& globalPosition);
     bool isOverlayDispatchObject(const QObject* object) const;
 
     QPixmap m_pixmap;
@@ -124,4 +128,4 @@ private:
     bool m_toolTipsEnabled{true};
 };
 
-} // namespace tlm
+} // namespace qtm

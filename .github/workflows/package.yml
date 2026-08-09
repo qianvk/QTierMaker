@@ -22,14 +22,14 @@ jobs:
         include:
           - os: macos-15
             cpack_generator: DragNDrop
-            artifact_name: TierListMaker-macOS
+            artifact_name: QTierMaker-macOS
             artifact_glob: dist/*.dmg
             runtime_metadata: ''
           - os: windows-latest
             cpack_generator: NSIS
-            artifact_name: TierListMaker-Windows
+            artifact_name: QTierMaker-Windows
             artifact_glob: dist/*.exe
-            runtime_metadata: dist/TierListMaker-Windows-runtime-version.txt
+            runtime_metadata: dist/QTierMaker-Windows-runtime-version.txt
     runs-on: ${{ matrix.os }}
     timeout-minutes: 45
     env:
@@ -63,7 +63,7 @@ jobs:
           else
             version="0.2.0-dev.${GITHUB_RUN_NUMBER}"
           fi
-          echo "TLM_PACKAGE_VERSION=${version}" >> "${GITHUB_ENV}"
+          echo "QTM_PACKAGE_VERSION=${version}" >> "${GITHUB_ENV}"
 
       - name: Import macOS signing certificate
         if: runner.os == 'macOS' && env.HAS_MACOS_CERTIFICATE == 'true'
@@ -72,8 +72,8 @@ jobs:
           MACOS_CERTIFICATE_BASE64: ${{ secrets.MACOS_CERTIFICATE_BASE64 }}
           MACOS_CERTIFICATE_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
         run: |
-          certificate_path="${RUNNER_TEMP}/tierlistmaker-signing.p12"
-          keychain_path="${RUNNER_TEMP}/tierlistmaker-signing.keychain-db"
+          certificate_path="${RUNNER_TEMP}/qtiermaker-signing.p12"
+          keychain_path="${RUNNER_TEMP}/qtiermaker-signing.keychain-db"
           keychain_password="$(openssl rand -hex 24)"
           printf '%s' "${MACOS_CERTIFICATE_BASE64}" | base64 --decode > "${certificate_path}"
           security create-keychain -p "${keychain_password}" "${keychain_path}"
@@ -92,7 +92,7 @@ jobs:
         env:
           WINDOWS_CERTIFICATE_BASE64: ${{ secrets.WINDOWS_CERTIFICATE_BASE64 }}
         run: |
-          $certificatePath = Join-Path $env:RUNNER_TEMP 'tierlistmaker-signing.pfx'
+          $certificatePath = Join-Path $env:RUNNER_TEMP 'qtiermaker-signing.pfx'
           [IO.File]::WriteAllBytes(
             $certificatePath,
             [Convert]::FromBase64String($env:WINDOWS_CERTIFICATE_BASE64))
@@ -118,9 +118,9 @@ jobs:
           # Ninja on Windows can pair MinGW from PATH with the MSVC Qt package.
           cmake -S . -B build/package \
             -DCMAKE_BUILD_TYPE=Release \
-            -DTLM_BUILD_TESTS=ON \
-            "-DTLM_PACKAGE_VERSION=${TLM_PACKAGE_VERSION}" \
-            "-DTLM_MACOS_CODESIGN_IDENTITY=${signing_identity}" \
+            -DQTM_BUILD_TESTS=ON \
+            "-DQTM_PACKAGE_VERSION=${QTM_PACKAGE_VERSION}" \
+            "-DQTM_MACOS_CODESIGN_IDENTITY=${signing_identity}" \
             "${platform_args[@]}"
 
       - name: Build
@@ -143,7 +143,7 @@ jobs:
             /tr https://timestamp.digicert.com `
             /f $env:WINDOWS_CERTIFICATE_PATH `
             /p $env:WINDOWS_CERTIFICATE_PASSWORD `
-            build/package/Release/TierListMaker.exe
+            build/package/Release/QTierMaker.exe
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       - name: Package
@@ -157,10 +157,10 @@ jobs:
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          cmake --build build/package --config Release --target TierListMakerUpdatePackage
+          cmake --build build/package --config Release --target QTierMakerUpdatePackage
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           Copy-Item build/package/updates/*-WinUpdate-*.exe dist/
-          Copy-Item build/package/TierListMaker-Windows-runtime-version.txt dist/
+          Copy-Item build/package/QTierMaker-Windows-runtime-version.txt dist/
 
       - name: Audit Windows runtime payload
         if: runner.os == 'Windows'
@@ -256,8 +256,8 @@ jobs:
         if: always()
         shell: bash
         run: |
-          rm -f "${RUNNER_TEMP}/tierlistmaker-signing.p12" \
-            "${RUNNER_TEMP}/tierlistmaker-signing.pfx" \
+          rm -f "${RUNNER_TEMP}/qtiermaker-signing.p12" \
+            "${RUNNER_TEMP}/qtiermaker-signing.pfx" \
             "${RUNNER_TEMP}"/AuthKey_*.p8
           if [[ -n "${MACOS_SIGNING_KEYCHAIN:-}" ]]; then
             security delete-keychain "${MACOS_SIGNING_KEYCHAIN}"
@@ -273,7 +273,7 @@ jobs:
       - name: Download installers
         uses: actions/download-artifact@v5
         with:
-          pattern: TierListMaker-*
+          pattern: QTierMaker-*
           path: release-assets
           merge-multiple: true
 
@@ -288,7 +288,7 @@ jobs:
           windows_path="$(find release-assets -maxdepth 1 -name '*-Windows-x64-Setup.exe' -print -quit)"
           windows_update_path="$(find release-assets -maxdepth 1 -name '*-WinUpdate-*.exe' -print -quit)"
           macos_path="$(find release-assets -maxdepth 1 -name '*-macOS-arm64.dmg' -print -quit)"
-          runtime_path="release-assets/TierListMaker-Windows-runtime-version.txt"
+          runtime_path="release-assets/QTierMaker-Windows-runtime-version.txt"
           test -n "${windows_path}" && test -n "${windows_update_path}" && \
             test -n "${macos_path}" && test -f "${runtime_path}"
 
@@ -325,10 +325,10 @@ jobs:
               channel: $channel,
               localizations: {
                 en: {
-                  changelog: ("TierListMaker " + $version + " is available. See the release page for details.")
+                  changelog: ("QTierMaker " + $version + " is available. See the release page for details.")
                 },
                 zh_CN: {
-                  changelog: ("TierListMaker " + $version + " 已发布。详细内容请查看发布页面。")
+                  changelog: ("QTierMaker " + $version + " 已发布。详细内容请查看发布页面。")
                 }
               },
               updates: {
@@ -372,11 +372,11 @@ jobs:
           if gh release view "${GITHUB_REF_NAME}" >/dev/null 2>&1; then
             gh release upload "${GITHUB_REF_NAME}" release-assets/* --clobber
             gh release edit "${GITHUB_REF_NAME}" "${release_flags[@]}" \
-              --title "TierListMaker ${GITHUB_REF_NAME}"
+              --title "QTierMaker ${GITHUB_REF_NAME}"
           else
             gh release create "${GITHUB_REF_NAME}" release-assets/* \
               --verify-tag \
               --generate-notes \
               "${release_flags[@]}" \
-              --title "TierListMaker ${GITHUB_REF_NAME}"
+              --title "QTierMaker ${GITHUB_REF_NAME}"
           fi

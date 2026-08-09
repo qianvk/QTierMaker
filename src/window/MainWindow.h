@@ -2,11 +2,11 @@
 
 #include <QMainWindow>
 
-namespace QWK {
-class WidgetWindowAgent;
+namespace vkui {
+class VkWindowAgent;
 }
 
-namespace tlm {
+namespace qtm {
 
 class AssetManager;
 class AppSettings;
@@ -18,7 +18,7 @@ class ThemeManager;
 class ThumbnailCache;
 class AppUpdater;
 
-/** Top-level QWindowKit host with native platform move, resize, and system buttons. */
+/** Top-level VkUI window host with native platform move, resize, and system buttons. */
 class MainWindow : public QMainWindow {
     Q_OBJECT
 
@@ -27,7 +27,7 @@ public:
                AssetManager* assetManager, ThumbnailCache* thumbnailCache, AppSettings* settings,
                LanguageManager* languageManager, AppUpdater* updater, QWidget* parent = nullptr);
 
-    QWK::WidgetWindowAgent* windowAgent() const {
+    vkui::VkWindowAgent* windowAgent() const {
         return m_windowAgent;
     }
 
@@ -35,8 +35,8 @@ protected:
     void closeEvent(QCloseEvent* event) override;
 
 private:
-    QWK::WidgetWindowAgent* m_windowAgent{nullptr};
+    vkui::VkWindowAgent* m_windowAgent{nullptr};
     RootWidget* m_root{nullptr};
 };
 
-} // namespace tlm
+} // namespace qtm

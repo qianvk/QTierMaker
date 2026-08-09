@@ -1,6 +1,6 @@
-# TierListMaker
+# QTierMaker
 
-TierListMaker is a native Qt desktop app for building personal tier lists on Windows, macOS,
+QTierMaker is a native Qt desktop app for building personal tier lists on Windows, macOS,
 and Linux. Projects stay local and keep their imported images, tier structure, background, and
 presentation settings together.
 

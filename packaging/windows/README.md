@@ -17,10 +17,10 @@ a timestamp server so the signatures remain valid after certificate rotation:
 
 ```powershell
 signtool sign /fd SHA256 /td SHA256 /tr https://timestamp.digicert.com /a \
-  .\build\windows-release\TierListMaker.exe
+  .\build\windows-release\QTierMaker.exe
 cpack --config build/windows-release/CPackConfig.cmake -G NSIS
 signtool sign /fd SHA256 /td SHA256 /tr https://timestamp.digicert.com /a \
-  .\TierListMaker-*.exe
+  .\QTierMaker-*.exe
 ```
 
 The `Platform Installers` workflow installs NSIS and produces the same installer for tags and manual

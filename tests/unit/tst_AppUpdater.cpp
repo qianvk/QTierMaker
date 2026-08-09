@@ -2,7 +2,7 @@
 
 #include <QtTest>
 
-using namespace tlm;
+using namespace qtm;
 
 class AppUpdaterTest final : public QObject {
     Q_OBJECT
@@ -79,15 +79,15 @@ void AppUpdaterTest::parsesPlatformManifest() {
       "latest-version": "0.2.0-beta.2",
       "runtime-version": "qt-6.10.1-r1",
       "minimum-supported-version": "0.2.0",
-      "download-url": "https://github.com/qianvk/TierListMaker/releases/download/v0.2.0-beta.2/TierListMaker-0.2.0-beta.2-Windows-AMD64.exe",
-      "release-url": "https://github.com/qianvk/TierListMaker/releases/tag/v0.2.0-beta.2",
-      "file-name": "TierListMaker-0.2.0-beta.2-Windows-AMD64.exe",
+      "download-url": "https://github.com/qianvk/QTierMaker/releases/download/v0.2.0-beta.2/QTierMaker-0.2.0-beta.2-Windows-AMD64.exe",
+      "release-url": "https://github.com/qianvk/QTierMaker/releases/tag/v0.2.0-beta.2",
+      "file-name": "QTierMaker-0.2.0-beta.2-Windows-AMD64.exe",
       "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
       "size": 1234,
       "changelog": "Beta fixes",
       "update": {
-        "download-url": "https://github.com/qianvk/TierListMaker/releases/download/v0.2.0-beta.2/TierListMaker-0.2.0-beta.2-WinUpdate-AMD64.exe",
-        "file-name": "TierListMaker-0.2.0-beta.2-WinUpdate-AMD64.exe",
+        "download-url": "https://github.com/qianvk/QTierMaker/releases/download/v0.2.0-beta.2/QTierMaker-0.2.0-beta.2-WinUpdate-AMD64.exe",
+        "file-name": "QTierMaker-0.2.0-beta.2-WinUpdate-AMD64.exe",
         "sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
         "size": 567
       }
@@ -95,18 +95,18 @@ void AppUpdaterTest::parsesPlatformManifest() {
     "macos": {
       "latest-version": "0.2.0-beta.2",
       "minimum-supported-version": "0.2.0",
-      "download-url": "https://github.com/qianvk/TierListMaker/releases/download/v0.2.0-beta.2/TierListMaker-0.2.0-beta.2-Darwin-arm64.dmg",
-      "release-url": "https://github.com/qianvk/TierListMaker/releases/tag/v0.2.0-beta.2",
-      "file-name": "TierListMaker-0.2.0-beta.2-Darwin-arm64.dmg",
+      "download-url": "https://github.com/qianvk/QTierMaker/releases/download/v0.2.0-beta.2/QTierMaker-0.2.0-beta.2-Darwin-arm64.dmg",
+      "release-url": "https://github.com/qianvk/QTierMaker/releases/tag/v0.2.0-beta.2",
+      "file-name": "QTierMaker-0.2.0-beta.2-Darwin-arm64.dmg",
       "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
       "size": 1234
     },
     "linux": {
       "latest-version": "0.2.0-beta.2",
       "minimum-supported-version": "0.2.0",
-      "download-url": "https://github.com/qianvk/TierListMaker/releases/download/v0.2.0-beta.2/TierListMaker-0.2.0-beta.2-Linux-x86_64.AppImage",
-      "release-url": "https://github.com/qianvk/TierListMaker/releases/tag/v0.2.0-beta.2",
-      "file-name": "TierListMaker-0.2.0-beta.2-Linux-x86_64.AppImage",
+      "download-url": "https://github.com/qianvk/QTierMaker/releases/download/v0.2.0-beta.2/QTierMaker-0.2.0-beta.2-Linux-x86_64.AppImage",
+      "release-url": "https://github.com/qianvk/QTierMaker/releases/tag/v0.2.0-beta.2",
+      "file-name": "QTierMaker-0.2.0-beta.2-Linux-x86_64.AppImage",
       "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
       "size": 1234
     }
@@ -127,7 +127,7 @@ void AppUpdaterTest::parsesPlatformManifest() {
 #if defined(Q_OS_WIN)
     QCOMPARE(AppUpdater::runtimeVersion(), QStringLiteral("qt-6.10.1-r1"));
     QVERIFY(result.lightweightPackage);
-    QCOMPARE(result.fileName, QStringLiteral("TierListMaker-0.2.0-beta.2-WinUpdate-AMD64.exe"));
+    QCOMPARE(result.fileName, QStringLiteral("QTierMaker-0.2.0-beta.2-WinUpdate-AMD64.exe"));
     QCOMPARE(result.packageSize, 567);
 
     QByteArray incompatibleManifest = manifest;
@@ -139,7 +139,7 @@ void AppUpdaterTest::parsesPlatformManifest() {
     QVERIFY2(error.isEmpty(), qPrintable(error));
     QVERIFY(!fallbackResult.lightweightPackage);
     QCOMPARE(fallbackResult.fileName,
-             QStringLiteral("TierListMaker-0.2.0-beta.2-Windows-AMD64.exe"));
+             QStringLiteral("QTierMaker-0.2.0-beta.2-Windows-AMD64.exe"));
     QCOMPARE(fallbackResult.packageSize, 1234);
 #else
     QVERIFY(!result.lightweightPackage);
@@ -149,42 +149,42 @@ void AppUpdaterTest::parsesPlatformManifest() {
 
 void AppUpdaterTest::parsesGitHubReleaseFeed() {
 #if defined(Q_OS_WIN)
-    constexpr auto packageName = "TierListMaker-0.2.0-beta.3-Windows-AMD64.exe";
+    constexpr auto packageName = "QTierMaker-0.2.0-beta.3-Windows-AMD64.exe";
 #elif defined(Q_OS_MACOS) || defined(Q_OS_MAC)
-    constexpr auto packageName = "TierListMaker-0.2.0-beta.3-Darwin-universal.dmg";
+    constexpr auto packageName = "QTierMaker-0.2.0-beta.3-Darwin-universal.dmg";
 #else
-    constexpr auto packageName = "TierListMaker-0.2.0-beta.3-Linux-x86_64.AppImage";
+    constexpr auto packageName = "QTierMaker-0.2.0-beta.3-Linux-x86_64.AppImage";
 #endif
     const QByteArray releaseTemplate = R"json(
 [
   {
     "tag_name": "v0.2.0-beta.4",
-    "html_url": "https://github.com/qianvk/TierListMaker/releases/tag/v0.2.0-beta.4",
+    "html_url": "https://github.com/qianvk/QTierMaker/releases/tag/v0.2.0-beta.4",
     "draft": true,
     "prerelease": true,
     "assets": []
   },
   {
     "tag_name": "v0.2.0-beta.3",
-    "html_url": "https://github.com/qianvk/TierListMaker/releases/tag/v0.2.0-beta.3",
+    "html_url": "https://github.com/qianvk/QTierMaker/releases/tag/v0.2.0-beta.3",
     "body": "Release notes",
     "draft": false,
     "prerelease": true,
     "assets": [
       {
         "name": "%1",
-        "browser_download_url": "https://github.com/qianvk/TierListMaker/releases/download/v0.2.0-beta.3/%1",
+        "browser_download_url": "https://github.com/qianvk/QTierMaker/releases/download/v0.2.0-beta.3/%1",
         "size": 4321,
         "digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
       },
       {
         "name": "updates.json",
-        "browser_download_url": "https://github.com/qianvk/TierListMaker/releases/download/v0.2.0-beta.3/updates.json",
+        "browser_download_url": "https://github.com/qianvk/QTierMaker/releases/download/v0.2.0-beta.3/updates.json",
         "size": 1024
       },
       {
-        "name": "TierListMaker-0.2.0-beta.3-WinUpdate-AMD64.exe",
-        "browser_download_url": "https://github.com/qianvk/TierListMaker/releases/download/v0.2.0-beta.3/TierListMaker-0.2.0-beta.3-WinUpdate-AMD64.exe",
+        "name": "QTierMaker-0.2.0-beta.3-WinUpdate-AMD64.exe",
+        "browser_download_url": "https://github.com/qianvk/QTierMaker/releases/download/v0.2.0-beta.3/QTierMaker-0.2.0-beta.3-WinUpdate-AMD64.exe",
         "size": 678,
         "digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
       }
@@ -192,7 +192,7 @@ void AppUpdaterTest::parsesGitHubReleaseFeed() {
   },
   {
     "tag_name": "v0.2.0-beta.2",
-    "html_url": "https://github.com/qianvk/TierListMaker/releases/tag/v0.2.0-beta.2",
+    "html_url": "https://github.com/qianvk/QTierMaker/releases/tag/v0.2.0-beta.2",
     "draft": false,
     "prerelease": true,
     "assets": []
@@ -214,11 +214,11 @@ void AppUpdaterTest::parsesGitHubReleaseFeed() {
     QCOMPARE(result.sha256,
              QStringLiteral("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"));
     QCOMPARE(result.metadataUrl,
-             QUrl(QStringLiteral("https://github.com/qianvk/TierListMaker/releases/download/"
+             QUrl(QStringLiteral("https://github.com/qianvk/QTierMaker/releases/download/"
                                  "v0.2.0-beta.3/updates.json")));
 #if defined(Q_OS_WIN)
     QCOMPARE(result.updateFileName,
-             QStringLiteral("TierListMaker-0.2.0-beta.3-WinUpdate-AMD64.exe"));
+             QStringLiteral("QTierMaker-0.2.0-beta.3-WinUpdate-AMD64.exe"));
     QCOMPARE(result.updatePackageSize, 678);
     QCOMPARE(result.updateSha256,
              QStringLiteral("dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"));
@@ -231,7 +231,7 @@ void AppUpdaterTest::requiresSecurePackageMetadata() {
   "updates": {
     "default": {
       "latest-version": "9.0.0",
-      "download-url": "http://example.com/TierListMaker.exe",
+      "download-url": "http://example.com/QTierMaker.exe",
       "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
     }
   }

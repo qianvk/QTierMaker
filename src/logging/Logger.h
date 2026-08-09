@@ -6,7 +6,7 @@
 #include <QString>
 #include <memory>
 
-namespace tlm {
+namespace qtm {
 
 /** Small logging facade for console/file diagnostics without logging image contents. */
 class Logger : public QObject {
@@ -37,5 +37,5 @@ private:
     static Logger* s_instance;
 };
 
-} // namespace tlm
+} // namespace qtm
 

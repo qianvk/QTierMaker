@@ -2,7 +2,7 @@
 
 #include <QToolButton>
 
-namespace tlm {
+namespace qtm {
 
 /** macOS-style sidebar toggle button used as a top-chrome overlay. */
 class SidebarToggleButton : public QToolButton {
@@ -12,4 +12,4 @@ public:
     explicit SidebarToggleButton(QWidget* parent = nullptr);
 };
 
-} // namespace tlm
+} // namespace qtm

@@ -22,14 +22,14 @@ SetCompressor /SOLID lzma
     !error "RUNTIME_VERSION is required"
 !endif
 
-Name "TierListMaker Update ${APP_VERSION}"
+Name "QTierMaker Update ${APP_VERSION}"
 OutFile "${OUTPUT_FILE}"
 VIProductVersion "${NUMERIC_VERSION}.0"
 VIAddVersionKey /LANG=1033 "CompanyName" "qianvk"
-VIAddVersionKey /LANG=1033 "FileDescription" "TierListMaker Update"
+VIAddVersionKey /LANG=1033 "FileDescription" "QTierMaker Update"
 VIAddVersionKey /LANG=1033 "FileVersion" "${APP_VERSION}"
-VIAddVersionKey /LANG=1033 "LegalCopyright" "Copyright 2026 TierListMaker contributors"
-VIAddVersionKey /LANG=1033 "ProductName" "TierListMaker"
+VIAddVersionKey /LANG=1033 "LegalCopyright" "Copyright 2026 QTierMaker contributors"
+VIAddVersionKey /LANG=1033 "ProductName" "QTierMaker"
 VIAddVersionKey /LANG=1033 "ProductVersion" "${APP_VERSION}"
 
 !insertmacro MUI_PAGE_INSTFILES
@@ -37,17 +37,17 @@ VIAddVersionKey /LANG=1033 "ProductVersion" "${APP_VERSION}"
 !insertmacro MUI_LANGUAGE "SimpChinese"
 
 LangString NotInstalled ${LANG_ENGLISH} \
-    "TierListMaker is not installed. Please use the full installer."
+    "QTierMaker is not installed. Please use the full installer."
 LangString NotInstalled ${LANG_SIMPCHINESE} \
-    "未找到 TierListMaker 安装。请使用完整安装包。"
+    "未找到 QTierMaker 安装。请使用完整安装包。"
 LangString RuntimeMismatch ${LANG_ENGLISH} \
     "This update requires a different application runtime. Please use the full installer."
 LangString RuntimeMismatch ${LANG_SIMPCHINESE} \
     "此更新需要不同的应用运行环境。请使用完整安装包。"
 LangString WaitTimeout ${LANG_ENGLISH} \
-    "TierListMaker did not close in time. Close all application windows and try again."
+    "QTierMaker did not close in time. Close all application windows and try again."
 LangString WaitTimeout ${LANG_SIMPCHINESE} \
-    "TierListMaker 未能及时退出。请关闭所有应用窗口后重试。"
+    "QTierMaker 未能及时退出。请关闭所有应用窗口后重试。"
 LangString ReplaceFailed ${LANG_ENGLISH} \
     "The application could not be updated. The previous executable has been restored."
 LangString ReplaceFailed ${LANG_SIMPCHINESE} \
@@ -60,14 +60,14 @@ Var WaitCount
 
 Function .onInit
     SetRegView 64
-    ReadRegStr $InstallRoot HKLM "Software\qianvk\TierListMaker" ""
+    ReadRegStr $InstallRoot HKLM "Software\qianvk\QTierMaker" ""
     StrCmp $InstallRoot "" not_installed
 
-    StrCpy $AppPath "$InstallRoot\bin\TierListMaker.exe"
+    StrCpy $AppPath "$InstallRoot\bin\QTierMaker.exe"
     IfFileExists "$AppPath" runtime_check not_installed
 
 runtime_check:
-    ReadRegStr $0 HKLM "Software\qianvk\TierListMaker" "RuntimeVersion"
+    ReadRegStr $0 HKLM "Software\qianvk\QTierMaker" "RuntimeVersion"
     StrCmp $0 "${RUNTIME_VERSION}" ready runtime_mismatch
 
 not_installed:
@@ -84,8 +84,8 @@ FunctionEnd
 Section "Update"
     InitPluginsDir
     SetOutPath "$PLUGINSDIR"
-    File "/oname=TierListMaker.exe" "${APP_EXECUTABLE}"
-    StrCpy $StagedPath "$PLUGINSDIR\TierListMaker.exe"
+    File "/oname=QTierMaker.exe" "${APP_EXECUTABLE}"
+    StrCpy $StagedPath "$PLUGINSDIR\QTierMaker.exe"
 
     Delete "$AppPath.old"
     IfFileExists "$AppPath.old" replace_failed
@@ -109,9 +109,9 @@ replace_executable:
 
 update_registry:
     Delete "$AppPath.old"
-    WriteRegStr HKLM "Software\qianvk\TierListMaker" "RuntimeVersion" "${RUNTIME_VERSION}"
+    WriteRegStr HKLM "Software\qianvk\QTierMaker" "RuntimeVersion" "${RUNTIME_VERSION}"
     WriteRegStr HKLM \
-        "Software\Microsoft\Windows\CurrentVersion\Uninstall\TierListMaker" \
+        "Software\Microsoft\Windows\CurrentVersion\Uninstall\QTierMaker" \
         "DisplayVersion" "${APP_VERSION}"
     Exec '"$AppPath"'
     Goto done

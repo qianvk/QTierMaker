@@ -1,5 +1,6 @@
 #pragma once
 
+#include "tier/ImagePresentationMode.h"
 #include "tier/TierImage.h"
 #include "tier/TierRow.h"
 
@@ -8,7 +9,7 @@
 #include <QString>
 #include <QVector>
 
-namespace tlm {
+namespace qtm {
 
 /** In-memory domain model for a complete tier-list project. */
 class TierProject {
@@ -37,10 +38,15 @@ public:
     QVector<const TierImage*> unassignedImages() const;
     QVector<const TierImage*> imagesForRow(const QString& rowId) const;
 
+    ImagePresentationMode imagePresentationMode() const;
+    bool setImagePresentationMode(ImagePresentationMode mode);
+    int customCropCount() const;
+    int clearCustomCrops();
+
     void resetDefaultRows();
     void normalizeOrdering();
     void touch();
     QString suggestedFileName() const;
 };
 
-} // namespace tlm
+} // namespace qtm

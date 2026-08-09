@@ -20,7 +20,7 @@ namespace vkui {
 class VkPopover;
 }
 
-namespace tlm {
+namespace qtm {
 
 class ImageGalleryPopover;
 class TierBoardWidget;
@@ -114,6 +114,7 @@ private:
     void editImage(const QString& imageId);
     void removeImageFromTierRow(const QString& imageId);
     void removeImageFromGallery(const QString& imageId);
+    void setImagePresentationMode(ImagePresentationMode mode);
     void editTierRow(const QString& rowId);
     void clearTierRowImages(const QString& rowId);
     void deleteTierRow(const QString& rowId);
@@ -149,4 +150,4 @@ private:
     bool m_backgroundPreviewActive{false};
 };
 
-} // namespace tlm
+} // namespace qtm

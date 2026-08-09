@@ -4,7 +4,7 @@
 #include <QLibraryInfo>
 #include <QLocale>
 
-namespace tlm {
+namespace qtm {
 
 LanguageManager::LanguageManager(QApplication* app, QObject* parent) : QObject(parent), m_app(app) {}
 
@@ -32,7 +32,7 @@ bool LanguageManager::setLanguage(const QString& languageCode) {
         if (qtLoaded) {
             m_app->installTranslator(&m_qtTranslator);
         }
-        loaded = m_translator.load(QStringLiteral(":/translations/TierListMaker_zh_CN.qm"));
+        loaded = m_translator.load(QStringLiteral(":/translations/QTierMaker_zh_CN.qm"));
         if (loaded) {
             m_app->installTranslator(&m_translator);
         }
@@ -42,4 +42,4 @@ bool LanguageManager::setLanguage(const QString& languageCode) {
     return loaded || resolvedLanguage == QStringLiteral("en");
 }
 
-} // namespace tlm
+} // namespace qtm

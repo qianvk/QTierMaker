@@ -8,7 +8,7 @@
 
 class QLineEdit;
 
-namespace tlm {
+namespace qtm {
 
 class CropEditorWidget;
 
@@ -18,7 +18,7 @@ class ImageEditDialog final : public AppDialog {
 
 public:
     ImageEditDialog(const TierImage& image, const QPixmap& pixmap, QWidget* parent = nullptr,
-                    QSizeF aspectRatio = QSizeF(1.0, 1.0));
+                    QSizeF aspectRatio = QSizeF(1.0, 1.0), bool cropEnabled = true);
 
     QString displayName() const;
     QRectF cropRect() const;
@@ -28,4 +28,4 @@ private:
     CropEditorWidget* m_cropEditor{nullptr};
 };
 
-} // namespace tlm
+} // namespace qtm

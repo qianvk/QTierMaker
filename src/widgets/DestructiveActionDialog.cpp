@@ -6,7 +6,7 @@
 #include <QDialogButtonBox>
 #include <QPushButton>
 
-namespace tlm {
+namespace qtm {
 
 bool confirmDestructiveAction(QWidget* parent, const QString& title, const QString& text,
                               const QString& confirmText) {
@@ -25,4 +25,4 @@ bool confirmDestructiveAction(QWidget* parent, const QString& title, const QStri
     return message.clickedButton() == confirmButton;
 }
 
-} // namespace tlm
+} // namespace qtm

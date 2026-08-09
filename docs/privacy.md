@@ -1,6 +1,6 @@
 # Privacy
 
-TierListMaker is local-first.
+QTierMaker is local-first.
 
 - The app does not upload user images.
 - The app does not upload project files.

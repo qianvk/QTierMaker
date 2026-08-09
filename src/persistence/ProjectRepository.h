@@ -5,9 +5,9 @@
 #include <QObject>
 #include <QString>
 
-namespace tlm {
+namespace qtm {
 
-/** Opens and saves `.tlmproject` files using ProjectSerializer and atomic writes. */
+/** Opens and saves current `.qtmproject` and legacy `.tlmproject` files. */
 class ProjectRepository : public QObject {
     Q_OBJECT
 
@@ -21,5 +21,4 @@ private:
     ProjectSerializer m_serializer;
 };
 
-} // namespace tlm
-
+} // namespace qtm
