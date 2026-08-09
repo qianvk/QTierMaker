@@ -105,16 +105,23 @@ set(CPACK_PACKAGE_HOMEPAGE_URL "https://github.com/qianvk/TierListMaker")
 set(CPACK_PACKAGE_VERSION "${TLM_PACKAGE_VERSION}")
 set(CPACK_PACKAGE_INSTALL_DIRECTORY "TierListMaker")
 set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE")
-set(CPACK_PACKAGE_FILE_NAME
-    "${CPACK_PACKAGE_NAME}-${CPACK_PACKAGE_VERSION}-${CMAKE_SYSTEM_NAME}-${CMAKE_SYSTEM_PROCESSOR}")
-
 if(APPLE)
+    if(NOT CMAKE_SYSTEM_PROCESSOR MATCHES "^(arm64|aarch64)$")
+        message(FATAL_ERROR "The public macOS package must be built for arm64")
+    endif()
+    set(CPACK_PACKAGE_FILE_NAME
+        "${CPACK_PACKAGE_NAME}-${CPACK_PACKAGE_VERSION}-macOS-arm64")
     # A DMG with the standard Applications symlink matches the platform's expected drag-install flow.
     set(CPACK_GENERATOR "DragNDrop")
     set(CPACK_DMG_VOLUME_NAME "TierListMaker ${CPACK_PACKAGE_VERSION}")
     set(CPACK_DMG_FORMAT "UDZO")
     set(CPACK_DMG_FILESYSTEM "APFS")
 elseif(WIN32)
+    if(NOT CMAKE_SYSTEM_PROCESSOR MATCHES "^(AMD64|amd64|x86_64)$")
+        message(FATAL_ERROR "The public Windows package must be built for x64")
+    endif()
+    set(CPACK_PACKAGE_FILE_NAME
+        "${CPACK_PACKAGE_NAME}-${CPACK_PACKAGE_VERSION}-Windows-x64-Setup")
     # NSIS provides a familiar machine-wide wizard, Start Menu entry, repair-safe upgrades,
     # Apps & Features metadata, and an optional launch action without modifying PATH.
     file(TO_NATIVE_PATH
@@ -151,13 +158,7 @@ elseif(WIN32)
     set(CPACK_NSIS_HELP_LINK "https://github.com/qianvk/TierListMaker/issues")
     set(CPACK_NSIS_BRANDING_TEXT "TierListMaker")
 
-    if(CMAKE_SYSTEM_PROCESSOR MATCHES "^(AMD64|amd64|x86_64)$")
-        set(_tlm_update_arch AMD64)
-    elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "^(ARM64|arm64|aarch64)$")
-        set(_tlm_update_arch ARM64)
-    else()
-        message(FATAL_ERROR "Unsupported Windows update architecture: ${CMAKE_SYSTEM_PROCESSOR}")
-    endif()
+    set(_tlm_update_arch x64)
 
     find_program(TLM_MAKENSIS_EXECUTABLE NAMES makensis makensis.exe
         HINTS "C:/Program Files (x86)/NSIS" "C:/Program Files/NSIS")

@@ -10,7 +10,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-latest, windows-latest]
+        os: [macos-15, windows-latest]
     runs-on: ${{ matrix.os }}
     timeout-minutes: 30
 
@@ -27,7 +27,18 @@ jobs:
           cache: true
 
       - name: Configure
-        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DTLM_BUILD_TESTS=ON
+        shell: bash
+        run: |
+          platform_args=()
+          if [[ "${RUNNER_OS}" == "macOS" ]]; then
+            platform_args+=("-DCMAKE_OSX_ARCHITECTURES=arm64")
+          else
+            platform_args+=(-A x64)
+          fi
+          cmake -S . -B build \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DTLM_BUILD_TESTS=ON \
+            "${platform_args[@]}"
 
       - name: Build native window policy test
         if: runner.os == 'Windows'

@@ -129,6 +129,32 @@ private slots:
         settings.setLiquidGlassParameters(original);
     }
 
+    void liquidGlassPreviewDefersPersistenceUntilCommit() {
+        QStandardPaths::setTestModeEnabled(true);
+        AppSettings settings;
+        const LiquidGlassParameters original = settings.liquidGlassParameters();
+        LiquidGlassParameters modified = original;
+        modified.cornerRadius = original.cornerRadius < 127.0 ? original.cornerRadius + 1.0
+                                                             : original.cornerRadius - 1.0;
+        QSignalSpy parameterChanged(&settings, &AppSettings::liquidGlassParametersChanged);
+        QSignalSpy settingsChanged(&settings, &AppSettings::changed);
+
+        settings.previewLiquidGlassParameters(modified);
+        QVERIFY(settings.liquidGlassParameters() == modified);
+        QCOMPARE(parameterChanged.count(), 1);
+        QCOMPARE(settingsChanged.count(), 0);
+
+        AppSettings persistedBeforeCommit;
+        QVERIFY(persistedBeforeCommit.liquidGlassParameters() == original);
+
+        settings.setLiquidGlassParameters(modified);
+        QCOMPARE(parameterChanged.count(), 1);
+        QCOMPARE(settingsChanged.count(), 1);
+        AppSettings persistedAfterCommit;
+        QVERIFY(persistedAfterCommit.liquidGlassParameters() == modified);
+        settings.setLiquidGlassParameters(original);
+    }
+
     void updateChecksAreScheduledPerApplicationVersion() {
         QStandardPaths::setTestModeEnabled(true);
         AppSettings settings;

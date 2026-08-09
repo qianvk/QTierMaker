@@ -10,6 +10,12 @@ public test builds use prerelease tags such as `v0.2.0-beta.1`.
 5. Push an annotated tag. The `Platform Installers` workflow publishes checksums and
    `updates.json` with the GitHub Release.
 
+Stable releases publish only the supported native architectures:
+
+- `TierListMaker-<version>-Windows-x64-Setup.exe`
+- `TierListMaker-<version>-WinUpdate-x64.exe`
+- `TierListMaker-<version>-macOS-arm64.dmg`
+
 The application reads the GitHub Releases API. Stable builds ignore prereleases; beta builds accept
 both prerelease and stable releases and select the highest compatible Semantic Version. Downloads
 are accepted only when the release asset reports a matching platform, architecture, size, and

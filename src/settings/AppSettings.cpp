@@ -83,6 +83,37 @@ qreal realSetting(const QSettings& settings, QStringView key, qreal fallback) {
     return converted ? value : fallback;
 }
 
+LiquidGlassParameters readLiquidGlassParameters(const QSettings& settings) {
+    LiquidGlassParameters parameters;
+    parameters.cornerRadius =
+        realSetting(settings, settings_keys::liquidGlassCornerRadius, parameters.cornerRadius);
+    parameters.blurRadius =
+        realSetting(settings, settings_keys::liquidGlassBlurRadius, parameters.blurRadius);
+    parameters.refractionHeightFraction = realSetting(
+        settings, settings_keys::liquidGlassRefractionHeight,
+        parameters.refractionHeightFraction);
+    parameters.refractionAmountFraction = realSetting(
+        settings, settings_keys::liquidGlassRefractionAmount,
+        parameters.refractionAmountFraction);
+    parameters.chromaticAberration = realSetting(
+        settings, settings_keys::liquidGlassChromaticAberration,
+        parameters.chromaticAberration);
+    return normalizedLiquidGlassParameters(parameters);
+}
+
+void writeLiquidGlassParameters(QSettings& settings,
+                                const LiquidGlassParameters& parameters) {
+    settings.setValue(settings_keys::liquidGlassCornerRadius.toString(),
+                      parameters.cornerRadius);
+    settings.setValue(settings_keys::liquidGlassBlurRadius.toString(), parameters.blurRadius);
+    settings.setValue(settings_keys::liquidGlassRefractionHeight.toString(),
+                      parameters.refractionHeightFraction);
+    settings.setValue(settings_keys::liquidGlassRefractionAmount.toString(),
+                      parameters.refractionAmountFraction);
+    settings.setValue(settings_keys::liquidGlassChromaticAberration.toString(),
+                      parameters.chromaticAberration);
+}
+
 QString fallbackProjectDirectory() {
     QString path = QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation);
     if (path.isEmpty()) {
@@ -94,7 +125,14 @@ QString fallbackProjectDirectory() {
 
 AppSettings::AppSettings(QObject* parent)
     : QObject(parent),
-      m_settings(QStringLiteral("TierListMaker"), QStringLiteral("TierListMaker")) {}
+      m_settings(QStringLiteral("TierListMaker"), QStringLiteral("TierListMaker")),
+      m_liquidGlassParameters(readLiquidGlassParameters(m_settings)) {}
+
+AppSettings::~AppSettings() {
+    if (m_liquidGlassParametersDirty) {
+        writeLiquidGlassParameters(m_settings, m_liquidGlassParameters);
+    }
+}
 
 QString AppSettings::language() const {
     return m_settings.value(settings_keys::language.toString(), QStringLiteral("system"))
@@ -340,41 +378,39 @@ void AppSettings::setPreviewEffect(BackdropEffect effect) {
 }
 
 LiquidGlassParameters AppSettings::liquidGlassParameters() const {
-    LiquidGlassParameters parameters;
-    parameters.cornerRadius =
-        realSetting(m_settings, settings_keys::liquidGlassCornerRadius,
-                    parameters.cornerRadius);
-    parameters.blurRadius =
-        realSetting(m_settings, settings_keys::liquidGlassBlurRadius, parameters.blurRadius);
-    parameters.refractionHeightFraction =
-        realSetting(m_settings, settings_keys::liquidGlassRefractionHeight,
-                    parameters.refractionHeightFraction);
-    parameters.refractionAmountFraction =
-        realSetting(m_settings, settings_keys::liquidGlassRefractionAmount,
-                    parameters.refractionAmountFraction);
-    parameters.chromaticAberration =
-        realSetting(m_settings, settings_keys::liquidGlassChromaticAberration,
-                    parameters.chromaticAberration);
-    return normalizedLiquidGlassParameters(parameters);
+    return m_liquidGlassParameters;
+}
+
+void AppSettings::previewLiquidGlassParameters(const LiquidGlassParameters& parameters) {
+    const LiquidGlassParameters normalized = normalizedLiquidGlassParameters(parameters);
+    if (m_liquidGlassParameters == normalized) {
+        return;
+    }
+
+    m_liquidGlassParameters = normalized;
+    m_liquidGlassParametersDirty = true;
+    emit liquidGlassParametersChanged();
 }
 
 void AppSettings::setLiquidGlassParameters(const LiquidGlassParameters& parameters) {
     const LiquidGlassParameters normalized = normalizedLiquidGlassParameters(parameters);
-    if (liquidGlassParameters() == normalized) {
+    const bool valueChanged = m_liquidGlassParameters != normalized;
+    const bool persistenceChanged = readLiquidGlassParameters(m_settings) != normalized;
+    if (!valueChanged && !persistenceChanged && !m_liquidGlassParametersDirty) {
         return;
     }
 
-    m_settings.setValue(settings_keys::liquidGlassCornerRadius.toString(),
-                        normalized.cornerRadius);
-    m_settings.setValue(settings_keys::liquidGlassBlurRadius.toString(), normalized.blurRadius);
-    m_settings.setValue(settings_keys::liquidGlassRefractionHeight.toString(),
-                        normalized.refractionHeightFraction);
-    m_settings.setValue(settings_keys::liquidGlassRefractionAmount.toString(),
-                        normalized.refractionAmountFraction);
-    m_settings.setValue(settings_keys::liquidGlassChromaticAberration.toString(),
-                        normalized.chromaticAberration);
-    emit liquidGlassParametersChanged();
-    emit changed();
+    m_liquidGlassParameters = normalized;
+    m_liquidGlassParametersDirty = false;
+    if (persistenceChanged) {
+        writeLiquidGlassParameters(m_settings, normalized);
+    }
+    if (valueChanged) {
+        emit liquidGlassParametersChanged();
+    }
+    if (persistenceChanged) {
+        emit changed();
+    }
 }
 
 QString AppSettings::defaultExportFormat() const {

@@ -22,7 +22,6 @@
 #include <QResizeEvent>
 #include <QScrollArea>
 #include <QSizePolicy>
-#include <QSlider>
 #include <QSpinBox>
 #include <QStackedWidget>
 #include <QStyledItemDelegate>
@@ -35,10 +34,11 @@
 
 #include <vkui/core/VkIcon.h>
 #include <vkui/widgets/VkComboBox.h>
+#include <vkui/widgets/controls/VkSlider.h>
 #include <vkui/widgets/controls/VkSwitch.h>
 
 #ifndef TLM_APP_VERSION
-#define TLM_APP_VERSION "0.2.0-beta.4"
+#define TLM_APP_VERSION "0.2.0"
 #endif
 
 #ifndef TLM_GIT_COMMIT
@@ -56,7 +56,7 @@ constexpr int kAboutPageIndex = 3;
 
 struct ParameterSlider final {
     QWidget* widget{nullptr};
-    QSlider* slider{nullptr};
+    vkui::VkSlider* slider{nullptr};
     QLabel* valueLabel{nullptr};
     qreal maximum{1.0};
     int steps{1000};
@@ -203,9 +203,11 @@ ParameterSlider createParameterSlider(qreal value, qreal maximum, int steps,
     layout->setContentsMargins(0, 0, 0, 0);
     layout->setSpacing(10);
 
-    auto* slider = new QSlider(Qt::Horizontal, field);
+    auto* slider = new vkui::VkSlider(Qt::Horizontal, field);
     slider->setRange(0, steps);
-    slider->setTracking(false);
+    // Keep the public value synchronized with the handle while it is dragged so live
+    // Liquid Glass consumers never restart from the last released position.
+    slider->setTracking(true);
     slider->setValue(qRound(qBound<qreal>(0.0, value, maximum) / maximum * steps));
     slider->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
 
@@ -217,7 +219,6 @@ ParameterSlider createParameterSlider(qreal value, qreal maximum, int steps,
     const auto updateLabel = [valueLabel, formatter, maximum, steps](int sliderValue) {
         valueLabel->setText(formatter(maximum * sliderValue / steps));
     };
-    QObject::connect(slider, &QSlider::sliderMoved, valueLabel, updateLabel);
     QObject::connect(slider, &QSlider::valueChanged, valueLabel, updateLabel);
 
     layout->addWidget(slider, 1);
@@ -771,7 +772,16 @@ QWidget* PreferencesPage::createLiquidGlassPage() {
             }
             LiquidGlassParameters updated = m_settings->liquidGlassParameters();
             updated.*member = parameterSliderValue(control);
-            m_settings->setLiquidGlassParameters(updated);
+            if (control.slider->isSliderDown()) {
+                m_settings->previewLiquidGlassParameters(updated);
+            } else {
+                m_settings->setLiquidGlassParameters(updated);
+            }
+        });
+        connect(control.slider, &QSlider::sliderReleased, this, [this]() {
+            if (m_settings) {
+                m_settings->setLiquidGlassParameters(m_settings->liquidGlassParameters());
+            }
         });
     };
     bindParameter(cornerRadius, &LiquidGlassParameters::cornerRadius);

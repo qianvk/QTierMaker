@@ -20,6 +20,7 @@ class AppSettings : public QObject {
 
 public:
     explicit AppSettings(QObject* parent = nullptr);
+    ~AppSettings() override;
 
     QString language() const;
     void setLanguage(const QString& language);
@@ -59,6 +60,7 @@ public:
     BackdropEffect previewEffect() const;
     void setPreviewEffect(BackdropEffect effect);
     LiquidGlassParameters liquidGlassParameters() const;
+    void previewLiquidGlassParameters(const LiquidGlassParameters& parameters);
     void setLiquidGlassParameters(const LiquidGlassParameters& parameters);
 
     QString defaultExportFormat() const;
@@ -89,6 +91,8 @@ signals:
 
 private:
     QSettings m_settings;
+    LiquidGlassParameters m_liquidGlassParameters;
+    bool m_liquidGlassParametersDirty{false};
 };
 
 } // namespace tlm

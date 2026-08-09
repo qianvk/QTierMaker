@@ -4,3 +4,4 @@
 [submodule "third_party/vkui"]
 	path = third_party/vkui
 	url = https://github.com/qianvk/vkui.git
+	branch = dev
