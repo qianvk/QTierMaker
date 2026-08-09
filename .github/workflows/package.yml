@@ -20,7 +20,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: macos-latest
+          - os: macos-15
             cpack_generator: DragNDrop
             artifact_name: TierListMaker-macOS
             artifact_glob: dist/*.dmg
@@ -105,8 +105,14 @@ jobs:
           MACOS_SIGNING_IDENTITY: ${{ secrets.MACOS_SIGNING_IDENTITY }}
         run: |
           signing_identity=""
+          platform_args=()
           if [[ "${RUNNER_OS}" == "macOS" && "${HAS_MACOS_CERTIFICATE}" == "true" ]]; then
             signing_identity="${MACOS_SIGNING_IDENTITY}"
+          fi
+          if [[ "${RUNNER_OS}" == "macOS" ]]; then
+            platform_args+=("-DCMAKE_OSX_ARCHITECTURES=arm64")
+          else
+            platform_args+=(-A x64)
           fi
           # Let CMake select the platform-native generator. In particular, forcing
           # Ninja on Windows can pair MinGW from PATH with the MSVC Qt package.
@@ -114,7 +120,8 @@ jobs:
             -DCMAKE_BUILD_TYPE=Release \
             -DTLM_BUILD_TESTS=ON \
             "-DTLM_PACKAGE_VERSION=${TLM_PACKAGE_VERSION}" \
-            "-DTLM_MACOS_CODESIGN_IDENTITY=${signing_identity}"
+            "-DTLM_MACOS_CODESIGN_IDENTITY=${signing_identity}" \
+            "${platform_args[@]}"
 
       - name: Build
         run: cmake --build build/package --config Release --parallel
@@ -278,9 +285,9 @@ jobs:
           if [[ "${version}" == *-* ]]; then
             channel="beta"
           fi
-          windows_path="$(find release-assets -maxdepth 1 -name '*-Windows-*.exe' -print -quit)"
+          windows_path="$(find release-assets -maxdepth 1 -name '*-Windows-x64-Setup.exe' -print -quit)"
           windows_update_path="$(find release-assets -maxdepth 1 -name '*-WinUpdate-*.exe' -print -quit)"
-          macos_path="$(find release-assets -maxdepth 1 -name '*-Darwin-*.dmg' -print -quit)"
+          macos_path="$(find release-assets -maxdepth 1 -name '*-macOS-arm64.dmg' -print -quit)"
           runtime_path="release-assets/TierListMaker-Windows-runtime-version.txt"
           test -n "${windows_path}" && test -n "${windows_update_path}" && \
             test -n "${macos_path}" && test -f "${runtime_path}"

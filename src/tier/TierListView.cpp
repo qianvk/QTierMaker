@@ -481,7 +481,7 @@ void TierListView::setLiquidGlassParameters(const LiquidGlassParameters& paramet
     }
     m_liquidGlassParameters = normalized;
     m_missionBackdropCache.clear();
-    if (viewport()) {
+    if (viewport() && (m_missionControlActive || m_missionTransitionProgress > 0.001)) {
         viewport()->update();
     }
 }
