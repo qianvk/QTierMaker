@@ -52,7 +52,7 @@
 #include <vkui/core/VkIcon.h>
 #include <vkui/widgets/VkComboBox.h>
 
-namespace tlm {
+namespace qtm {
 
 namespace {
 enum ProjectRole {
@@ -186,7 +186,7 @@ QString fallbackProjectDirectory() {
     if (path.isEmpty()) {
         path = QDir::homePath();
     }
-    return QDir::cleanPath(QDir(path).filePath(QStringLiteral("TierListMaker")));
+    return QDir::cleanPath(QDir(path).filePath(QStringLiteral("QTierMaker")));
 }
 
 QString projectParentDirectoryForPath(const QString& projectPath) {
@@ -481,7 +481,7 @@ public:
             monogramFont.setPointSize(monogramFont.pointSize() + 5);
             painter->setFont(monogramFont);
             painter->setPen(colors.primaryText);
-            painter->drawText(thumb, Qt::AlignCenter, QStringLiteral("TLM"));
+            painter->drawText(thumb, Qt::AlignCenter, QStringLiteral("QTM"));
         }
 
         const QString name = index.data(Qt::DisplayRole).toString();
@@ -502,13 +502,13 @@ public:
         const QColor metaColor = exists ? colors.tertiaryText : colors.destructive;
         painter->setPen(metaColor);
         const QString meta =
-            QCoreApplication::translate("tlm::ProjectsPage",
+            QCoreApplication::translate("qtm::ProjectsPage",
                                         "Updated %1  |  Created %2  |  %3 rows, %4 images%5")
                 .arg(updated.toLocalTime().toString(QStringLiteral("yyyy-MM-dd hh:mm")),
                      created.toLocalTime().toString(QStringLiteral("yyyy-MM-dd")),
                      index.data(RowCountRole).toString(), index.data(ImageCountRole).toString(),
                      exists ? QString()
-                            : QCoreApplication::translate("tlm::ProjectsPage", "  |  Missing"));
+                            : QCoreApplication::translate("qtm::ProjectsPage", "  |  Missing"));
         painter->drawText(
             textRect.adjusted(0, 24, 0, 0), Qt::AlignLeft | Qt::AlignTop,
             painter->fontMetrics().elidedText(meta, Qt::ElideRight, textRect.width()));
@@ -528,7 +528,7 @@ private:
 };
 
 class ProjectCoverDialog final : public AppDialog {
-    Q_DECLARE_TR_FUNCTIONS(tlm::ProjectCoverDialog)
+    Q_DECLARE_TR_FUNCTIONS(qtm::ProjectCoverDialog)
 
 public:
     ProjectCoverDialog(const QString& initialImagePath, const QRectF& initialCrop,
@@ -773,7 +773,7 @@ void ProjectsPage::openProjectFromDialog() {
     const QString directory =
         m_settings ? m_settings->defaultProjectDirectory() : fallbackProjectDirectory();
     const QString path = QFileDialog::getOpenFileName(this, tr("Open Project"), directory,
-                                                      tr("TierListMaker Projects (*.tlmproject)"));
+                                                      tr("QTierMaker Projects (*.qtmproject *.tlmproject)"));
     if (!path.isEmpty()) {
         emit openProjectRequested(path);
     }
@@ -1214,4 +1214,4 @@ void ProjectsPage::deleteSelectedProject() {
     Logger::info(QStringLiteral("projects.delete path=\"%1\"").arg(entry.filePath));
 }
 
-} // namespace tlm
+} // namespace qtm

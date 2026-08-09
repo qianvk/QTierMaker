@@ -5,7 +5,7 @@
 #include <QStandardPaths>
 #include <QTextStream>
 
-namespace tlm {
+namespace qtm {
 
 Logger* Logger::s_instance = nullptr;
 
@@ -13,7 +13,7 @@ Logger::Logger(QObject* parent) : QObject(parent) {
     s_instance = this;
     const QString base = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
     QDir().mkpath(QDir(base).filePath(QStringLiteral("logs")));
-    m_file.setFileName(QDir(base).filePath(QStringLiteral("logs/tierlistmaker.log")));
+    m_file.setFileName(QDir(base).filePath(QStringLiteral("logs/qtiermaker.log")));
     if (!m_file.open(QIODevice::WriteOnly | QIODevice::Append | QIODevice::Text)) {
         m_file.setFileName(QString());
     }
@@ -107,4 +107,4 @@ QString Logger::levelName(Level level) {
     return QStringLiteral("info");
 }
 
-} // namespace tlm
+} // namespace qtm

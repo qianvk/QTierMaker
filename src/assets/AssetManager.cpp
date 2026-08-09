@@ -8,7 +8,7 @@
 #include <QImageReader>
 #include <QUuid>
 
-namespace tlm {
+namespace qtm {
 
 AssetManager::AssetManager(QObject* parent) : QObject(parent) {
     m_sessionDir.setAutoRemove(true);
@@ -224,4 +224,4 @@ bool AssetManager::isSessionAsset(const QString& path) const {
     return QFileInfo(path).absoluteFilePath().startsWith(QFileInfo(m_sessionDir.path()).absoluteFilePath());
 }
 
-} // namespace tlm
+} // namespace qtm

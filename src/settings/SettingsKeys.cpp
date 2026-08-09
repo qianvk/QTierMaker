@@ -1,5 +1,5 @@
 #include "settings/SettingsKeys.h"
 
-namespace tlm {
-} // namespace tlm
+namespace qtm {
+} // namespace qtm
 

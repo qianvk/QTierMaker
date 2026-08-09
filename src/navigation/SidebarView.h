@@ -2,7 +2,7 @@
 
 #include <QListView>
 
-namespace tlm {
+namespace qtm {
 
 /** Left navigation view configured for keyboard, mouse, and HiDPI sidebar use. */
 class SidebarView : public QListView {
@@ -21,4 +21,4 @@ private:
     int m_availableWidth{208};
 };
 
-} // namespace tlm
+} // namespace qtm

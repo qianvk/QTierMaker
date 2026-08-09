@@ -2,24 +2,44 @@
 #include "window/AppDialog.h"
 
 #include <QApplication>
+#include <QLabel>
+#include <QLayout>
 #include <QPointer>
 #include <QPushButton>
 #include <QtTest>
 
-#include <QWKWidgets/widgetwindowagent.h>
+#include <vkui/window/VkWindowAgent.h>
 
 #if defined(Q_OS_WIN)
 #include <qt_windows.h>
 #endif
 
-using namespace tlm;
+using namespace qtm;
 
 class WindowLifecycleTest final : public QObject {
     Q_OBJECT
 
 private slots:
+    void editDialogsLeadWithTitle();
     void dialogClosePreservesWindowInput();
 };
+
+void WindowLifecycleTest::editDialogsLeadWithTitle() {
+    AppDialog dialog(QStringLiteral("Edit Image"));
+    dialog.resize(480, 320);
+    dialog.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&dialog));
+    QCOMPARE(dialog.closeButtonPlacement(), AppDialog::CloseButtonPlacement::Hidden);
+
+    auto* title =
+        dialog.findChild<QLabel*>(QStringLiteral("VkFramelessDialogTitleLabel"));
+    QVERIFY(title != nullptr);
+    QCOMPARE(title->parentWidget(), dialog.titleBar());
+    QTRY_COMPARE(title->geometry().left(),
+                 dialog.titleBar()->layout()->contentsMargins().left());
+    QCOMPARE(dialog.windowAgent()->systemButtonVisibility(),
+             vkui::VkWindowAgent::SystemButtonVisibility::AlwaysHidden);
+}
 
 #if defined(Q_OS_WIN)
 namespace {
@@ -38,8 +58,7 @@ POINT nativeScreenPosition(QWidget& host, const QPoint& hostPosition) {
 LRESULT hitTestAt(QWidget& host, const QPoint& hostPosition) {
     const HWND hwnd = reinterpret_cast<HWND>(host.winId());
     const POINT screenPosition = nativeScreenPosition(host, hostPosition);
-    return ::SendMessageW(hwnd, WM_NCHITTEST, 0,
-                          MAKELPARAM(screenPosition.x, screenPosition.y));
+    return ::SendMessageW(hwnd, WM_NCHITTEST, 0, MAKELPARAM(screenPosition.x, screenPosition.y));
 }
 
 QPoint findCaptionPoint(QWidget& host) {
@@ -90,7 +109,7 @@ void WindowLifecycleTest::dialogClosePreservesWindowInput() {
     PreviewOverlay preview(&host);
     preview.setGeometry(host.rect());
 
-    QWK::WidgetWindowAgent hostAgent;
+    vkui::VkWindowAgent hostAgent;
     hostAgent.setResizable(true);
     QVERIFY(hostAgent.setup(&host));
     QVERIFY(hostAgent.installSystemButtons());
@@ -132,8 +151,8 @@ void WindowLifecycleTest::dialogClosePreservesWindowInput() {
     pixmap.fill(Qt::red);
     preview.openPreview(QRect(host.rect().center(), QSize(40, 30)), pixmap);
     QTRY_VERIFY(preview.isOpen());
-    QCOMPARE(QWidget::mouseGrabber(), &preview);
-    QCOMPARE(QWidget::keyboardGrabber(), &preview);
+    QVERIFY(!QWidget::mouseGrabber());
+    QVERIFY(!QWidget::keyboardGrabber());
 
     const QPoint outsideInOverlay(8, preview.height() - 8);
     const QPoint outsideInHost = preview.mapTo(&host, outsideInOverlay);

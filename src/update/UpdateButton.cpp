@@ -10,7 +10,7 @@
 #include <cmath>
 #include <numbers>
 
-namespace tlm {
+namespace qtm {
 
 UpdateButton::UpdateButton(QWidget* parent) : QToolButton(parent), m_attentionAnimation(this) {
     setObjectName(QStringLiteral("UpdateButton"));
@@ -138,4 +138,4 @@ void UpdateButton::playAttentionAnimation() {
     m_attentionAnimation.start();
 }
 
-} // namespace tlm
+} // namespace qtm

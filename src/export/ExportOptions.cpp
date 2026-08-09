@@ -1,6 +1,6 @@
 #include "export/ExportOptions.h"
 
-namespace tlm {
+namespace qtm {
 
 ExportFormat ExportOptions::formatFromSuffix(const QString& suffix) {
     const QString normalized = suffix.toLower();
@@ -25,5 +25,5 @@ QString ExportOptions::suffixForFormat(ExportFormat format) {
     }
 }
 
-} // namespace tlm
+} // namespace qtm
 

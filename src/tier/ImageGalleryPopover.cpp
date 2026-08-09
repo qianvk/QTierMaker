@@ -29,7 +29,7 @@
 #include <vkui/core/VkThemeManager.h>
 #include <vkui/widgets/overlays/VkPopover.h>
 
-namespace tlm {
+namespace qtm {
 
 namespace {
 constexpr int kMinimumTileExtent = 44;
@@ -60,8 +60,8 @@ QRect centeredCropSourceRect(const QPixmap& pixmap, const QSize& targetSize) {
     return QRect(0, (sourceSize.height() - cropHeight) / 2, sourceSize.width(), cropHeight);
 }
 
-QPixmap squareDragPixmap(const QPixmap& pixmap, const QSize& logicalSize, qreal devicePixelRatio,
-                         const QRect& sourceRect = {}) {
+QPixmap dragPixmap(const QPixmap& pixmap, const QSize& logicalSize, qreal devicePixelRatio,
+                   const QRect& sourceRect = {}) {
     if (pixmap.isNull() || logicalSize.isEmpty()) {
         return {};
     }
@@ -185,9 +185,10 @@ protected:
         auto* drag = new QDrag(this);
         drag->setMimeData(TierDragController::createMimeData(imageId));
         if (!pixmap.isNull()) {
-            const QRect crop =
-                image ? image->thumbnailSourceRect(pixmap.size(), sourceRect.size()) : QRect();
-            drag->setPixmap(squareDragPixmap(pixmap, sourceRect.size(), devicePixelRatioF(), crop));
+            const QRect crop = image ? m_owner->sourceRectForImage(
+                                           *image, pixmap, sourceRect.size())
+                                     : QRect();
+            drag->setPixmap(dragPixmap(pixmap, sourceRect.size(), devicePixelRatioF(), crop));
             drag->setHotSpot(event->pos() - sourceRect.topLeft());
         }
 
@@ -337,9 +338,10 @@ private:
         const QPixmap pixmap = m_owner->pixmapForImage(imageId, cell.size() * 2);
         if (!pixmap.isNull()) {
             const TierImage* image = m_owner->imageForId(imageId);
-            painter->drawPixmap(cell, pixmap,
-                                image ? image->thumbnailSourceRect(pixmap.size(), cell.size())
-                                      : centeredCropSourceRect(pixmap, cell.size()));
+            painter->drawPixmap(
+                cell, pixmap,
+                image ? m_owner->sourceRectForImage(*image, pixmap, cell.size())
+                      : centeredCropSourceRect(pixmap, cell.size()));
         }
         if (imageId == m_owner->m_selectedImageId) {
             painter->setPen(QPen(colors.accent, 2));
@@ -380,6 +382,8 @@ ImageGalleryPopover::ImageGalleryPopover(QWidget* parent)
     connect(m_popover, &vkui::VkPopover::closed, this, [this]() {
         if (!m_suspendedForPreview) {
             emit closed();
+        } else {
+            Logger::debug(QStringLiteral("tier.gallery.popover.preview.suspended logicalClose=0"));
         }
     });
     auto* previewShortcut = new QShortcut(QKeySequence(Qt::Key_Space), m_popover);
@@ -498,6 +502,9 @@ bool ImageGalleryPopover::suspendForPreview() {
     }
     m_suspendedForPreview = true;
     m_popover->closeImmediately();
+    Logger::debug(QStringLiteral("tier.gallery.popover.preview.suspend anchorValid=%1 imageId=%2")
+                      .arg(m_anchor != nullptr)
+                      .arg(m_selectedImageId));
     return true;
 }
 
@@ -505,13 +512,21 @@ bool ImageGalleryPopover::restoreAfterPreview() {
     if (!m_suspendedForPreview) {
         return false;
     }
-    m_suspendedForPreview = false;
     if (!m_anchor || !m_anchor->isVisible()) {
+        m_suspendedForPreview = false;
         emit closed();
+        Logger::warn(
+            QStringLiteral("tier.gallery.popover.preview.restore rejected anchorVisible=0"));
         return false;
     }
-    openFor(m_anchor);
-    return isOpen();
+    const QPointer<QWidget> anchor = m_anchor;
+    m_suspendedForPreview = false;
+    openFor(anchor);
+    const bool restored = isOpen();
+    Logger::debug(QStringLiteral("tier.gallery.popover.preview.restore open=%1 imageId=%2")
+                      .arg(restored)
+                      .arg(m_selectedImageId));
+    return restored;
 }
 
 bool ImageGalleryPopover::isOpen() const {
@@ -523,7 +538,7 @@ QRect ImageGalleryPopover::imageSourceRect(const QString& imageId) const {
 }
 
 QSize ImageGalleryPopover::sizeHint() const {
-    return QSize(qMax(1, m_columns) * m_tileExtent, qMax(1, m_rows) * m_tileExtent);
+    return m_gridSize.expandedTo(QSize(1, 1));
 }
 
 void ImageGalleryPopover::resizeEvent(QResizeEvent* event) {
@@ -586,30 +601,126 @@ QPixmap ImageGalleryPopover::pixmapForImage(const QString& imageId, QSize reques
         .pixmap(requestedSize.isEmpty() ? QSize(64, 64) : requestedSize);
 }
 
+QRect ImageGalleryPopover::sourceRectForImage(const TierImage& image, const QPixmap& pixmap,
+                                              const QSize& targetSize) const {
+    if (m_project && m_project->imagePresentationMode() == ImagePresentationMode::NoCrop) {
+        return QRect(QPoint(0, 0), pixmap.size());
+    }
+    return image.thumbnailSourceRect(pixmap.size(), targetSize);
+}
+
 QRect ImageGalleryPopover::cellRect(int index) const {
-    if (index < 0 || m_columns <= 0 || m_tileExtent <= 0) {
+    if (index < 0 || index >= m_cellRects.size()) {
         return {};
     }
-    const int row = index / m_columns;
-    const int column = index % m_columns;
-    return QRect(column * m_tileExtent, row * m_tileExtent, m_tileExtent, m_tileExtent);
+    return m_cellRects.at(index);
 }
 
 int ImageGalleryPopover::cellIndexAt(const QPoint& point) const {
-    if (!m_grid || !m_grid->rect().contains(point) || m_tileExtent <= 0 || m_columns <= 0) {
+    if (!m_grid || !m_grid->rect().contains(point)) {
         return -1;
     }
-    const int column = point.x() / m_tileExtent;
-    const int row = point.y() / m_tileExtent;
-    const int index = row * m_columns + column;
-    const int count = static_cast<int>(imageIds().size()) + 1;
-    return index >= 0 && index < count ? index : -1;
+    for (int index = 0; index < m_cellRects.size(); ++index) {
+        if (m_cellRects.at(index).contains(point)) {
+            return index;
+        }
+    }
+    return -1;
 }
 
 void ImageGalleryPopover::recalculateGrid(const QRect& availableGeometry) {
-    const int count = qMax(1, static_cast<int>(imageIds().size()) + 1);
+    const QStringList ids = imageIds();
+    const int count = qMax(1, static_cast<int>(ids.size()) + 1);
     const int maxWidth = qMax(kMinimumTileExtent, qMin(760, availableGeometry.width()));
     const int maxHeight = qMax(kMinimumTileExtent, availableGeometry.height());
+
+    m_cellRects.clear();
+    m_cellRects.reserve(count);
+
+    if (m_project && m_project->imagePresentationMode() == ImagePresentationMode::NoCrop) {
+        struct Candidate {
+            QVector<QRect> rects;
+            QSize size;
+            int tileHeight{kMinimumTileExtent};
+            int rows{1};
+            int maximumItemsPerRow{1};
+            qreal score{-std::numeric_limits<qreal>::max()};
+        };
+
+        Candidate best;
+        for (int tileHeight = kMinimumTileExtent; tileHeight <= kMaximumTileExtent;
+             tileHeight += 2) {
+            QVector<QSize> itemSizes;
+            itemSizes.reserve(count);
+            int widestItem = tileHeight;
+            for (const QString& imageId : ids) {
+                const TierImage* image = imageForId(imageId);
+                const QSize source = image && image->size().isValid() ? image->size() : QSize(1, 1);
+                const qreal aspect = static_cast<qreal>(source.width()) / qMax(1, source.height());
+                int itemWidth = qMax(1, qRound(tileHeight * aspect));
+                int itemHeight = tileHeight;
+                if (itemWidth > maxWidth) {
+                    itemWidth = maxWidth;
+                    itemHeight = qMax(1, qRound(itemWidth / qMax<qreal>(0.001, aspect)));
+                }
+                itemSizes.append(QSize(itemWidth, itemHeight));
+                widestItem = qMax(widestItem, itemWidth);
+            }
+            itemSizes.append(QSize(tileHeight, tileHeight));
+
+            for (int shelfWidth = widestItem; shelfWidth <= maxWidth; shelfWidth += 12) {
+                QVector<QRect> rects;
+                rects.reserve(count);
+                int x = 0;
+                int row = 0;
+                int usedWidth = 0;
+                int itemsInRow = 0;
+                int maximumItemsPerRow = 0;
+                qreal imageArea = 0.0;
+                for (const QSize& itemSize : std::as_const(itemSizes)) {
+                    if (x > 0 && x + itemSize.width() > shelfWidth) {
+                        maximumItemsPerRow = qMax(maximumItemsPerRow, itemsInRow);
+                        ++row;
+                        x = 0;
+                        itemsInRow = 0;
+                    }
+                    const int y = row * tileHeight + (tileHeight - itemSize.height()) / 2;
+                    rects.append(QRect(x, y, itemSize.width(), itemSize.height()));
+                    x += itemSize.width();
+                    usedWidth = qMax(usedWidth, x);
+                    imageArea += static_cast<qreal>(itemSize.width()) * itemSize.height();
+                    ++itemsInRow;
+                }
+                maximumItemsPerRow = qMax(maximumItemsPerRow, itemsInRow);
+                const int rows = row + 1;
+                const int usedHeight = rows * tileHeight;
+                if (usedHeight > maxHeight) {
+                    continue;
+                }
+
+                const qreal density = imageArea / qMax<qreal>(1.0, usedWidth * usedHeight);
+                const qreal aspect = static_cast<qreal>(usedWidth) / qMax(1, usedHeight);
+                const qreal targetAspect = count <= 6 ? 1.2 : 1.55;
+                const qreal score = tileHeight * 80.0 + density * 34.0 -
+                                    std::abs(aspect - targetAspect) * 18.0 - rows * 1.5;
+                if (score > best.score) {
+                    best = Candidate{std::move(rects), QSize(usedWidth, usedHeight), tileHeight,
+                                     rows, maximumItemsPerRow, score};
+                }
+            }
+        }
+
+        if (!best.rects.isEmpty()) {
+            m_cellRects = std::move(best.rects);
+            m_gridSize = best.size;
+            m_tileExtent = best.tileHeight;
+            m_rows = best.rows;
+            m_columns = best.maximumItemsPerRow;
+            requestThumbnails();
+            return;
+        }
+    }
+
     const int maxColumns = qMax(1, qMin(count, maxWidth / kMinimumTileExtent));
 
     int bestColumns = 1;
@@ -642,6 +753,13 @@ void ImageGalleryPopover::recalculateGrid(const QRect& availableGeometry) {
     m_columns = qMax(1, bestColumns);
     m_rows = qMax(1, bestRows);
     m_tileExtent = qBound(kMinimumTileExtent, bestTile, kMaximumTileExtent);
+    for (int index = 0; index < count; ++index) {
+        const int row = index / m_columns;
+        const int column = index % m_columns;
+        m_cellRects.append(QRect(column * m_tileExtent, row * m_tileExtent, m_tileExtent,
+                                 m_tileExtent));
+    }
+    m_gridSize = QSize(m_columns * m_tileExtent, m_rows * m_tileExtent);
     requestThumbnails();
 }
 
@@ -649,12 +767,17 @@ void ImageGalleryPopover::requestThumbnails() {
     if (!m_thumbnailCache || !m_project) {
         return;
     }
-    const QSize requestSize(m_tileExtent * 2, m_tileExtent * 2);
-    for (const TierImage& image : m_project->images) {
-        if (!image.assignedTierRowId.has_value()) {
-            m_thumbnailCache->requestThumbnail(image.id, resolvedPathForImage(image), requestSize);
+    const QStringList ids = imageIds();
+    for (int index = 0; index < ids.size(); ++index) {
+        const TierImage* image = imageForId(ids.at(index));
+        if (!image) {
+            continue;
         }
+        const QSize cellSize = cellRect(index).size();
+        const QSize requestSize =
+            cellSize.isValid() ? cellSize * 2 : QSize(m_tileExtent * 2, m_tileExtent * 2);
+        m_thumbnailCache->requestThumbnail(image->id, resolvedPathForImage(*image), requestSize);
     }
 }
 
-} // namespace tlm
+} // namespace qtm

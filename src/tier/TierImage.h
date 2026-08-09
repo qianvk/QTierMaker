@@ -7,7 +7,7 @@
 
 #include <optional>
 
-namespace tlm {
+namespace qtm {
 
 /** Persisted image metadata for an imported item. Large pixmaps are cached outside this class. */
 class TierImage {
@@ -30,4 +30,4 @@ public:
     QRect thumbnailSourceRect(const QSize& sourceSize, const QSize& targetSize) const;
 };
 
-} // namespace tlm
+} // namespace qtm

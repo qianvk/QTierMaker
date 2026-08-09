@@ -6,7 +6,7 @@ class QCheckBox;
 class QLabel;
 class QLineEdit;
 
-namespace tlm {
+namespace qtm {
 
 /** Project save location dialog with the same folder-first flow as the original new-project sheet. */
 class ProjectLocationDialog final : public AppDialog {
@@ -32,4 +32,4 @@ private:
     QCheckBox* m_defaultDirectoryCheck{nullptr};
 };
 
-} // namespace tlm
+} // namespace qtm

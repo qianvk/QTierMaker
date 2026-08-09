@@ -6,7 +6,7 @@
 #include <QPointer>
 #include <QWidget>
 
-#include <QWKCore/windowagentbase.h>
+#include <vkui/window/VkWindowAgent.h>
 
 class QFrame;
 class QDialog;
@@ -18,11 +18,7 @@ class QToolButton;
 class QVBoxLayout;
 class QVariantAnimation;
 
-namespace QWK {
-class WidgetWindowAgent;
-}
-
-namespace tlm {
+namespace qtm {
 
 class AppSettings;
 class AppTitleBar;
@@ -40,7 +36,7 @@ class ThumbnailCache;
 class AppUpdater;
 class UpdateButton;
 
-/** Root content widget registered with QWindowKit and responsible for page routing. */
+/** Root content widget registered with VkUI windowing and responsible for page routing. */
 class RootWidget : public QWidget {
     Q_OBJECT
 
@@ -53,7 +49,7 @@ public:
         return m_titleBar;
     }
     bool confirmClose();
-    void installWindowAgent(QWK::WidgetWindowAgent* agent);
+    void installWindowAgent(vkui::VkWindowAgent* agent);
 
 public slots:
     void switchToPage(AppPage page);
@@ -95,7 +91,7 @@ private:
     void updateUnsavedIndicators();
 
     AppTitleBar* m_titleBar{nullptr};
-    QWK::WidgetWindowAgent* m_windowAgent{nullptr};
+    vkui::VkWindowAgent* m_windowAgent{nullptr};
     QSplitter* m_splitter{nullptr};
     QFrame* m_sidebarShell{nullptr};
     QFrame* m_sidebar{nullptr};
@@ -121,10 +117,10 @@ private:
     bool m_hasActiveProject{false};
     bool m_sidebarCollapsed{false};
     bool m_tierFocusMode{false};
-    QWK::WindowAgentBase::SystemButtonVisibility m_savedSystemButtonVisibility{
-        QWK::WindowAgentBase::AlwaysVisible};
-    QWK::WindowAgentBase::SystemButtonVisibility m_previewSavedSystemButtonVisibility{
-        QWK::WindowAgentBase::AlwaysVisible};
+    vkui::VkWindowAgent::SystemButtonVisibility m_savedSystemButtonVisibility{
+        vkui::VkWindowAgent::SystemButtonVisibility::AlwaysVisible};
+    vkui::VkWindowAgent::SystemButtonVisibility m_previewSavedSystemButtonVisibility{
+        vkui::VkWindowAgent::SystemButtonVisibility::AlwaysVisible};
     bool m_previewSystemButtonStateCaptured{false};
     int m_currentSidebarWidth{0};
     int m_lastExpandedSidebarWidth{240};
@@ -135,4 +131,4 @@ private:
     QPoint m_focusMoveOffset;
 };
 
-} // namespace tlm
+} // namespace qtm

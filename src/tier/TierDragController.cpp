@@ -14,7 +14,7 @@
 
 #include <vkui/core/VkIcon.h>
 
-namespace tlm {
+namespace qtm {
 
 namespace {
 QRect centeredCropSourceRect(const QPixmap& pixmap, const QSize& targetSize) {
@@ -36,11 +36,11 @@ QRect centeredCropSourceRect(const QPixmap& pixmap, const QSize& targetSize) {
 } // namespace
 
 QString TierDragController::imageMimeType() {
-    return QStringLiteral("application/x-tierlistmaker-image-id");
+    return QStringLiteral("application/x-qtiermaker-image-id");
 }
 
 QString TierDragController::rowMimeType() {
-    return QStringLiteral("application/x-tierlistmaker-row-id");
+    return QStringLiteral("application/x-qtiermaker-row-id");
 }
 
 QMimeData* TierDragController::createMimeData(const QString& imageId) {
@@ -272,4 +272,4 @@ QPixmap ImageTileWidget::pixmap() const {
         .pixmap(QSize(m_tileExtent, m_tileExtent));
 }
 
-} // namespace tlm
+} // namespace qtm

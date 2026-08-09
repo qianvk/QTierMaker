@@ -6,7 +6,7 @@
 #include <QSize>
 #include <QString>
 
-namespace tlm {
+namespace qtm {
 
 /** Semantic parameters for a subdued content-layer backdrop. */
 struct FocusBackdropStyle final {
@@ -40,4 +40,4 @@ private:
     QPixmap m_rendered;
 };
 
-} // namespace tlm
+} // namespace qtm

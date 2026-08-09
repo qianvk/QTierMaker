@@ -2,7 +2,7 @@
 
 #include <QtTest>
 
-using namespace tlm;
+using namespace qtm;
 
 class tst_ProjectSerializer : public QObject {
     Q_OBJECT
@@ -16,7 +16,7 @@ private slots:
         ProjectSerializer serializer;
         auto data = serializer.serialize(project);
         QVERIFY(data);
-        auto loaded = serializer.deserialize(data.value(), QStringLiteral("/tmp/test.tlmproject"));
+        auto loaded = serializer.deserialize(data.value(), QStringLiteral("/tmp/test.qtmproject"));
         QVERIFY(loaded);
         QCOMPARE(loaded.value().name, project.name);
         QCOMPARE(loaded.value().rows.size(), 5);
@@ -63,7 +63,7 @@ private slots:
         ProjectSerializer serializer;
         auto data = serializer.serialize(project);
         QVERIFY(data);
-        auto loaded = serializer.deserialize(data.value(), QStringLiteral("/tmp/ordered.tlmproject"));
+        auto loaded = serializer.deserialize(data.value(), QStringLiteral("/tmp/ordered.qtmproject"));
         QVERIFY(loaded);
 
         QCOMPARE(loaded.value().rows.at(1).id, rowId);
@@ -78,6 +78,28 @@ private slots:
         QVERIFY(alphaImage);
         QVERIFY(alphaImage->hasCropRect());
         QCOMPARE(alphaImage->cropRect, QRectF(0.125, 0.25, 0.5, 0.5));
+    }
+
+    void preservesImagePresentationModeAndCropCleanup() {
+        TierProject project = TierProject::createUntitled();
+        QCOMPARE(project.imagePresentationMode(), ImagePresentationMode::Square);
+
+        TierImage image;
+        image.id = QStringLiteral("cropped-image");
+        image.cropRect = QRectF(0.1, 0.2, 0.7, 0.7);
+        project.images.append(image);
+        QCOMPARE(project.customCropCount(), 1);
+        QCOMPARE(project.clearCustomCrops(), 1);
+        QCOMPARE(project.customCropCount(), 0);
+        QVERIFY(project.setImagePresentationMode(ImagePresentationMode::NoCrop));
+
+        ProjectSerializer serializer;
+        const auto serialized = serializer.serialize(project);
+        QVERIFY(serialized);
+        const auto loaded = serializer.deserialize(serialized.value());
+        QVERIFY(loaded);
+        QCOMPARE(loaded.value().imagePresentationMode(), ImagePresentationMode::NoCrop);
+        QVERIFY(!loaded.value().imageById(QStringLiteral("cropped-image"))->hasCropRect());
     }
 };
 

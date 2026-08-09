@@ -13,11 +13,11 @@ namespace vkui {
 class VkPopover;
 }
 
-namespace tlm {
+namespace qtm {
 
 class GalleryGridWidget;
 
-/** Popup gallery for every imported image, with tight square cells and shared image drag MIME. */
+/** Popup gallery for every imported image, with tight adaptive cells and shared image drag MIME. */
 class ImageGalleryPopover final : public QWidget {
     Q_OBJECT
 
@@ -59,6 +59,8 @@ private:
     const TierImage* imageForId(const QString& imageId) const;
     QString resolvedPathForImage(const TierImage& image) const;
     QPixmap pixmapForImage(const QString& imageId, QSize requestedSize) const;
+    QRect sourceRectForImage(const TierImage& image, const QPixmap& pixmap,
+                             const QSize& targetSize) const;
     QRect cellRect(int index) const;
     int cellIndexAt(const QPoint& point) const;
     void recalculateGrid(const QRect& availableGeometry);
@@ -76,8 +78,10 @@ private:
     int m_tileExtent{72};
     int m_columns{1};
     int m_rows{1};
+    QSize m_gridSize{72, 72};
+    QVector<QRect> m_cellRects;
     bool m_outsideDismissSuspended{false};
     bool m_suspendedForPreview{false};
 };
 
-} // namespace tlm
+} // namespace qtm

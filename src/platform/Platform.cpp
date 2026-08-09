@@ -4,7 +4,7 @@
 #include <QFileInfo>
 #include <QUrl>
 
-namespace tlm::platform {
+namespace qtm::platform {
 
 bool openUrlOrPath(const QString& path) {
     const QUrl url = path.startsWith(QStringLiteral("http"))
@@ -31,5 +31,5 @@ QString platformName() {
 #endif
 }
 
-} // namespace tlm::platform
+} // namespace qtm::platform
 

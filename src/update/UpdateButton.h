@@ -6,7 +6,7 @@
 #include <QToolButton>
 #include <QVariantAnimation>
 
-namespace tlm {
+namespace qtm {
 
 /** Compact update action with event-driven attention and download progress states. */
 class UpdateButton final : public QToolButton {
@@ -34,4 +34,4 @@ private:
     QString m_installText;
 };
 
-} // namespace tlm
+} // namespace qtm

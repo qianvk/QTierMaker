@@ -3,8 +3,8 @@
 IDI_ICON1 ICON DISCARDABLE "@CMAKE_CURRENT_SOURCE_DIR@/resources/windows/app-icon.ico"
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION @TLM_VERSION_MAJOR@,@TLM_VERSION_MINOR@,@TLM_VERSION_PATCH@,0
- PRODUCTVERSION @TLM_VERSION_MAJOR@,@TLM_VERSION_MINOR@,@TLM_VERSION_PATCH@,0
+ FILEVERSION @QTM_VERSION_MAJOR@,@QTM_VERSION_MINOR@,@QTM_VERSION_PATCH@,0
+ PRODUCTVERSION @QTM_VERSION_MAJOR@,@QTM_VERSION_MINOR@,@QTM_VERSION_PATCH@,0
  FILEFLAGSMASK 0x3fL
 #ifdef _DEBUG
  FILEFLAGS VS_FF_DEBUG
@@ -20,12 +20,12 @@ BEGIN
         BLOCK "040904b0"
         BEGIN
             VALUE "CompanyName", "qianvk\0"
-            VALUE "FileDescription", "TierListMaker\0"
-            VALUE "FileVersion", "@TLM_PACKAGE_VERSION@\0"
-            VALUE "InternalName", "TierListMaker\0"
-            VALUE "OriginalFilename", "TierListMaker.exe\0"
-            VALUE "ProductName", "TierListMaker\0"
-            VALUE "ProductVersion", "@TLM_PACKAGE_VERSION@\0"
+            VALUE "FileDescription", "QTierMaker\0"
+            VALUE "FileVersion", "@QTM_PACKAGE_VERSION@\0"
+            VALUE "InternalName", "QTierMaker\0"
+            VALUE "OriginalFilename", "QTierMaker.exe\0"
+            VALUE "ProductName", "QTierMaker\0"
+            VALUE "ProductVersion", "@QTM_PACKAGE_VERSION@\0"
         END
     END
     BLOCK "VarFileInfo"

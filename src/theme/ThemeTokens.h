@@ -2,7 +2,7 @@
 
 #include <QColor>
 
-namespace tlm {
+namespace qtm {
 
 /** Semantic colors used by widgets so raw palettes remain centralized. */
 struct ThemeTokens {
@@ -36,4 +36,4 @@ struct ThemeTokens {
     QColor symbolDisabled;
 };
 
-} // namespace tlm
+} // namespace qtm

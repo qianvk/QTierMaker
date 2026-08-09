@@ -1,5 +1,5 @@
 #include "platform/Platform.h"
 
-namespace tlm::platform {
-} // namespace tlm::platform
+namespace qtm::platform {
+} // namespace qtm::platform
 

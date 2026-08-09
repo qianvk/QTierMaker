@@ -4,7 +4,7 @@
 #include <QString>
 #include <QStringList>
 
-namespace tlm {
+namespace qtm {
 
 /** Persisted row definition for one rank in a tier-list project. */
 class TierRow {
@@ -19,5 +19,5 @@ public:
     static TierRow makeDefault(QString label, QColor color, int order);
 };
 
-} // namespace tlm
+} // namespace qtm
 

@@ -8,7 +8,7 @@
 
 #include <optional>
 
-namespace tlm {
+namespace qtm {
 
 namespace {
 QString requiredString(const QJsonObject& object, const QString& key, QString* error) {
@@ -46,7 +46,7 @@ Result<QByteArray> ProjectSerializer::serialize(const TierProject& project) cons
     QJsonObject root;
     root.insert(QStringLiteral("schemaVersion"), schemaVersion);
     root.insert(QStringLiteral("app"),
-                QJsonObject{{QStringLiteral("name"), QStringLiteral("TierListMaker")},
+                QJsonObject{{QStringLiteral("name"), QStringLiteral("QTierMaker")},
                             {QStringLiteral("version"), QStringLiteral("0.1.0")}});
 
     root.insert(QStringLiteral("project"),
@@ -194,4 +194,4 @@ Result<TierProject> ProjectSerializer::deserialize(const QByteArray& data, const
     return Result<TierProject>::success(project);
 }
 
-} // namespace tlm
+} // namespace qtm

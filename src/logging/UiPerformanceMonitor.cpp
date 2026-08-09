@@ -21,7 +21,7 @@
 #include <sys/resource.h>
 #endif
 
-namespace tlm {
+namespace qtm {
 
 namespace {
 
@@ -168,30 +168,30 @@ public:
         for (const QObject* current = object; current; current = current->parent()) {
             const QString name = current->objectName();
             if (name == QStringLiteral("ToolbarButtonGroup") ||
-                current->inherits("tlm::AppTitleBar")) {
+                current->inherits("qtm::AppTitleBar")) {
                 result = Surface::EditorToolbar;
                 break;
             }
-            if (current->inherits("tlm::TierListView") ||
-                current->inherits("tlm::TierBoardWidget")) {
+            if (current->inherits("qtm::TierListView") ||
+                current->inherits("qtm::TierBoardWidget")) {
                 result = Surface::TierBoard;
                 break;
             }
-            if (current->inherits("tlm::SidebarView") || name == QStringLiteral("Sidebar") ||
+            if (current->inherits("qtm::SidebarView") || name == QStringLiteral("Sidebar") ||
                 name == QStringLiteral("SidebarShell")) {
                 result = Surface::Sidebar;
                 break;
             }
-            if (current->inherits("tlm::ProjectsPage")) {
+            if (current->inherits("qtm::ProjectsPage")) {
                 result = Surface::Projects;
                 break;
             }
-            if (current->inherits("tlm::PreferencesPage") ||
+            if (current->inherits("qtm::PreferencesPage") ||
                 name == QStringLiteral("PreferencesDialog")) {
                 result = Surface::Preferences;
                 break;
             }
-            if (current->inherits("tlm::MainWindow") ||
+            if (current->inherits("qtm::MainWindow") ||
                 (current->isWidgetType() && !current->parent())) {
                 result = Surface::Window;
             }
@@ -333,7 +333,7 @@ UiPerformanceMonitor* g_monitor = nullptr;
 
 UiPerformanceMonitor::UiPerformanceMonitor(QApplication* application, QObject* parent)
     : QObject(parent), d(new Private) {
-    const QByteArray requested = qgetenv("TLM_PERF_DIAGNOSTICS").trimmed();
+    const QByteArray requested = qgetenv("QTM_PERF_DIAGNOSTICS").trimmed();
     const bool explicitlyEnabled =
         requested == QByteArrayLiteral("1") ||
         requested.compare(QByteArrayLiteral("true"), Qt::CaseInsensitive) == 0;
@@ -367,7 +367,7 @@ UiPerformanceMonitor::UiPerformanceMonitor(QApplication* application, QObject* p
     connect(&d->timer, &QTimer::timeout, this, [this]() { d->writeSample(); });
     d->timer.start();
     Logger::info(QStringLiteral("ui.perf.monitor enabled intervalMs=2000 enableWith="
-                                "TLM_PERF_DIAGNOSTICS=1 disableWith=TLM_PERF_DIAGNOSTICS=0"));
+                                "QTM_PERF_DIAGNOSTICS=1 disableWith=QTM_PERF_DIAGNOSTICS=0"));
 }
 
 UiPerformanceMonitor::~UiPerformanceMonitor() {
@@ -476,4 +476,4 @@ bool UiPerformanceMonitor::eventFilter(QObject* watched, QEvent* event) {
     return QObject::eventFilter(watched, event);
 }
 
-} // namespace tlm
+} // namespace qtm

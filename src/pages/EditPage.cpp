@@ -60,7 +60,7 @@
 #include <vkui/core/VkIcon.h>
 #include <vkui/widgets/overlays/VkPopover.h>
 
-namespace tlm {
+namespace qtm {
 
 namespace {
 constexpr int kContentTitleBarHeight = 54;
@@ -492,7 +492,7 @@ bool EditPage::openProjectFromDialog() {
     }
     const QString directory = m_settings ? m_settings->defaultProjectDirectory() : QString();
     const QString path = QFileDialog::getOpenFileName(this, tr("Open Project"), directory,
-                                                      tr("TierListMaker Projects (*.tlmproject)"));
+                                                      tr("QTierMaker Projects (*.qtmproject *.tlmproject)"));
     if (path.isEmpty()) {
         return false;
     }
@@ -700,8 +700,9 @@ void EditPage::showTemplateMenu(QWidget* anchor) {
 
     addSection(tr("Custom"));
     QDir directory(managedTemplateDirectory());
-    const QFileInfoList files =
-        directory.entryInfoList({QStringLiteral("*.tlmtemplate")}, QDir::Files, QDir::Name);
+    const QFileInfoList files = directory.entryInfoList(
+        {QStringLiteral("*.qtmtemplate"), QStringLiteral("*.tlmtemplate")}, QDir::Files,
+        QDir::Name);
     if (files.isEmpty()) {
         auto* empty = new QLabel(tr("No custom templates saved."), content);
         empty->setObjectName(QStringLiteral("TemplatePopoverEmpty"));
@@ -1383,6 +1384,8 @@ void EditPage::buildUi() {
             &EditPage::removeImageFromTierRow);
     connect(m_board, &TierBoardWidget::imageRemoveFromGalleryRequested, this,
             &EditPage::removeImageFromGallery);
+    connect(m_board, &TierBoardWidget::imagePresentationModeRequested, this,
+            &EditPage::setImagePresentationMode);
     connect(m_board, &TierBoardWidget::imageSelected, this, &EditPage::setSelectedImageId);
     connect(m_board, &TierBoardWidget::imagePreviewRequested, this,
             [this](const QString& imageId, const QRect& source) {
@@ -1460,20 +1463,22 @@ QString EditPage::chooseTemplatePath(bool saveDialog) {
     const QString directory =
         m_settings ? m_settings->defaultProjectDirectory()
                    : QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation);
-    const QString suffix = QStringLiteral(".tlmtemplate");
+    const QString suffix = QStringLiteral(".qtmtemplate");
     const QString suggested =
         saveDialog
             ? QDir(directory.isEmpty() ? QDir::homePath() : directory)
                   .filePath(QFileInfo(m_project.suggestedFileName()).completeBaseName() + suffix)
             : directory;
-    const QString filter = tr("TierListMaker Templates (*.tlmtemplate);;TierListMaker Projects "
-                              "(*.tlmproject)");
+    const QString filter =
+        saveDialog
+            ? tr("QTierMaker Templates (*.qtmtemplate)")
+            : tr("QTierMaker Templates (*.qtmtemplate *.tlmtemplate);;QTierMaker Projects "
+                 "(*.qtmproject *.tlmproject)");
     QString path =
         saveDialog ? QFileDialog::getSaveFileName(this, tr("Save Template"), suggested, filter)
                    : QFileDialog::getOpenFileName(this, tr("Apply Template"), suggested, filter);
     if (saveDialog && !path.isEmpty() &&
-        !path.endsWith(QStringLiteral(".tlmtemplate"), Qt::CaseInsensitive) &&
-        !path.endsWith(QStringLiteral(".tlmproject"), Qt::CaseInsensitive)) {
+        !path.endsWith(QStringLiteral(".qtmtemplate"), Qt::CaseInsensitive)) {
         path += suffix;
     }
     if (!path.isEmpty() && m_settings) {
@@ -1702,7 +1707,7 @@ bool EditPage::saveManagedTemplateFromPrompt(QWidget* reopenAnchor) {
         return false;
     }
     const QString path =
-        directory.filePath(templateFileStem(templateName) + QStringLiteral(".tlmtemplate"));
+        directory.filePath(templateFileStem(templateName) + QStringLiteral(".qtmtemplate"));
     if (QFileInfo::exists(path) &&
         !confirmDestructiveAction(this, tr("Replace Template"),
                                   tr("Replace the existing template \"%1\"?").arg(templateName))) {
@@ -1728,9 +1733,28 @@ bool EditPage::saveManagedTemplateFromPrompt(QWidget* reopenAnchor) {
 QString EditPage::managedTemplateDirectory() const {
     QString base = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
     if (base.isEmpty()) {
-        base = QDir(QDir::homePath()).filePath(QStringLiteral(".tierlistmaker"));
+        base = QDir(QDir::homePath()).filePath(QStringLiteral(".qtiermaker"));
     }
-    return QDir(base).filePath(QStringLiteral("templates"));
+    const QString target = QDir(base).filePath(QStringLiteral("templates"));
+    QDir parent(base);
+    QString legacy;
+    if (parent.cdUp()) {
+        legacy = parent.filePath(QStringLiteral("TierListMaker/templates"));
+    } else {
+        legacy = QDir(QDir::homePath()).filePath(QStringLiteral(".tierlistmaker/templates"));
+    }
+    if (QFileInfo(legacy).isDir() && QDir().mkpath(target)) {
+        const QFileInfoList files = QDir(legacy).entryInfoList(
+            {QStringLiteral("*.tlmtemplate"), QStringLiteral("*.qtmtemplate")}, QDir::Files);
+        for (const QFileInfo& file : files) {
+            const QString targetName = file.completeBaseName() + QStringLiteral(".qtmtemplate");
+            const QString targetPath = QDir(target).filePath(targetName);
+            if (!QFileInfo::exists(targetPath)) {
+                QFile::copy(file.absoluteFilePath(), targetPath);
+            }
+        }
+    }
+    return target;
 }
 
 bool EditPage::applyTemplateFromDialog() {
@@ -1867,7 +1891,9 @@ void EditPage::editImage(const QString& imageId) {
         return;
     }
 
-    ImageEditDialog dialog(*image, pixmap, this);
+    const bool cropEnabled =
+        m_project.imagePresentationMode() == ImagePresentationMode::Square;
+    ImageEditDialog dialog(*image, pixmap, this, QSizeF(1.0, 1.0), cropEnabled);
     if (dialog.exec() != QDialog::Accepted) {
         Logger::debug(QStringLiteral("tier.edit.image.edit.cancel imageId=%1").arg(imageId));
         return;
@@ -1940,6 +1966,49 @@ void EditPage::removeImageFromGallery(const QString& imageId) {
     Logger::info(QStringLiteral("tier.edit.image.remove.from.gallery imageId=%1 remaining=%2")
                      .arg(imageId)
                      .arg(m_project.images.size()));
+    markDirty();
+    refreshUi();
+}
+
+void EditPage::setImagePresentationMode(ImagePresentationMode mode) {
+    const ImagePresentationMode previous = m_project.imagePresentationMode();
+    if (previous == mode) {
+        return;
+    }
+
+    int customCropCount = 0;
+    if (previous == ImagePresentationMode::Square && mode == ImagePresentationMode::NoCrop) {
+        customCropCount = m_project.customCropCount();
+        if (customCropCount > 0) {
+            AppMessageDialog prompt(
+                AppMessageDialog::Icon::Warning, tr("Use No Crop"),
+                tr("%n image(s) have a custom square crop. Switching to No Crop will remove "
+                   "those crop settings.",
+                   nullptr, customCropCount),
+                QDialogButtonBox::Cancel, this);
+            QAbstractButton* switchButton =
+                prompt.addButton(tr("Use No Crop"), QDialogButtonBox::AcceptRole);
+            QPushButton* cancelButton = prompt.button(QDialogButtonBox::Cancel);
+            prompt.setDefaultButton(cancelButton);
+            prompt.setEscapeButton(cancelButton);
+            prompt.exec();
+            if (prompt.clickedButton() != switchButton) {
+                Logger::debug(
+                    QStringLiteral("tier.edit.image.presentation.cancel mode=noCrop crops=%1")
+                        .arg(customCropCount));
+                return;
+            }
+        }
+        m_project.clearCustomCrops();
+    }
+
+    if (!m_project.setImagePresentationMode(mode)) {
+        return;
+    }
+    Logger::info(QStringLiteral("tier.edit.image.presentation.apply mode=%1 clearedCrops=%2")
+                     .arg(mode == ImagePresentationMode::NoCrop ? QStringLiteral("noCrop")
+                                                                : QStringLiteral("square"))
+                     .arg(customCropCount));
     markDirty();
     refreshUi();
 }
@@ -2231,4 +2300,4 @@ QPixmap EditPage::pixmapForImage(const QString& imageId) const {
     return QPixmap::fromImage(loaded.takeValue());
 }
 
-} // namespace tlm
+} // namespace qtm

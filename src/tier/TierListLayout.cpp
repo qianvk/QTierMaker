@@ -5,7 +5,7 @@
 #include <limits>
 #include <utility>
 
-namespace tlm {
+namespace qtm {
 
 namespace {
 constexpr int kContentLeadingBorder = 1;
@@ -37,15 +37,14 @@ QVector<int> distributeRowHeights(const QVector<int>& rowUnits, int availableHei
     return rowHeights;
 }
 
-int densestRow(const QVector<int>& imageCounts, const QVector<int>& rowUnits) {
+int densestRow(const QVector<qreal>& rowLoads, const QVector<int>& rowUnits) {
     int bestRow = 0;
-    for (int row = 1; row < imageCounts.size(); ++row) {
-        const qint64 left = static_cast<qint64>(qMax(0, imageCounts.at(row))) *
-                            qMax(1, rowUnits.at(bestRow));
-        const qint64 right = static_cast<qint64>(qMax(0, imageCounts.at(bestRow))) *
-                             qMax(1, rowUnits.at(row));
+    for (int row = 1; row < rowLoads.size(); ++row) {
+        const qreal left = qMax<qreal>(0.0, rowLoads.at(row)) * qMax(1, rowUnits.at(bestRow));
+        const qreal right = qMax<qreal>(0.0, rowLoads.at(bestRow)) * qMax(1, rowUnits.at(row));
         if (left > right ||
-            (left == right && imageCounts.at(row) > imageCounts.at(bestRow))) {
+            (qFuzzyCompare(left + 1.0, right + 1.0) &&
+             rowLoads.at(row) > rowLoads.at(bestRow))) {
             bestRow = row;
         }
     }
@@ -992,6 +991,98 @@ int TierRowGrid::insertionIndex(const QPoint& point, int itemCount) const {
     return qBound(0, line * safeColumns + column, itemCount);
 }
 
+QVector<QRect> TierRowGrid::itemRects(const QVector<QSize>& sourceSizes,
+                                      ImagePresentationMode mode) const {
+    QVector<QRect> rects;
+    rects.reserve(sourceSizes.size());
+    if (sourceSizes.isEmpty()) {
+        return rects;
+    }
+
+    const int availableWidth = qMax(1, contentRect.width() - kTileMargin * 2);
+    const int leading = contentRect.left() + kTileMargin;
+    const int trailing = leading + availableWidth;
+    int x = leading;
+    int y = contentRect.top();
+    for (const QSize& sourceSize : sourceSizes) {
+        int width = tileSide;
+        int height = tileSide;
+        if (mode == ImagePresentationMode::NoCrop) {
+            const qreal aspect = sourceSize.isValid()
+                                     ? static_cast<qreal>(sourceSize.width()) /
+                                           qMax(1, sourceSize.height())
+                                     : 1.0;
+            width = qMax(1, qRound(lineHeight * qMax<qreal>(0.001, aspect)));
+            height = lineHeight;
+
+            // A pathological panorama can remain wider than the board even at a one-pixel line
+            // height. Preserve its aspect ratio and center the shorter item in the shared line.
+            if (width > availableWidth) {
+                width = availableWidth;
+                height = qMax(1, qRound(width / qMax<qreal>(0.001, aspect)));
+            }
+        }
+
+        if (x > leading && x + width > trailing) {
+            x = leading;
+            y += qMax(1, lineHeight);
+        }
+        const int top = y + qMax(0, (lineHeight - height) / 2);
+        rects.append(QRect(x, top, width, height));
+        x += width + kTileSpacing;
+    }
+    return rects;
+}
+
+int TierRowGrid::requiredRows(const QVector<QSize>& sourceSizes,
+                              ImagePresentationMode mode) const {
+    if (sourceSizes.isEmpty()) {
+        return 1;
+    }
+    const QVector<QRect> rects = itemRects(sourceSizes, mode);
+    if (rects.isEmpty()) {
+        return 1;
+    }
+    return qMax(1, (rects.constLast().top() - contentRect.top()) / qMax(1, lineHeight) + 1);
+}
+
+int TierRowGrid::insertionIndex(const QPoint& point, const QVector<QSize>& sourceSizes,
+                                ImagePresentationMode mode) const {
+    const QVector<QRect> rects = itemRects(sourceSizes, mode);
+    if (rects.isEmpty()) {
+        return 0;
+    }
+
+    const int requestedLine =
+        qMax(0, (point.y() - contentRect.top()) / qMax(1, lineHeight));
+    int firstInLine = -1;
+    int lastInLine = -1;
+    for (int index = 0; index < rects.size(); ++index) {
+        const int line =
+            qMax(0, (rects.at(index).top() - contentRect.top()) / qMax(1, lineHeight));
+        if (line == requestedLine) {
+            if (firstInLine < 0) {
+                firstInLine = index;
+            }
+            lastInLine = index;
+        } else if (line > requestedLine) {
+            break;
+        }
+    }
+
+    if (firstInLine < 0) {
+        const int firstLine = qMax(
+            0, (rects.constFirst().top() - contentRect.top()) / qMax(1, lineHeight));
+        return requestedLine < firstLine ? 0 : static_cast<int>(rects.size());
+    }
+    for (int index = firstInLine; index <= lastInLine; ++index) {
+        if (point.x() < rects.at(index).center().x()) {
+            return index;
+        }
+    }
+    return lastInLine + 1;
+}
+
 TierRowGrid TierListLayout::gridForRow(const QRect& rowRect, int rowUnits, int labelWidth) {
     rowUnits = qMax(1, rowUnits);
     labelWidth = qMax(0, labelWidth);
@@ -1016,30 +1107,54 @@ int TierListLayout::requiredRowUnits(int imageCount, int rowWidth, int lineHeigh
 
 TierBoardLayoutMetrics TierListLayout::fitBoard(const QVector<int>& imageCounts,
                                                  const QSize& viewportSize, int labelWidth) {
+    QVector<QVector<QSize>> imageSizes;
+    imageSizes.reserve(imageCounts.size());
+    for (int count : imageCounts) {
+        imageSizes.append(QVector<QSize>(qMax(0, count), QSize(1, 1)));
+    }
+    return fitBoard(imageSizes, viewportSize, labelWidth, ImagePresentationMode::Square);
+}
+
+TierBoardLayoutMetrics TierListLayout::fitBoard(const QVector<QVector<QSize>>& imageSizes,
+                                                 const QSize& viewportSize, int labelWidth,
+                                                 ImagePresentationMode mode) {
     TierBoardLayoutMetrics result;
-    if (imageCounts.isEmpty()) {
+    if (imageSizes.isEmpty()) {
         return result;
     }
 
     const int rowWidth = qMax(1, viewportSize.width());
     const int availableHeight = qMax(1, viewportSize.height());
-    int maximumTotalUnits = 0;
-    for (int imageCount : imageCounts) {
-        maximumTotalUnits += qMax(1, imageCount);
+    QVector<qreal> rowLoads;
+    rowLoads.reserve(imageSizes.size());
+    int imageCountTotal = 0;
+    for (const QVector<QSize>& rowSizes : imageSizes) {
+        imageCountTotal += qMax(1, static_cast<int>(rowSizes.size()));
+        qreal load = 0.0;
+        for (const QSize& size : rowSizes) {
+            load += mode == ImagePresentationMode::NoCrop && size.isValid()
+                        ? static_cast<qreal>(size.width()) / qMax(1, size.height())
+                        : 1.0;
+        }
+        rowLoads.append(qMax<qreal>(1.0, load));
     }
 
-    const int minimumTotalUnits = imageCounts.size();
+    // No-crop rows may need more vertical units than their image count to keep a very wide image
+    // inside the board. Searching at most one unit per pixel is bounded and remains cheap.
+    const int maximumTotalUnits = qMax(imageCountTotal, availableHeight);
+    const int minimumTotalUnits = static_cast<int>(imageSizes.size());
     for (int totalUnits = minimumTotalUnits; totalUnits <= maximumTotalUnits; ++totalUnits) {
         // A distributed row can receive one remainder pixel per unit, so use the ceiling as the
         // worst (largest) tile side when proving that every row fits.
         const int maximumLineHeight =
             qMax(1, (availableHeight + totalUnits - 1) / totalUnits);
         QVector<int> rowUnits;
-        rowUnits.reserve(imageCounts.size());
+        rowUnits.reserve(imageSizes.size());
         int requiredTotalUnits = 0;
-        for (int row = 0; row < imageCounts.size(); ++row) {
-            const int required = requiredRowUnits(imageCounts.at(row), rowWidth,
-                                                  maximumLineHeight, labelWidth);
+        for (int row = 0; row < imageSizes.size(); ++row) {
+            const TierRowGrid grid = gridForRow(
+                QRect(0, 0, rowWidth, maximumLineHeight), 1, labelWidth);
+            const int required = grid.requiredRows(imageSizes.at(row), mode);
             rowUnits.append(required);
             requiredTotalUnits += required;
         }
@@ -1050,7 +1165,7 @@ TierBoardLayoutMetrics TierListLayout::fitBoard(const QVector<int>& imageCounts,
         // Spare vertical units go to the densest rows. This keeps the board balanced without
         // changing the fit proof, because the total unit count and maximum line height stay fixed.
         while (requiredTotalUnits < totalUnits) {
-            ++rowUnits[densestRow(imageCounts, rowUnits)];
+            ++rowUnits[densestRow(rowLoads, rowUnits)];
             ++requiredTotalUnits;
         }
         result.rowUnits = std::move(rowUnits);
@@ -1058,6 +1173,8 @@ TierBoardLayoutMetrics TierListLayout::fitBoard(const QVector<int>& imageCounts,
         return result;
     }
 
+    result.rowUnits = QVector<int>(imageSizes.size(), 1);
+    result.rowHeights = distributeRowHeights(result.rowUnits, availableHeight);
     return result;
 }
 
@@ -1166,4 +1283,4 @@ TierListLayout::applyMissionControlHover(const QVector<QRectF>& baseRects, int h
     return result;
 }
 
-} // namespace tlm
+} // namespace qtm

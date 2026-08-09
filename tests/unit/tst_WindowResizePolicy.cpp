@@ -1,11 +1,17 @@
+#include "window/AppDialog.h"
+
 #include <QDialog>
-#include <QPointer>
+#include <QLabel>
+#include <QLayout>
 #include <QPixmap>
+#include <QPointer>
 #include <QPushButton>
+#include <QToolButton>
 #include <QWidget>
 #include <QtTest>
 
-#include <QWKWidgets/widgetwindowagent.h>
+#include <vkui/window/VkFramelessDialog.h>
+#include <vkui/window/VkWindowAgent.h>
 
 #if defined(Q_OS_MACOS) || defined(Q_OS_MAC)
 #import <AppKit/AppKit.h>
@@ -18,6 +24,7 @@ class WindowResizePolicyTest final : public QObject {
 
 private slots:
     void nativeResizeIsOptIn();
+    void dialogClosePlacementTracksPolicy();
     void transientAgentNeverClaimsOwnerWindow();
 };
 
@@ -36,10 +43,55 @@ bool nativeWindowEnabled(QWidget& host) {
 } // namespace
 #endif
 
+void WindowResizePolicyTest::dialogClosePlacementTracksPolicy() {
+    QWidget host;
+    host.resize(960, 640);
+    host.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&host));
+
+    qtm::AppDialog dialog(QStringLiteral("Preferences"), &host);
+    dialog.setWindowModality(Qt::NonModal);
+    dialog.resize(520, 360);
+    dialog.setResizable(true);
+    dialog.setCloseButtonPlacement(qtm::AppDialog::CloseButtonPlacement::Platform);
+    dialog.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&dialog));
+    QCOMPARE(dialog.windowAgent()->systemButtonVisibility(),
+             vkui::VkWindowAgent::SystemButtonVisibility::AlwaysVisible);
+
+#if defined(Q_OS_MACOS) || defined(Q_OS_MAC)
+    auto* nativeView = reinterpret_cast<NSView*>(dialog.winId());
+    QVERIFY(nativeView != nil);
+    NSButton* closeButton = [nativeView.window standardWindowButton:NSWindowCloseButton];
+    QVERIFY(closeButton != nil);
+    QVERIFY(!closeButton.hidden);
+    QVERIFY(closeButton.superview != nil);
+    QVERIFY(NSIntersectsRect(closeButton.frame, closeButton.superview.bounds));
+#endif
+
+    dialog.setCloseButtonPlacement(vkui::VkFramelessDialog::CloseButtonPlacement::Hidden);
+    QCOMPARE(dialog.windowAgent()->systemButtonVisibility(),
+             vkui::VkWindowAgent::SystemButtonVisibility::AlwaysHidden);
+    auto* title =
+        dialog.findChild<QLabel*>(QStringLiteral("VkFramelessDialogTitleLabel"));
+    auto* fallbackClose =
+        dialog.findChild<QToolButton*>(QStringLiteral("VkFramelessDialogCloseButton"));
+    QVERIFY(title != nullptr);
+    QVERIFY(fallbackClose != nullptr);
+    QVERIFY(!fallbackClose->isVisible());
+    QCOMPARE(title->parentWidget(), dialog.titleBar());
+    QTRY_COMPARE(title->geometry().left(),
+                 dialog.titleBar()->layout()->contentsMargins().left());
+
+#if defined(Q_OS_MACOS) || defined(Q_OS_MAC)
+    QVERIFY(closeButton.hidden);
+#endif
+}
+
 void WindowResizePolicyTest::nativeResizeIsOptIn() {
     QWidget host;
     host.resize(480, 320);
-    QWK::WidgetWindowAgent agent;
+    vkui::VkWindowAgent agent;
     QVERIFY(!agent.isResizable());
     QVERIFY(agent.setup(&host));
     host.show();
@@ -98,7 +150,7 @@ void WindowResizePolicyTest::transientAgentNeverClaimsOwnerWindow() {
     QWidget hostTitleBar(&host);
     hostTitleBar.setGeometry(0, 0, host.width(), 44);
 
-    QWK::WidgetWindowAgent hostAgent;
+    vkui::VkWindowAgent hostAgent;
     hostAgent.setResizable(true);
     QVERIFY(hostAgent.setup(&host));
     QVERIFY(hostAgent.addTitleBar(&hostTitleBar));
@@ -116,7 +168,7 @@ void WindowResizePolicyTest::transientAgentNeverClaimsOwnerWindow() {
         auto* dialogTitleBar = new QWidget(dialog);
         dialogTitleBar->setGeometry(0, 0, dialog->width(), 44);
 
-        auto* dialogAgent = new QWK::WidgetWindowAgent(dialog);
+        auto* dialogAgent = new vkui::VkWindowAgent(dialog);
         QVERIFY(!dialog->internalWinId());
         QVERIFY(dialogAgent->setup(dialog));
         QVERIFY(!dialog->internalWinId());

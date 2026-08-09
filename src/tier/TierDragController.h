@@ -10,7 +10,7 @@
 
 class QKeyEvent;
 
-namespace tlm {
+namespace qtm {
 
 /** Shared MIME helpers for moving tier images through Qt drag-and-drop. */
 class TierDragController {
@@ -65,4 +65,4 @@ private:
     bool m_dragInProgress{false};
 };
 
-} // namespace tlm
+} // namespace qtm

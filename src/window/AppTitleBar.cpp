@@ -1,4 +1,5 @@
 #include "window/AppTitleBar.h"
+#include "window/CompositionAwareLineEdit.h"
 #include "window/MainWindow.h"
 
 #include <QApplication>
@@ -8,8 +9,8 @@
 #include <QKeyEvent>
 #include <QLabel>
 #include <QLineEdit>
-#include <QMoveEvent>
 #include <QMouseEvent>
+#include <QMoveEvent>
 #include <QResizeEvent>
 #include <QShortcut>
 #include <QSizePolicy>
@@ -18,10 +19,9 @@
 
 #include <algorithm>
 
-#include <QWKWidgets/widgetwindowagent.h>
 #include <vkui/core/VkIcon.h>
 
-namespace tlm {
+namespace qtm {
 
 namespace {
 constexpr int kTitleBarHorizontalMargin = 18;
@@ -72,7 +72,7 @@ AppTitleBar::AppTitleBar(QWidget* parent) : QWidget(parent) {
     // Qt style painting for every independent control without propagating hover updates through
     // the transparent title-bar widget and the dynamic page beneath it.
     QWidget* controlsParent = parent ? parent : this;
-    m_titleEdit = new QLineEdit(controlsParent);
+    m_titleEdit = new CompositionAwareLineEdit(controlsParent);
     m_titleEdit->setObjectName(QStringLiteral("ProjectTitleEdit"));
     m_titleEdit->setAlignment(Qt::AlignCenter);
     m_titleEdit->setPlaceholderText(tr("Untitled Tier List"));
@@ -111,7 +111,8 @@ AppTitleBar::AppTitleBar(QWidget* parent) : QWidget(parent) {
             [this]() { emit galleryRequested(m_galleryButton); });
     connect(m_resetButton, &QToolButton::clicked, this, &AppTitleBar::resetRowsRequested);
     connect(m_focusButton, &QToolButton::clicked, this, &AppTitleBar::tierFocusModeRequested);
-    connect(m_titleEdit, &QLineEdit::textChanged, this, &AppTitleBar::updateTitleWidth);
+    connect(m_titleEdit, &CompositionAwareLineEdit::visualTextChanged, this,
+            &AppTitleBar::updateTitleWidth);
 
     auto* cancelShortcut = new QShortcut(QKeySequence(Qt::Key_Escape), m_titleEdit);
     cancelShortcut->setContext(Qt::WidgetShortcut);
@@ -247,6 +248,7 @@ void AppTitleBar::submitTitleEdit(bool clearFocus) {
         return;
     }
     m_submittingTitle = true;
+    m_titleEdit->commitComposition();
     const QString title = m_titleEdit->text();
     if (clearFocus && m_titleEdit->hasFocus()) {
         m_titleEdit->clearFocus();
@@ -262,6 +264,7 @@ void AppTitleBar::cancelTitleEdit() {
         return;
     }
     m_cancelingTitleEdit = true;
+    m_titleEdit->cancelComposition();
     m_titleEdit->setText(m_titleEditBaseline);
     if (m_titleEdit->hasFocus()) {
         m_titleEdit->clearFocus();
@@ -280,8 +283,8 @@ void AppTitleBar::updateTitleWidth() {
     if (!m_titleEdit) {
         return;
     }
-    const QString measuredText =
-        m_titleEdit->text().isEmpty() ? m_titleEdit->placeholderText() : m_titleEdit->text();
+    const QString visualText = m_titleEdit->visualText();
+    const QString measuredText = visualText.isEmpty() ? m_titleEdit->placeholderText() : visualText;
     const int textWidth = QFontMetrics(m_titleEdit->font()).horizontalAdvance(measuredText);
     const int actionWidth = actionButtonsWidth() + (actionButtonsWidth() > 0 ? 28 : 18);
 #if defined(Q_OS_MACOS) || defined(Q_OS_MAC)
@@ -309,12 +312,11 @@ QLineEdit* AppTitleBar::titleEditor() const {
 }
 
 QList<QWidget*> AppTitleBar::interactiveWidgets() const {
-    return {m_titleEdit, m_templatesButton, m_backgroundButton, m_galleryButton, m_resetButton,
-            m_focusButton};
+    return {m_titleEdit,     m_templatesButton, m_backgroundButton,
+            m_galleryButton, m_resetButton,     m_focusButton};
 }
 
 void AppTitleBar::raiseChrome() {
-    raise();
     if (m_titleEdit) {
         m_titleEdit->raise();
     }
@@ -376,9 +378,8 @@ bool AppTitleBar::eventFilter(QObject* watched, QEvent* event) {
 }
 
 void AppTitleBar::mousePressEvent(QMouseEvent* event) {
-    const QRect titleRect = m_titleEdit
-                                ? QRect(mapFromParent(m_titleEdit->pos()), m_titleEdit->size())
-                                : QRect{};
+    const QRect titleRect =
+        m_titleEdit ? QRect(mapFromParent(m_titleEdit->pos()), m_titleEdit->size()) : QRect{};
     if (m_titleEdit && m_titleEdit->hasFocus() &&
         !titleRect.contains(event->position().toPoint())) {
         submitTitleEdit(true);
@@ -392,7 +393,7 @@ void AppTitleBar::moveEvent(QMoveEvent* event) {
 }
 
 void AppTitleBar::paintEvent(QPaintEvent* event) {
-    // The registered QWindowKit drag region is intentionally paint-free. Dynamic page content is
+    // The registered VkUI drag region is intentionally paint-free. Dynamic page content is
     // visible below it, while sibling controls keep independent interaction and dirty regions.
     event->accept();
 }
@@ -424,8 +425,7 @@ void AppTitleBar::updateTitleGeometry() {
     if (m_unsavedIndicator) {
         const int indicatorX = qMin(pos().x() + width() - m_unsavedIndicator->width() - 4,
                                     m_titleEdit->geometry().right() + 4);
-        const int indicatorY =
-            pos().y() + qMax(0, (height() - m_unsavedIndicator->height()) / 2);
+        const int indicatorY = pos().y() + qMax(0, (height() - m_unsavedIndicator->height()) / 2);
         m_unsavedIndicator->move(qMax(pos().x(), indicatorX), indicatorY);
         m_unsavedIndicator->raise();
     }
@@ -487,4 +487,4 @@ void AppTitleBar::removeTitleEditOutsideClickFilter() {
     m_titleEditOutsideClickFilterInstalled = false;
 }
 
-} // namespace tlm
+} // namespace qtm

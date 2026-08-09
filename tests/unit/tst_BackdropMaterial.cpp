@@ -2,7 +2,7 @@
 
 #include <QTest>
 
-using namespace tlm;
+using namespace qtm;
 
 namespace {
 QImage patternedSource() {

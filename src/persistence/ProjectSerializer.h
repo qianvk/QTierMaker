@@ -5,9 +5,9 @@
 
 #include <QByteArray>
 
-namespace tlm {
+namespace qtm {
 
-/** Converts TierProject instances to and from the stable `.tlmproject` JSON schema. */
+/** Converts TierProject instances to and from the stable QTierMaker JSON schema. */
 class ProjectSerializer {
 public:
     static constexpr int schemaVersion = 1;
@@ -16,5 +16,4 @@ public:
     Result<TierProject> deserialize(const QByteArray& data, const QString& filePath = {}) const;
 };
 
-} // namespace tlm
-
+} // namespace qtm

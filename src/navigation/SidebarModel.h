@@ -3,7 +3,7 @@
 #include <QAbstractListModel>
 #include <QIcon>
 
-namespace tlm {
+namespace qtm {
 
 enum class AppPage { Edit = 0, Projects = 1, Preferences = 2 };
 
@@ -38,5 +38,5 @@ private:
     QVector<Item> m_items;
 };
 
-} // namespace tlm
+} // namespace qtm
 

@@ -7,7 +7,7 @@
 
 #include <cmath>
 
-namespace tlm {
+namespace qtm {
 
 namespace {
 QSizeF normalizedAspectRatio(QSizeF ratio) {
@@ -219,4 +219,4 @@ QRectF CropEditorWidget::sourceRect() const {
                   crop.width() * m_pixmap.width(), crop.height() * m_pixmap.height());
 }
 
-} // namespace tlm
+} // namespace qtm

@@ -3,6 +3,7 @@
 #include "assets/BackdropMaterial.h"
 #include "assets/CoverImageCache.h"
 #include "settings/AppSettings.h"
+#include "tier/ImagePresentationMode.h"
 
 #include <QHash>
 #include <QListView>
@@ -27,7 +28,7 @@ class QPaintEvent;
 class QResizeEvent;
 class QVariantAnimation;
 
-namespace tlm {
+namespace qtm {
 
 class TierListDelegate;
 class TierListModel;
@@ -79,6 +80,7 @@ signals:
     void imageEditRequested(const QString& imageId);
     void imageRemoveFromTierRowRequested(const QString& imageId);
     void imageRemoveFromGalleryRequested(const QString& imageId);
+    void imagePresentationModeRequested(ImagePresentationMode mode);
     void rowEditRequested(const QString& rowId);
     void rowClearRequested(const QString& rowId);
     void rowDeleteRequested(const QString& rowId);
@@ -132,6 +134,7 @@ private:
     void updateImageDropIntent(const QModelIndex& target, int insertionIndex);
     void applyImagePreviewTargetRow(int targetRow);
     int previewImageCountForRow(int row) const;
+    QStringList previewImageIdsForRow(int row) const;
     int imageInsertionIndexForPosition(const QModelIndex& target, const QPoint& point) const;
     void animateImageOffset(const QString& imageId, const QPointF& targetOffset);
     void animateImagePlaceholder(const QRectF& targetRect);
@@ -252,4 +255,4 @@ private:
     mutable QVector<QRectF> m_missionHoverLayoutCacheRects;
 };
 
-} // namespace tlm
+} // namespace qtm

@@ -10,7 +10,7 @@
 #include <QStyledItemDelegate>
 #include <QVector>
 
-namespace tlm {
+namespace qtm {
 
 /** Paints table-like tier rows and exposes geometry helpers for view hit testing. */
 class TierListDelegate : public QStyledItemDelegate {
@@ -30,7 +30,9 @@ public:
 
     QRect labelRect(const QRect& rowRect) const;
     QVector<QRect> tileRects(const QModelIndex& index, const QRect& rowRect) const;
-    QVector<QRect> tileRectsForCount(const QModelIndex& index, const QRect& rowRect, int itemCount) const;
+    QVector<QRect> tileRectsForImageIds(const QModelIndex& index, const QRect& rowRect,
+                                        const QStringList& imageIds,
+                                        const QString& placeholderImageId = {}) const;
     QRect tileImageRect(const QRect& tileRect) const;
     QString imageIdAt(const QModelIndex& index, const QRect& rowRect, const QPoint& point) const;
     QRect imageRectForId(const QModelIndex& index, const QRect& rowRect, const QString& imageId) const;
@@ -41,7 +43,7 @@ public:
     int insertionIndexForPosition(const QModelIndex& index, const QRect& rowRect,
                                   const QPoint& point) const;
     int insertionIndexForPosition(const QModelIndex& index, const QRect& rowRect,
-                                  const QPoint& point, int itemCount) const;
+                                  const QPoint& point, const QStringList& imageIds) const;
 
     void paint(QPainter* painter, const QStyleOptionViewItem& option,
                const QModelIndex& index) const override;
@@ -49,6 +51,10 @@ public:
 
 private:
     QStringList imageIdsForIndex(const QModelIndex& index) const;
+    QVector<QSize> sourceSizesForImageIds(const QStringList& imageIds,
+                                          const QString& placeholderImageId = {}) const;
+    QRect sourceRectForImage(const TierImage& image, const QSize& pixmapSize,
+                             const QSize& targetSize) const;
     QPixmap pixmapForImage(const TierImage& image, QSize targetPixelSize = QSize()) const;
 
     const TierProject* m_project{nullptr};
@@ -57,4 +63,4 @@ private:
     QString m_selectedImageId;
 };
 
-} // namespace tlm
+} // namespace qtm
