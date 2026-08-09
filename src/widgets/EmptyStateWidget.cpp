@@ -3,7 +3,7 @@
 #include <QLabel>
 #include <QVBoxLayout>
 
-namespace tlm {
+namespace qtm {
 
 EmptyStateWidget::EmptyStateWidget(const QString& title, const QString& subtitle, QWidget* parent)
     : QWidget(parent) {
@@ -27,5 +27,5 @@ EmptyStateWidget::EmptyStateWidget(const QString& title, const QString& subtitle
     layout->addWidget(subtitleLabel);
 }
 
-} // namespace tlm
+} // namespace qtm
 

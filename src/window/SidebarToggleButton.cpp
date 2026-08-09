@@ -2,7 +2,7 @@
 
 #include <vkui/core/VkIcon.h>
 
-namespace tlm {
+namespace qtm {
 
 SidebarToggleButton::SidebarToggleButton(QWidget* parent) : QToolButton(parent) {
     setToolTip(tr("Toggle sidebar"));
@@ -14,4 +14,4 @@ SidebarToggleButton::SidebarToggleButton(QWidget* parent) : QToolButton(parent) 
     setAutoRaise(true);
 }
 
-} // namespace tlm
+} // namespace qtm

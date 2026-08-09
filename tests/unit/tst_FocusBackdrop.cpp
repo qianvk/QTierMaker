@@ -5,7 +5,7 @@
 #include <algorithm>
 #include <cmath>
 
-using namespace tlm;
+using namespace qtm;
 
 namespace {
 qreal luminance(const QColor& color) {

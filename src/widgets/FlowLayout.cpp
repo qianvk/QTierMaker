@@ -3,7 +3,7 @@
 #include <QWidget>
 #include <QWidgetItem>
 
-namespace tlm {
+namespace qtm {
 
 FlowLayout::FlowLayout(QWidget* parent, int margin, int hSpacing, int vSpacing)
     : QLayout(parent), m_hSpace(hSpacing), m_vSpace(vSpacing) {
@@ -179,4 +179,4 @@ int FlowLayout::smartSpacing(QStyle::PixelMetric metric) const {
     return static_cast<QLayout*>(parentObject)->spacing();
 }
 
-} // namespace tlm
+} // namespace qtm

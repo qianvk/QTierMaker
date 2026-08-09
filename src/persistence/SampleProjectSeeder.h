@@ -4,7 +4,7 @@
 
 #include <QString>
 
-namespace tlm {
+namespace qtm {
 
 enum class SampleProjectSeedStatus { Copied, AlreadyExists };
 
@@ -25,4 +25,4 @@ public:
                                                 const QString& projectFileName);
 };
 
-} // namespace tlm
+} // namespace qtm

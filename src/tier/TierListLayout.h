@@ -1,5 +1,7 @@
 #pragma once
 
+#include "tier/ImagePresentationMode.h"
+
 #include <QPoint>
 #include <QRect>
 #include <QRectF>
@@ -7,7 +9,7 @@
 #include <QSizeF>
 #include <QVector>
 
-namespace tlm {
+namespace qtm {
 
 /** Shared geometry for one tier row. Painting and hit testing must use this exact grid. */
 struct TierRowGrid {
@@ -19,6 +21,11 @@ struct TierRowGrid {
     QRect tileRect(int itemIndex) const;
     int requiredRows(int itemCount) const;
     int insertionIndex(const QPoint& point, int itemCount) const;
+    QVector<QRect> itemRects(const QVector<QSize>& sourceSizes,
+                             ImagePresentationMode mode) const;
+    int requiredRows(const QVector<QSize>& sourceSizes, ImagePresentationMode mode) const;
+    int insertionIndex(const QPoint& point, const QVector<QSize>& sourceSizes,
+                       ImagePresentationMode mode) const;
 };
 
 struct TierBoardLayoutMetrics {
@@ -52,6 +59,9 @@ public:
     static int requiredRowUnits(int imageCount, int rowWidth, int lineHeight, int labelWidth);
     static TierBoardLayoutMetrics fitBoard(const QVector<int>& imageCounts,
                                            const QSize& viewportSize, int labelWidth);
+    static TierBoardLayoutMetrics fitBoard(const QVector<QVector<QSize>>& imageSizes,
+                                           const QSize& viewportSize, int labelWidth,
+                                           ImagePresentationMode mode);
     static MissionControlLayoutMetrics fitMissionControl(const QVector<QSizeF>& sourceSizes,
                                                          const QRectF& bounds, qreal gap);
     // Animation timing remains a view concern; easedProgress is normalized to [0, 1].
@@ -61,4 +71,4 @@ public:
                              qreal easedProgress, qreal gap);
 };
 
-} // namespace tlm
+} // namespace qtm

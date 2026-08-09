@@ -5,7 +5,7 @@
 #include <QByteArray>
 #include <QString>
 
-namespace tlm {
+namespace qtm {
 
 /** Writes files atomically through QSaveFile so interrupted saves do not corrupt projects. */
 class AtomicFileWriter {
@@ -13,5 +13,5 @@ public:
     static Result<void> write(const QString& filePath, const QByteArray& data);
 };
 
-} // namespace tlm
+} // namespace qtm
 

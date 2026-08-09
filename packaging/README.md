@@ -1,6 +1,6 @@
 # Packaging and releases
 
-TierListMaker uses Qt's CMake deployment API to assemble a self-contained application and CPack to
+QTierMaker uses Qt's CMake deployment API to assemble a self-contained application and CPack to
 create the platform-native installer:
 
 - macOS: a drag-to-Applications DMG (`DragNDrop`).

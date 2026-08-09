@@ -1,18 +1,21 @@
 #include "tier/ImageGalleryPopover.h"
 
+#include "preview/PreviewOverlay.h"
+
 #include <QPushButton>
 #include <QShortcut>
 #include <QSignalSpy>
 #include <QTest>
 #include <QWidget>
 
-using namespace tlm;
+using namespace qtm;
 
 class ImageGalleryPopoverTest final : public QObject {
     Q_OBJECT
 
 private slots:
     void spacePreviewSurvivesTemporaryPopoverSuspension();
+    void closingWindowPreviewRestoresPopover();
 };
 
 void ImageGalleryPopoverTest::spacePreviewSurvivesTemporaryPopoverSuspension() {
@@ -60,6 +63,40 @@ void ImageGalleryPopoverTest::spacePreviewSurvivesTemporaryPopoverSuspension() {
 
     popover->closeImmediately();
     QCOMPARE(closedSpy.count(), 1);
+}
+
+void ImageGalleryPopoverTest::closingWindowPreviewRestoresPopover() {
+    QWidget host;
+    host.resize(720, 480);
+    QPushButton anchor(QStringLiteral("Gallery"), &host);
+    anchor.setGeometry(24, 24, 100, 32);
+    PreviewOverlay preview(&host);
+    preview.setGeometry(host.rect());
+    host.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&host));
+
+    TierProject project;
+    TierImage image;
+    image.id = QStringLiteral("preview-image");
+    project.images.append(image);
+
+    ImageGalleryPopover popover(&host);
+    popover.setData(&project, nullptr, nullptr, image.id);
+    popover.openFor(&anchor);
+    QTRY_VERIFY(popover.isOpen());
+    QVERIFY(popover.suspendForPreview());
+    QVERIFY(!popover.isOpen());
+
+    connect(&preview, &PreviewOverlay::closed, &popover, &ImageGalleryPopover::restoreAfterPreview);
+    QPixmap pixmap(640, 360);
+    pixmap.fill(QColor(68, 126, 214));
+    preview.openPreview(QRect(80, 80, 72, 72), pixmap);
+    QTRY_VERIFY_WITH_TIMEOUT(preview.previewGeometry().width() > 400, 1000);
+    QTest::mouseDClick(&preview, Qt::LeftButton, Qt::NoModifier,
+                       preview.previewGeometry().center());
+
+    QTRY_VERIFY_WITH_TIMEOUT(!preview.isOpen(), 1000);
+    QTRY_VERIFY_WITH_TIMEOUT(popover.isOpen(), 1000);
 }
 
 QTEST_MAIN(ImageGalleryPopoverTest)

@@ -6,7 +6,7 @@
 #include <cmath>
 #include <limits>
 
-namespace tlm {
+namespace qtm {
 
 Theme::Theme() : Theme(vkui::VkThemeManager::instance()->theme()) {}
 
@@ -80,4 +80,4 @@ QColor contrastingTextColor(const QColor& background) {
     return whiteContrast >= blackContrast ? QColor(Qt::white) : QColor(Qt::black);
 }
 
-} // namespace tlm
+} // namespace qtm

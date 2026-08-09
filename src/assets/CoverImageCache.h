@@ -5,7 +5,7 @@
 #include <QSize>
 #include <QString>
 
-namespace tlm {
+namespace qtm {
 
 /** Caches a decoded source and its center-cropped device-pixel rendering. */
 class CoverImageCache final {
@@ -24,4 +24,4 @@ private:
     QPixmap m_rendered;
 };
 
-} // namespace tlm
+} // namespace qtm

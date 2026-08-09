@@ -2,7 +2,7 @@
 
 #include <QString>
 
-namespace tlm::platform {
+namespace qtm::platform {
 
 /** Reveals a path in the native file manager when possible. */
 bool revealInFileManager(const QString& path);
@@ -13,5 +13,5 @@ bool openUrlOrPath(const QString& path);
 /** Returns a readable platform label for About and diagnostics. */
 QString platformName();
 
-} // namespace tlm::platform
+} // namespace qtm::platform
 

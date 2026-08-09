@@ -8,7 +8,7 @@
 #include <QSettings>
 #include <QString>
 
-namespace tlm {
+namespace qtm {
 
 enum class AppearanceMode { System, Light, Dark };
 enum class BlankAreaAction { None, TierMissionControl, GalleryMissionControl };
@@ -95,4 +95,4 @@ private:
     bool m_liquidGlassParametersDirty{false};
 };
 
-} // namespace tlm
+} // namespace qtm

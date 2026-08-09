@@ -2,7 +2,7 @@
 
 ## Create a Project
 
-Open TierListMaker. A new unsaved project is created automatically. Use **New** to reset to another project.
+Open QTierMaker. A new unsaved project is created automatically. Use **New** to reset to another project.
 
 ## Import Images
 
@@ -11,6 +11,9 @@ Open the gallery button and use the final add tile to import images. You can sel
 ## Rank Images
 
 Drag images from the gallery into tier rows. Drag images between rows to move them.
+
+Right-click an empty part of the tier board and use **Image Appearance** to switch between square
+crops and equal-height images that preserve their original aspect ratios.
 
 ## Edit Rows
 
@@ -22,4 +25,4 @@ Select or hover an image and press Space. Press Space or Escape again, or click 
 
 ## Save and Export
 
-Projects are saved as `.tlmproject` files. Export creates PNG, JPEG, or PDF output without mutating the project.
+Projects are saved as `.qtmproject` files. Export creates PNG, JPEG, or PDF output without mutating the project.

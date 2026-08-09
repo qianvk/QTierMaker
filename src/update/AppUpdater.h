@@ -14,7 +14,7 @@ class QCryptographicHash;
 class QNetworkReply;
 class QSaveFile;
 
-namespace tlm {
+namespace qtm {
 
 enum class UpdateState {
     Idle,
@@ -88,16 +88,16 @@ public slots:
     void checkForUpdates(const QUrl& definitionUrl = {});
     void cancelCheck();
     void startUpdate();
-    void openUpdatePage(const tlm::UpdateCheckResult& result = {});
+    void openUpdatePage(const qtm::UpdateCheckResult& result = {});
 
 signals:
     void checkingStarted(const QUrl& definitionUrl);
-    void updateAvailable(const tlm::UpdateCheckResult& result);
-    void noUpdateAvailable(const tlm::UpdateCheckResult& result);
-    void updateDetailsChanged(const tlm::UpdateCheckResult& result);
+    void updateAvailable(const qtm::UpdateCheckResult& result);
+    void noUpdateAvailable(const qtm::UpdateCheckResult& result);
+    void updateDetailsChanged(const qtm::UpdateCheckResult& result);
     void checkFailed(const QString& reason);
     void updateNotificationChanged(bool visible);
-    void stateChanged(tlm::UpdateState state);
+    void stateChanged(qtm::UpdateState state);
     void downloadProgress(qint64 bytesReceived, qint64 bytesTotal);
     void updateReady(const QString& packagePath);
     void updateFailed(const QString& reason);
@@ -131,7 +131,7 @@ private:
     bool m_hasUpdateAvailable{false};
 };
 
-} // namespace tlm
+} // namespace qtm
 
-Q_DECLARE_METATYPE(tlm::UpdateCheckResult)
-Q_DECLARE_METATYPE(tlm::UpdateState)
+Q_DECLARE_METATYPE(qtm::UpdateCheckResult)
+Q_DECLARE_METATYPE(qtm::UpdateState)

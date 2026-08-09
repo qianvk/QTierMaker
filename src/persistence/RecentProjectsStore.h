@@ -8,7 +8,7 @@
 #include <QString>
 #include <QVector>
 
-namespace tlm {
+namespace qtm {
 
 /** Lightweight metadata shown on the Projects page. */
 struct RecentProjectEntry {
@@ -48,4 +48,4 @@ private:
     QVector<RecentProjectEntry> m_entries;
 };
 
-} // namespace tlm
+} // namespace qtm

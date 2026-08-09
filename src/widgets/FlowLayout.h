@@ -6,7 +6,7 @@
 
 class QWidget;
 
-namespace tlm {
+namespace qtm {
 
 /** Simple wrapping layout used for compact tile groups. */
 class FlowLayout : public QLayout {
@@ -40,4 +40,4 @@ private:
     int m_vSpace;
 };
 
-} // namespace tlm
+} // namespace qtm

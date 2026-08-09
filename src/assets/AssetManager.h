@@ -6,7 +6,7 @@
 #include <QObject>
 #include <QTemporaryDir>
 
-namespace tlm {
+namespace qtm {
 
 /** Imports images, manages local asset paths, and migrates unsaved session assets on save. */
 class AssetManager : public QObject {
@@ -33,4 +33,4 @@ private:
     QTemporaryDir m_sessionDir;
 };
 
-} // namespace tlm
+} // namespace qtm

@@ -8,7 +8,7 @@
 
 class QApplication;
 
-namespace tlm {
+namespace qtm {
 
 /** Owns the active theme and applies platform-aware palettes to the Qt application. */
 class ThemeManager : public QObject {
@@ -26,7 +26,7 @@ public:
     void applyTo(QApplication& app);
 
 signals:
-    void themeChanged(const tlm::Theme& theme);
+    void themeChanged(const qtm::Theme& theme);
 
 private:
     void synchronizeTheme();
@@ -36,4 +36,4 @@ private:
     quint64 m_generation{0};
 };
 
-} // namespace tlm
+} // namespace qtm

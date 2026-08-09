@@ -12,7 +12,7 @@
 #include <QSize>
 #include <QString>
 
-namespace tlm {
+namespace qtm {
 
 enum class LiquidGlassContentTreatment { TonedBackdrop, ClearSurface };
 enum class LiquidGlassSourceLayout { Cover, Stretch };
@@ -75,4 +75,4 @@ private:
     QPixmap m_rendered;
 };
 
-} // namespace tlm
+} // namespace qtm

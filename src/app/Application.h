@@ -5,7 +5,7 @@
 
 class QTimer;
 
-namespace tlm {
+namespace qtm {
 
 class AppSettings;
 class AssetManager;
@@ -47,4 +47,4 @@ private:
     QTimer* m_updateCheckTimer{nullptr};
 };
 
-} // namespace tlm
+} // namespace qtm

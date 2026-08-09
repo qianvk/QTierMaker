@@ -8,7 +8,7 @@
 #include <QMetaObject>
 #include <QWidget>
 
-namespace tlm {
+namespace qtm {
 
 class TierListDelegate;
 class TierListModel;
@@ -44,6 +44,7 @@ signals:
     void imageEditRequested(const QString& imageId);
     void imageRemoveFromTierRowRequested(const QString& imageId);
     void imageRemoveFromGalleryRequested(const QString& imageId);
+    void imagePresentationModeRequested(ImagePresentationMode mode);
     void rowEditRequested(const QString& rowId);
     void rowClearRequested(const QString& rowId);
     void rowDeleteRequested(const QString& rowId);
@@ -62,4 +63,4 @@ private:
     QMetaObject::Connection m_thumbnailConnection;
 };
 
-} // namespace tlm
+} // namespace qtm

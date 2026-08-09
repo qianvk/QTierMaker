@@ -13,7 +13,7 @@ class QEvent;
 class QResizeEvent;
 class QStackedWidget;
 
-namespace tlm {
+namespace qtm {
 
 /** Non-modal preferences page with General, Updates, and About sections. */
 class PreferencesPage : public QWidget {
@@ -56,4 +56,4 @@ private:
     UpdateCheckResult m_lastUpdateResult;
 };
 
-} // namespace tlm
+} // namespace qtm

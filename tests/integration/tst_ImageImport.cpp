@@ -5,7 +5,7 @@
 #include <QTemporaryDir>
 #include <QtTest>
 
-using namespace tlm;
+using namespace qtm;
 
 class tst_ImageImport : public QObject {
     Q_OBJECT
@@ -20,7 +20,7 @@ private slots:
         QVERIFY(image.save(source));
 
         TierProject project = TierProject::createUntitled();
-        const QString projectPath = dir.filePath(QStringLiteral("import.tlmproject"));
+        const QString projectPath = dir.filePath(QStringLiteral("import.qtmproject"));
         project.filePath = projectPath;
 
         AssetManager assets;

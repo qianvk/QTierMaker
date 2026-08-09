@@ -2,7 +2,7 @@
 
 #include <vkui/core/VkIcon.h>
 
-namespace tlm {
+namespace qtm {
 
 SidebarModel::SidebarModel(QObject* parent) : QAbstractListModel(parent) {
     retranslate();
@@ -104,4 +104,4 @@ int SidebarModel::rowForPage(AppPage page) const {
     return -1;
 }
 
-} // namespace tlm
+} // namespace qtm

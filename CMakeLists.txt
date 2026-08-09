@@ -1,9 +1,9 @@
 cmake_minimum_required(VERSION 3.24)
 
-project(TierListMaker
+project(QTierMaker
     VERSION 0.2.0
     DESCRIPTION "A native Qt 6 desktop tier-list editor"
-    HOMEPAGE_URL "https://github.com/qianvk/TierListMaker"
+    HOMEPAGE_URL "https://github.com/qianvk/QTierMaker"
     LANGUAGES CXX
 )
 
@@ -11,28 +11,28 @@ if(APPLE)
     enable_language(OBJCXX)
 endif()
 
-option(TLM_BUILD_TESTS "Build TierListMaker tests" ON)
-option(TLM_WARNINGS_AS_ERRORS "Treat compiler warnings as errors" OFF)
-set(TLM_PACKAGE_VERSION "${PROJECT_VERSION}" CACHE STRING
+option(QTM_BUILD_TESTS "Build QTierMaker tests" ON)
+option(QTM_WARNINGS_AS_ERRORS "Treat compiler warnings as errors" OFF)
+set(QTM_PACKAGE_VERSION "${PROJECT_VERSION}" CACHE STRING
     "Version embedded in the application and platform installers")
-if(NOT TLM_PACKAGE_VERSION MATCHES "^([0-9]+)\\.([0-9]+)\\.([0-9]+)([-+].*)?$")
-    message(FATAL_ERROR "TLM_PACKAGE_VERSION must start with a semantic x.y.z version")
+if(NOT QTM_PACKAGE_VERSION MATCHES "^([0-9]+)\\.([0-9]+)\\.([0-9]+)([-+].*)?$")
+    message(FATAL_ERROR "QTM_PACKAGE_VERSION must start with a semantic x.y.z version")
 endif()
-set(TLM_VERSION_MAJOR "${CMAKE_MATCH_1}")
-set(TLM_VERSION_MINOR "${CMAKE_MATCH_2}")
-set(TLM_VERSION_PATCH "${CMAKE_MATCH_3}")
-set(TLM_NUMERIC_VERSION
-    "${TLM_VERSION_MAJOR}.${TLM_VERSION_MINOR}.${TLM_VERSION_PATCH}")
+set(QTM_VERSION_MAJOR "${CMAKE_MATCH_1}")
+set(QTM_VERSION_MINOR "${CMAKE_MATCH_2}")
+set(QTM_VERSION_PATCH "${CMAKE_MATCH_3}")
+set(QTM_NUMERIC_VERSION
+    "${QTM_VERSION_MAJOR}.${QTM_VERSION_MINOR}.${QTM_VERSION_PATCH}")
 
-set(_tlm_default_update_channel "stable")
-if(TLM_PACKAGE_VERSION MATCHES "-")
-    set(_tlm_default_update_channel "beta")
+set(_qtm_default_update_channel "stable")
+if(QTM_PACKAGE_VERSION MATCHES "-")
+    set(_qtm_default_update_channel "beta")
 endif()
-set(TLM_UPDATE_CHANNEL "${_tlm_default_update_channel}" CACHE STRING
+set(QTM_UPDATE_CHANNEL "${_qtm_default_update_channel}" CACHE STRING
     "Update feed channel embedded in the application")
-set_property(CACHE TLM_UPDATE_CHANNEL PROPERTY STRINGS stable beta)
-set(TLM_UPDATE_MANIFEST_URL
-    "https://api.github.com/repos/qianvk/TierListMaker/releases?per_page=20"
+set_property(CACHE QTM_UPDATE_CHANNEL PROPERTY STRINGS stable beta)
+set(QTM_UPDATE_MANIFEST_URL
+    "https://api.github.com/repos/qianvk/QTierMaker/releases?per_page=20"
     CACHE STRING "HTTPS release feed embedded in the application")
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
@@ -43,7 +43,7 @@ include(Dependencies)
 include(Version)
 
 # Bump the revision whenever the executable requires a different deployed Qt/plugin payload.
-set(TLM_UPDATE_RUNTIME_VERSION "qt-${Qt6_VERSION}-r1" CACHE STRING
+set(QTM_UPDATE_RUNTIME_VERSION "qt-${Qt6_VERSION}-r1" CACHE STRING
     "Runtime generation required by executable-only update packages")
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON CACHE BOOL "Generate compile_commands.json for clangd" FORCE)
@@ -51,7 +51,7 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
-set(TLM_CORE_SOURCES
+set(QTM_CORE_SOURCES
     src/assets/AssetManager.cpp
     src/assets/AssetManager.h
     src/assets/BackdropEffect.h
@@ -101,6 +101,7 @@ set(TLM_CORE_SOURCES
     src/theme/ThemeTokens.h
     src/tier/TierImage.cpp
     src/tier/TierImage.h
+    src/tier/ImagePresentationMode.h
     src/tier/TierListLayout.cpp
     src/tier/TierListLayout.h
     src/tier/TierProject.cpp
@@ -109,7 +110,7 @@ set(TLM_CORE_SOURCES
     src/tier/TierRow.h
 )
 
-set(TLM_APP_SOURCES
+set(QTM_APP_SOURCES
     src/app/Application.cpp
     src/app/Application.h
     src/app/main.cpp
@@ -159,12 +160,12 @@ set(TLM_APP_SOURCES
     src/widgets/FlowLayout.h
     src/widgets/SectionHeader.cpp
     src/widgets/SectionHeader.h
-    src/window/AppDialog.cpp
     src/window/AppDialog.h
-    src/window/AppMessageDialog.cpp
     src/window/AppMessageDialog.h
     src/window/AppTitleBar.cpp
     src/window/AppTitleBar.h
+    src/window/CompositionAwareLineEdit.cpp
+    src/window/CompositionAwareLineEdit.h
     src/window/MainWindow.cpp
     src/window/MainWindow.h
     src/window/RootWidget.cpp
@@ -175,33 +176,33 @@ set(TLM_APP_SOURCES
 )
 
 if(APPLE)
-    set(TLM_APP_ICON_MACOS "${CMAKE_CURRENT_SOURCE_DIR}/resources/macos/app-icon.icns")
-    list(APPEND TLM_APP_SOURCES "${TLM_APP_ICON_MACOS}")
-    set_source_files_properties("${TLM_APP_ICON_MACOS}" PROPERTIES
+    set(QTM_APP_ICON_MACOS "${CMAKE_CURRENT_SOURCE_DIR}/resources/macos/app-icon.icns")
+    list(APPEND QTM_APP_SOURCES "${QTM_APP_ICON_MACOS}")
+    set_source_files_properties("${QTM_APP_ICON_MACOS}" PROPERTIES
         MACOSX_PACKAGE_LOCATION "Resources"
     )
 endif()
 
 if(WIN32)
     configure_file(
-        resources/windows/TierListMaker.rc.in
-        "${CMAKE_CURRENT_BINARY_DIR}/generated/TierListMaker.rc"
+        resources/windows/QTierMaker.rc.in
+        "${CMAKE_CURRENT_BINARY_DIR}/generated/QTierMaker.rc"
         @ONLY
     )
-    list(APPEND TLM_APP_SOURCES "${CMAKE_CURRENT_BINARY_DIR}/generated/TierListMaker.rc")
+    list(APPEND QTM_APP_SOURCES "${CMAKE_CURRENT_BINARY_DIR}/generated/QTierMaker.rc")
 endif()
 
 if(APPLE)
-    list(APPEND TLM_CORE_SOURCES src/platform/PlatformMac.mm)
+    list(APPEND QTM_CORE_SOURCES src/platform/PlatformMac.mm)
 elseif(WIN32)
-    list(APPEND TLM_CORE_SOURCES src/platform/PlatformWindows.cpp)
+    list(APPEND QTM_CORE_SOURCES src/platform/PlatformWindows.cpp)
 else()
-    list(APPEND TLM_CORE_SOURCES src/platform/PlatformLinux.cpp)
+    list(APPEND QTM_CORE_SOURCES src/platform/PlatformLinux.cpp)
 endif()
 
-add_library(tierlistmaker_core STATIC ${TLM_CORE_SOURCES})
-target_include_directories(tierlistmaker_core PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/src")
-target_link_libraries(tierlistmaker_core
+add_library(qtiermaker_core STATIC ${QTM_CORE_SOURCES})
+target_include_directories(qtiermaker_core PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/src")
+target_link_libraries(qtiermaker_core
     PUBLIC
         Qt6::Core
         Qt6::Gui
@@ -209,51 +210,51 @@ target_link_libraries(tierlistmaker_core
         Qt6::Concurrent
         VkUI::Core
 )
-tlm_apply_project_options(tierlistmaker_core)
-tlm_apply_compiler_warnings(tierlistmaker_core)
+qtm_apply_project_options(qtiermaker_core)
+qtm_apply_compiler_warnings(qtiermaker_core)
 
-qt_add_executable(TierListMaker ${TLM_APP_SOURCES})
-target_include_directories(TierListMaker PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src")
-target_link_libraries(TierListMaker
+qt_add_executable(QTierMaker ${QTM_APP_SOURCES})
+target_include_directories(QTierMaker PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src")
+target_link_libraries(QTierMaker
     PRIVATE
-        tierlistmaker_core
+        qtiermaker_core
         Qt6::Network
         Qt6::Svg
-        QWindowKit::Widgets
         VkUI::Widgets
+        VkUI::Window
 )
 if(WIN32)
-    target_link_libraries(TierListMaker PRIVATE dwmapi)
+    target_link_libraries(QTierMaker PRIVATE dwmapi)
 endif()
-target_compile_definitions(TierListMaker PRIVATE
-    TLM_APP_VERSION="${TLM_PACKAGE_VERSION}"
-    TLM_GIT_COMMIT="${TLM_GIT_COMMIT}"
-    TLM_UPDATE_CHANNEL="${TLM_UPDATE_CHANNEL}"
-    TLM_UPDATE_MANIFEST_URL="${TLM_UPDATE_MANIFEST_URL}"
-    TLM_UPDATE_RUNTIME_VERSION="${TLM_UPDATE_RUNTIME_VERSION}"
+target_compile_definitions(QTierMaker PRIVATE
+    QTM_APP_VERSION="${QTM_PACKAGE_VERSION}"
+    QTM_GIT_COMMIT="${QTM_GIT_COMMIT}"
+    QTM_UPDATE_CHANNEL="${QTM_UPDATE_CHANNEL}"
+    QTM_UPDATE_MANIFEST_URL="${QTM_UPDATE_MANIFEST_URL}"
+    QTM_UPDATE_RUNTIME_VERSION="${QTM_UPDATE_RUNTIME_VERSION}"
 )
-qt_add_translations(TierListMaker
+qt_add_translations(QTierMaker
     TS_FILES
-        resources/translations/TierListMaker_en.ts
-        resources/translations/TierListMaker_zh_CN.ts
+        resources/translations/QTierMaker_en.ts
+        resources/translations/QTierMaker_zh_CN.ts
     RESOURCE_PREFIX "/translations"
 )
-tlm_apply_project_options(TierListMaker)
-tlm_apply_compiler_warnings(TierListMaker)
+qtm_apply_project_options(QTierMaker)
+qtm_apply_compiler_warnings(QTierMaker)
 
-set_target_properties(TierListMaker PROPERTIES
+set_target_properties(QTierMaker PROPERTIES
     WIN32_EXECUTABLE TRUE
     MACOSX_BUNDLE TRUE
-    MACOSX_BUNDLE_BUNDLE_NAME "TierListMaker"
-    MACOSX_BUNDLE_GUI_IDENTIFIER "org.tierlistmaker.app"
+    MACOSX_BUNDLE_BUNDLE_NAME "QTierMaker"
+    MACOSX_BUNDLE_GUI_IDENTIFIER "org.qtiermaker.app"
     MACOSX_BUNDLE_ICON_FILE "app-icon.icns"
-    MACOSX_BUNDLE_SHORT_VERSION_STRING "${TLM_NUMERIC_VERSION}"
-    MACOSX_BUNDLE_BUNDLE_VERSION "${TLM_NUMERIC_VERSION}"
+    MACOSX_BUNDLE_SHORT_VERSION_STRING "${QTM_NUMERIC_VERSION}"
+    MACOSX_BUNDLE_BUNDLE_VERSION "${QTM_NUMERIC_VERSION}"
 )
 
 include(InstallRules)
 
-if(TLM_BUILD_TESTS)
+if(QTM_BUILD_TESTS)
     enable_testing()
     add_subdirectory(tests/unit)
     add_subdirectory(tests/integration)

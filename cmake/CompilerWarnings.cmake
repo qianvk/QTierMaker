@@ -1,7 +1,7 @@
-function(tlm_apply_compiler_warnings target_name)
+function(qtm_apply_compiler_warnings target_name)
     if(MSVC)
         target_compile_options(${target_name} PRIVATE /W4 /permissive-)
-        if(TLM_WARNINGS_AS_ERRORS)
+        if(QTM_WARNINGS_AS_ERRORS)
             target_compile_options(${target_name} PRIVATE /WX)
         endif()
     else()
@@ -12,7 +12,7 @@ function(tlm_apply_compiler_warnings target_name)
             -Wconversion
             -Wshadow
         )
-        if(TLM_WARNINGS_AS_ERRORS)
+        if(QTM_WARNINGS_AS_ERRORS)
             target_compile_options(${target_name} PRIVATE -Werror)
         endif()
     endif()

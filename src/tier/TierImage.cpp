@@ -2,7 +2,7 @@
 
 #include <QtGlobal>
 
-namespace tlm {
+namespace qtm {
 
 namespace {
 QRect centeredCropSourceRect(const QSize& sourceSize, const QSize& targetSize) {
@@ -59,4 +59,4 @@ QRect TierImage::thumbnailSourceRect(const QSize& sourceSize, const QSize& targe
     return rect.isValid() ? rect : centeredCropSourceRect(sourceSize, targetSize);
 }
 
-} // namespace tlm
+} // namespace qtm

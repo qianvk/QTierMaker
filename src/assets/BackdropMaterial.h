@@ -11,7 +11,7 @@
 
 #include <memory>
 
-namespace tlm {
+namespace qtm {
 
 enum class BackdropMaterialPurpose { Background, GlassOverlay };
 
@@ -47,4 +47,4 @@ private:
     std::unique_ptr<Impl> m_impl;
 };
 
-} // namespace tlm
+} // namespace qtm

@@ -6,7 +6,7 @@
 #include <QFileInfo>
 #include <QUuid>
 
-namespace tlm {
+namespace qtm {
 
 namespace {
 bool isSimpleFileName(const QString& name) {
@@ -103,4 +103,4 @@ SampleProjectSeeder::seed(const QString& sourceDirectory, const QString& destina
         {targetProject, SampleProjectSeedStatus::Copied});
 }
 
-} // namespace tlm
+} // namespace qtm

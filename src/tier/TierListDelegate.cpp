@@ -19,7 +19,7 @@
 #include <vkui/core/VkTheme.h>
 #include <vkui/core/VkThemeManager.h>
 
-namespace tlm {
+namespace qtm {
 
 namespace {
 constexpr int kMinimumLabelWidth = 82;
@@ -120,23 +120,17 @@ QRect TierListDelegate::labelRect(const QRect& rowRect) const {
 
 QVector<QRect> TierListDelegate::tileRects(const QModelIndex& index, const QRect& rowRect) const {
     const QStringList imageIds = imageIdsForIndex(index);
-    return tileRectsForCount(index, rowRect, static_cast<int>(imageIds.size()));
+    return tileRectsForImageIds(index, rowRect, imageIds);
 }
 
-QVector<QRect> TierListDelegate::tileRectsForCount(const QModelIndex& index, const QRect& rowRect,
-                                                   int itemCount) const {
-    QVector<QRect> rects;
-    rects.reserve(qMax(0, itemCount));
-    if (itemCount <= 0) {
-        return rects;
-    }
-
+QVector<QRect> TierListDelegate::tileRectsForImageIds(
+    const QModelIndex& index, const QRect& rowRect, const QStringList& imageIds,
+    const QString& placeholderImageId) const {
     const TierRowGrid grid = TierListLayout::gridForRow(
         rowRect, index.data(TierListModel::RowUnitCountRole).toInt(), labelWidth());
-    for (int i = 0; i < itemCount; ++i) {
-        rects.append(grid.tileRect(i));
-    }
-    return rects;
+    const ImagePresentationMode mode =
+        m_project ? m_project->imagePresentationMode() : ImagePresentationMode::Square;
+    return grid.itemRects(sourceSizesForImageIds(imageIds, placeholderImageId), mode);
 }
 
 QRect TierListDelegate::tileImageRect(const QRect& tileRect) const {
@@ -221,19 +215,17 @@ QSize TierListDelegate::sourceSizeForImageId(const QString& imageId) const {
 
 int TierListDelegate::insertionIndexForPosition(const QModelIndex& index, const QRect& rowRect,
                                                 const QPoint& point) const {
-    return insertionIndexForPosition(index, rowRect, point,
-                                     static_cast<int>(imageIdsForIndex(index).size()));
+    return insertionIndexForPosition(index, rowRect, point, imageIdsForIndex(index));
 }
 
 int TierListDelegate::insertionIndexForPosition(const QModelIndex& index, const QRect& rowRect,
-                                                const QPoint& point, int itemCount) const {
-    itemCount = qMax(0, itemCount);
-
-    // Project directly onto the same grid used by sizing and painting. Drag animations remain
-    // paint-only and therefore cannot alter insertion semantics.
+                                                const QPoint& point,
+                                                const QStringList& imageIds) const {
     const TierRowGrid grid = TierListLayout::gridForRow(
         rowRect, index.data(TierListModel::RowUnitCountRole).toInt(), labelWidth());
-    return grid.insertionIndex(point, itemCount);
+    const ImagePresentationMode mode =
+        m_project ? m_project->imagePresentationMode() : ImagePresentationMode::Square;
+    return grid.insertionIndex(point, sourceSizesForImageIds(imageIds), mode);
 }
 
 void TierListDelegate::paint(QPainter* painter, const QStyleOptionViewItem& option,
@@ -381,9 +373,9 @@ void TierListDelegate::paint(QPainter* painter, const QStyleOptionViewItem& opti
         painter->setClipRect(drawBounds);
         painter->fillRect(drawBounds, colors.elevatedBackground);
         if (!pixmap.isNull()) {
-            painter->drawPixmap(
-                drawBounds, pixmap,
-                image->thumbnailSourceRect(pixmap.size(), drawBounds.size().toSize()));
+            painter->drawPixmap(drawBounds, pixmap,
+                                sourceRectForImage(*image, pixmap.size(),
+                                                   drawBounds.size().toSize()));
         }
         painter->restore();
 
@@ -407,6 +399,26 @@ QStringList TierListDelegate::imageIdsForIndex(const QModelIndex& index) const {
     return index.data(TierListModel::ImageIdsRole).toStringList();
 }
 
+QVector<QSize> TierListDelegate::sourceSizesForImageIds(
+    const QStringList& imageIds, const QString& placeholderImageId) const {
+    QVector<QSize> sizes;
+    sizes.reserve(imageIds.size());
+    for (const QString& imageId : imageIds) {
+        const QString resolvedId = imageId.isEmpty() ? placeholderImageId : imageId;
+        const TierImage* image = m_project ? m_project->imageById(resolvedId) : nullptr;
+        sizes.append(image && image->size().isValid() ? image->size() : QSize(1, 1));
+    }
+    return sizes;
+}
+
+QRect TierListDelegate::sourceRectForImage(const TierImage& image, const QSize& pixmapSize,
+                                           const QSize& targetSize) const {
+    if (m_project && m_project->imagePresentationMode() == ImagePresentationMode::NoCrop) {
+        return QRect(QPoint(0, 0), pixmapSize);
+    }
+    return image.thumbnailSourceRect(pixmapSize, targetSize);
+}
+
 QPixmap TierListDelegate::pixmapForImage(const TierImage& image, QSize targetPixelSize) const {
     if (m_thumbnailCache) {
         if (m_project && m_assetManager) {
@@ -425,4 +437,4 @@ QPixmap TierListDelegate::pixmapForImage(const TierImage& image, QSize targetPix
         .pixmap(targetPixelSize.isEmpty() ? QSize(64, 64) : targetPixelSize);
 }
 
-} // namespace tlm
+} // namespace qtm

@@ -2,7 +2,7 @@
 
 #include <utility>
 
-namespace tlm {
+namespace qtm {
 
 TierListModel::TierListModel(QObject* parent) : QAbstractListModel(parent) {}
 
@@ -119,4 +119,4 @@ int TierListModel::rowUnitCountAt(int row) const {
     return qMax(1, m_rowUnits.at(row));
 }
 
-} // namespace tlm
+} // namespace qtm

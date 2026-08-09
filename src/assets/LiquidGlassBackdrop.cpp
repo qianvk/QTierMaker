@@ -18,7 +18,7 @@
 #include <cmath>
 #include <numbers>
 
-namespace tlm {
+namespace qtm {
 
 LiquidGlassParameters normalizedLiquidGlassParameters(LiquidGlassParameters parameters) {
     const auto bounded = [](qreal value, qreal minimum, qreal maximum, qreal fallback) {
@@ -601,4 +601,4 @@ void LiquidGlassBackdropCache::clear() {
     m_rendered = {};
 }
 
-} // namespace tlm
+} // namespace qtm

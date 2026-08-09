@@ -5,7 +5,7 @@
 #include <QFile>
 #include <QFileInfo>
 
-namespace tlm {
+namespace qtm {
 
 ProjectRepository::ProjectRepository(QObject* parent) : QObject(parent) {}
 
@@ -44,4 +44,4 @@ Result<void> ProjectRepository::saveProject(TierProject& project, const QString&
     return Result<void>::success();
 }
 
-} // namespace tlm
+} // namespace qtm

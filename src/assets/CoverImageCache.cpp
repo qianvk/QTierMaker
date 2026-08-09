@@ -2,7 +2,7 @@
 
 #include <QImageReader>
 
-namespace tlm {
+namespace qtm {
 
 const QImage& CoverImageCache::sourceImage(const QString& path) {
     ensureSource(path);
@@ -59,4 +59,4 @@ bool CoverImageCache::ensureSource(const QString& path) {
     return !m_source.isNull();
 }
 
-} // namespace tlm
+} // namespace qtm

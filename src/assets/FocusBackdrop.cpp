@@ -6,7 +6,7 @@
 #include <array>
 #include <cmath>
 
-namespace tlm {
+namespace qtm {
 
 namespace {
 constexpr int kMaximumRasterExtent = 1280;
@@ -245,4 +245,4 @@ void FocusBackdropCache::clear() {
     m_rendered = {};
 }
 
-} // namespace tlm
+} // namespace qtm

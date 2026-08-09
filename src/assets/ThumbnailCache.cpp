@@ -10,7 +10,7 @@
 #include <algorithm>
 #include <limits>
 
-namespace tlm {
+namespace qtm {
 
 namespace {
 constexpr qsizetype kCacheBudgetBytes = 96 * 1024 * 1024;
@@ -334,4 +334,4 @@ void ThumbnailCache::trimToBudget() {
     }
 }
 
-} // namespace tlm
+} // namespace qtm

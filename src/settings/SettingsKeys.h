@@ -2,7 +2,7 @@
 
 #include <QStringView>
 
-namespace tlm::settings_keys {
+namespace qtm::settings_keys {
 
 inline constexpr QStringView language = u"general/language";
 inline constexpr QStringView appearance = u"general/appearance";
@@ -33,4 +33,4 @@ inline constexpr QStringView animationsEnabled = u"animation/enabled";
 inline constexpr QStringView reducedMotion = u"animation/reducedMotion";
 inline constexpr QStringView localOnlyMode = u"privacy/localOnlyMode";
 
-} // namespace tlm::settings_keys
+} // namespace qtm::settings_keys

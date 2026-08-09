@@ -7,13 +7,13 @@
 #include <QWindow>
 #include <QtTest>
 
-#include <QWKWidgets/widgetwindowagent.h>
+#include <vkui/window/VkWindowAgent.h>
 
 #if defined(Q_OS_WIN)
 #include <qt_windows.h>
 #endif
 
-using namespace tlm;
+using namespace qtm;
 
 class PreviewOverlayTest final : public QObject {
     Q_OBJECT
@@ -22,6 +22,7 @@ private slots:
     void blocksUnderlyingInputUntilCloseFinishes();
     void doubleClickingPreviewImageCloses();
     void clickingOutsidePreviewImageCloses();
+    void escapeCloseRestoresUnderlyingInput();
     void operationToolTipPreferenceIncludesPreview();
     void changingPreviewEffectPreservesAnimationState();
     void liquidGlassSelectsUnfilteredProjectBackground();
@@ -35,8 +36,7 @@ LRESULT hitTestAt(QWidget& host, const QPoint& clientPosition) {
     const HWND hwnd = reinterpret_cast<HWND>(host.winId());
     POINT nativePosition{clientPosition.x(), clientPosition.y()};
     ::ClientToScreen(hwnd, &nativePosition);
-    return ::SendMessageW(hwnd, WM_NCHITTEST, 0,
-                          MAKELPARAM(nativePosition.x, nativePosition.y));
+    return ::SendMessageW(hwnd, WM_NCHITTEST, 0, MAKELPARAM(nativePosition.x, nativePosition.y));
 }
 
 } // namespace
@@ -67,13 +67,13 @@ void PreviewOverlayTest::blocksUnderlyingInputUntilCloseFinishes() {
     QVERIFY(overlay.isOpen());
     QCOMPARE(overlay.geometry(), host.rect());
 
-    // Direct delivery simulates a leaked event. The application-level barrier must still stop it.
-    QTest::mouseClick(&underlyingButton, Qt::LeftButton);
-    QCOMPARE(clickCount, 0);
-
-    QTest::keyClick(&underlyingButton, Qt::Key_Space);
     host.resize(760, 560);
     overlay.setGeometry(host.rect());
+
+    // Direct delivery simulates a leaked event. It must close the preview without activating the
+    // covered control.
+    QTest::mouseClick(&underlyingButton, Qt::LeftButton);
+    QCOMPARE(clickCount, 0);
     QTRY_COMPARE_WITH_TIMEOUT(closedSpy.count(), 1, 1000);
     QVERIFY(!overlay.isOpen());
 
@@ -94,12 +94,11 @@ void PreviewOverlayTest::doubleClickingPreviewImageCloses() {
     QSignalSpy closedSpy(&overlay, &PreviewOverlay::closed);
     overlay.openPreview(QRect(220, 180, 72, 72), image);
     QTRY_VERIFY_WITH_TIMEOUT(overlay.previewGeometry().width() > 400, 1000);
-    QCOMPARE(QWidget::mouseGrabber(), &overlay);
-    QCOMPARE(QWidget::keyboardGrabber(), &overlay);
+    QVERIFY(!QWidget::mouseGrabber());
+    QVERIFY(!QWidget::keyboardGrabber());
 
     const QPoint imageCenter = overlay.previewGeometry().center();
-    QCOMPARE(overlay.toolTipTextAt(imageCenter),
-             QStringLiteral("Double-click image to close"));
+    QCOMPARE(overlay.toolTipTextAt(imageCenter), QStringLiteral("Double-click image to close"));
 #if defined(Q_OS_WIN)
     QCOMPARE(hitTestAt(host, imageCenter), static_cast<LRESULT>(HTCLIENT));
 #endif
@@ -116,7 +115,7 @@ void PreviewOverlayTest::windowChromeDoesNotStealPreviewInput() {
     QWidget titleBar(&host);
     titleBar.setGeometry(0, 0, host.width(), 44);
 
-    QWK::WidgetWindowAgent agent;
+    vkui::VkWindowAgent agent;
     agent.setResizable(true);
     QVERIFY(agent.setup(&host));
     QVERIFY(agent.addTitleBar(&titleBar));
@@ -135,7 +134,7 @@ void PreviewOverlayTest::windowChromeDoesNotStealPreviewInput() {
 
     const QPoint titleBarPoint(120, 22);
     QCOMPARE(hitTestAt(host, titleBarPoint), static_cast<LRESULT>(HTCLIENT));
-    QCOMPARE(QWidget::mouseGrabber(), &overlay);
+    QVERIFY(!QWidget::mouseGrabber());
     QTest::mouseClick(host.windowHandle(), Qt::LeftButton, Qt::NoModifier, titleBarPoint);
 
     QTRY_COMPARE_WITH_TIMEOUT(closedSpy.count(), 1, 1000);
@@ -164,6 +163,32 @@ void PreviewOverlayTest::clickingOutsidePreviewImageCloses() {
 
     QTRY_COMPARE_WITH_TIMEOUT(closedSpy.count(), 1, 1000);
     QVERIFY(!overlay.isOpen());
+}
+
+void PreviewOverlayTest::escapeCloseRestoresUnderlyingInput() {
+    QWidget host;
+    host.resize(800, 600);
+    QPushButton underlyingButton(QStringLiteral("Behind preview"), &host);
+    underlyingButton.setGeometry(20, 20, 160, 36);
+    int clickCount = 0;
+    connect(&underlyingButton, &QPushButton::clicked, this, [&clickCount]() { ++clickCount; });
+
+    PreviewOverlay overlay(&host);
+    overlay.setGeometry(host.rect());
+    host.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&host));
+
+    QPixmap image(640, 360);
+    image.fill(QColor(68, 126, 214));
+    QSignalSpy closedSpy(&overlay, &PreviewOverlay::closed);
+    overlay.openPreview(QRect(220, 180, 72, 72), image);
+    QTest::keyClick(&underlyingButton, Qt::Key_Escape);
+
+    QTRY_COMPARE_WITH_TIMEOUT(closedSpy.count(), 1, 1000);
+    QVERIFY(!QWidget::mouseGrabber());
+    QVERIFY(!QWidget::keyboardGrabber());
+    QTest::mouseClick(&underlyingButton, Qt::LeftButton);
+    QCOMPARE(clickCount, 1);
 }
 
 void PreviewOverlayTest::operationToolTipPreferenceIncludesPreview() {
@@ -204,8 +229,8 @@ void PreviewOverlayTest::changingPreviewEffectPreservesAnimationState() {
 }
 
 void PreviewOverlayTest::liquidGlassSelectsUnfilteredProjectBackground() {
-    QCOMPARE(PreviewOverlay::resolveBackgroundTreatment(
-                 BackdropEffect::LiquidGlass, PreviewBackgroundMode::None, true, true),
+    QCOMPARE(PreviewOverlay::resolveBackgroundTreatment(BackdropEffect::LiquidGlass,
+                                                        PreviewBackgroundMode::None, true, true),
              PreviewBackgroundTreatment::ProjectImage);
     QCOMPARE(PreviewOverlay::resolveBackgroundTreatment(
                  BackdropEffect::LiquidGlass, PreviewBackgroundMode::SelfImage, true, true),

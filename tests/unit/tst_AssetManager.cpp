@@ -4,7 +4,7 @@
 #include <QTemporaryDir>
 #include <QtTest>
 
-using namespace tlm;
+using namespace qtm;
 
 class tst_AssetManager : public QObject {
     Q_OBJECT
@@ -23,7 +23,7 @@ private slots:
         QCOMPARE(project.images.size(), 1);
         QVERIFY(QFileInfo(project.images.first().importedAssetPath).isAbsolute());
 
-        const QString projectPath = dir.filePath(QStringLiteral("project.tlmproject"));
+        const QString projectPath = dir.filePath(QStringLiteral("project.qtmproject"));
         QVERIFY(assets.migrateSessionAssets(project, projectPath));
         QVERIFY(!QFileInfo(project.images.first().importedAssetPath).isAbsolute());
         QVERIFY(QFileInfo::exists(assets.resolvedImagePath(project, project.images.first())) ||

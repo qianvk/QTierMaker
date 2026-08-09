@@ -38,12 +38,12 @@
 #include <QVariantAnimation>
 #include <QWindow>
 
-#include <QWKWidgets/widgetwindowagent.h>
 #include <vkui/core/VkIcon.h>
+#include <vkui/window/VkWindowAgent.h>
 
 #include <algorithm>
 
-namespace tlm {
+namespace qtm {
 
 namespace {
 constexpr int kSidebarInitialWidth = 236;
@@ -101,51 +101,59 @@ RootWidget::RootWidget(ProjectRepository* repository, RecentProjectsStore* recen
     setupShortcuts();
 }
 
-void RootWidget::installWindowAgent(QWK::WidgetWindowAgent* agent) {
+void RootWidget::installWindowAgent(vkui::VkWindowAgent* agent) {
     m_windowAgent = agent;
     if (!m_windowAgent || !m_sidebarTitleBar || !m_titleBar) {
         Logger::error(QStringLiteral("ui.window.agent.register rejected missing-widget=1"));
         return;
     }
 
-    m_windowAgent->addTitleBar(m_sidebarTitleBar);
-    m_windowAgent->addTitleBar(m_titleBar);
+    if (!m_windowAgent->addTitleBar(m_sidebarTitleBar) || !m_windowAgent->addTitleBar(m_titleBar)) {
+        Logger::error(QStringLiteral("ui.window.agent.titlebar.register failed backend=vkui"));
+        return;
+    }
+
+    const auto registerInteractive = [this](QWidget* titleBar, QWidget* control) {
+        if (titleBar && control && !m_windowAgent->setHitTestVisible(titleBar, control, true)) {
+            Logger::warn(QStringLiteral("ui.window.agent.hittest.register failed titleBar=%1 "
+                                        "control=%2")
+                             .arg(titleBar->objectName(), control->objectName()));
+        }
+    };
 
     if (m_previewOverlay) {
         // The preview is a window-level input surface. While visible it must supersede every
         // registered title bar so Windows routes pointer input through the client area.
-        m_windowAgent->setHitTestVisible(m_sidebarTitleBar, m_previewOverlay, true);
-        m_windowAgent->setHitTestVisible(m_titleBar, m_previewOverlay, true);
+        registerInteractive(m_sidebarTitleBar, m_previewOverlay);
+        registerInteractive(m_titleBar, m_previewOverlay);
     }
 
-    const auto registerInteractiveChildren = [this](QWidget* titleBar) {
+    const auto registerInteractiveChildren = [&registerInteractive](QWidget* titleBar) {
         const auto buttons = titleBar->findChildren<QAbstractButton*>();
         for (QAbstractButton* button : buttons) {
-            m_windowAgent->setHitTestVisible(titleBar, button, true);
+            registerInteractive(titleBar, button);
         }
         const auto edits = titleBar->findChildren<QLineEdit*>();
         for (QLineEdit* edit : edits) {
-            m_windowAgent->setHitTestVisible(titleBar, edit, true);
+            registerInteractive(titleBar, edit);
         }
     };
     registerInteractiveChildren(m_sidebarTitleBar);
     for (QWidget* control : m_titleBar->interactiveWidgets()) {
-        if (control) {
-            m_windowAgent->setHitTestVisible(m_titleBar, control, true);
-        }
+        registerInteractive(m_titleBar, control);
     }
 
     if (m_sidebarToggleButton) {
-        m_windowAgent->setHitTestVisible(m_sidebarTitleBar, m_sidebarToggleButton, true);
-        m_windowAgent->setHitTestVisible(m_titleBar, m_sidebarToggleButton, true);
+        registerInteractive(m_sidebarTitleBar, m_sidebarToggleButton);
+        registerInteractive(m_titleBar, m_sidebarToggleButton);
     }
     if (m_newProjectButton) {
-        m_windowAgent->setHitTestVisible(m_sidebarTitleBar, m_newProjectButton, true);
-        m_windowAgent->setHitTestVisible(m_titleBar, m_newProjectButton, true);
+        registerInteractive(m_sidebarTitleBar, m_newProjectButton);
+        registerInteractive(m_titleBar, m_newProjectButton);
     }
     if (m_splitter && m_splitter->handle(1)) {
-        m_windowAgent->setHitTestVisible(m_sidebarTitleBar, m_splitter->handle(1), true);
-        m_windowAgent->setHitTestVisible(m_titleBar, m_splitter->handle(1), true);
+        registerInteractive(m_sidebarTitleBar, m_splitter->handle(1));
+        registerInteractive(m_titleBar, m_splitter->handle(1));
     }
 #if defined(Q_OS_MACOS) || defined(Q_OS_MAC)
     m_windowAgent->setSystemButtonAreaGeometry(QRect(12, 11, 72, 32));
@@ -271,8 +279,7 @@ void RootWidget::buildUi(ProjectRepository* repository, RecentProjectsStore* rec
                 &PreviewOverlay::setPreviewEffect);
         connect(settings, &AppSettings::liquidGlassParametersChanged, m_previewOverlay,
                 [this, settings]() {
-                    m_previewOverlay->setLiquidGlassParameters(
-                        settings->liquidGlassParameters());
+                    m_previewOverlay->setLiquidGlassParameters(settings->liquidGlassParameters());
                 });
         connect(settings, &AppSettings::tierListToolTipsEnabledChanged, m_previewOverlay,
                 &PreviewOverlay::setToolTipsEnabled);
@@ -281,7 +288,8 @@ void RootWidget::buildUi(ProjectRepository* repository, RecentProjectsStore* rec
         if (m_windowAgent && !m_previewSystemButtonStateCaptured) {
             m_previewSavedSystemButtonVisibility = m_windowAgent->systemButtonVisibility();
             m_previewSystemButtonStateCaptured = true;
-            m_windowAgent->setSystemButtonVisibility(QWK::WindowAgentBase::AlwaysHidden);
+            m_windowAgent->setSystemButtonVisibility(
+                vkui::VkWindowAgent::SystemButtonVisibility::AlwaysHidden);
         }
         Logger::info(QStringLiteral("ui.preview.input.barrier enabled=1 scope=window"));
     });
@@ -455,6 +463,9 @@ void RootWidget::buildUi(ProjectRepository* repository, RecentProjectsStore* rec
         if (m_pages) {
             updateTitleBarForPage(m_currentPage);
         }
+        if (m_preferencesDialog) {
+            m_preferencesDialog->setWindowTitle(tr("Preferences"));
+        }
         if (m_sidebarToggleButton) {
             m_sidebarToggleButton->setToolTip(m_sidebarCollapsed ? tr("Show sidebar")
                                                                  : tr("Collapse sidebar"));
@@ -567,10 +578,11 @@ QFrame* RootWidget::createContent(ProjectRepository* repository,
     m_pages->addWidget(m_projectsPage);
     contentLayout->addWidget(m_pages, 1);
 
-    // The chrome is intentionally a transparent overlay. EditPage reserves exactly one title-bar
-    // height for the board, while its lightweight shadow can remain visible below this widget.
+    // The registered title bar is a transparent native hit-test geometry layer. Keep it below the
+    // page surface while AppTitleBar raises its independently parented interactive controls.
     m_titleBar = new AppTitleBar(content);
     m_titleBar->setGeometry(0, 0, content->width(), kTitleBarHeight);
+    m_titleBar->stackUnder(m_pages);
     m_titleBar->raiseChrome();
     return content;
 }
@@ -674,7 +686,8 @@ void RootWidget::setTierFocusMode(bool enabled) {
     if (enabled) {
         if (m_windowAgent) {
             m_savedSystemButtonVisibility = m_windowAgent->systemButtonVisibility();
-            m_windowAgent->setSystemButtonVisibility(QWK::WindowAgentBase::AlwaysHidden);
+            m_windowAgent->setSystemButtonVisibility(
+                vkui::VkWindowAgent::SystemButtonVisibility::AlwaysHidden);
         }
         m_focusSavedSidebarCollapsed = m_sidebarCollapsed || m_currentSidebarWidth <= 0;
         m_focusSavedSidebarWidth =
@@ -800,7 +813,7 @@ void RootWidget::layoutSidebarSurface() {
     }
 
     // The shell owns the animated width. The real sidebar remains expanded and is clipped by the
-    // shell, matching QWindowKit's multi-titlebar demo and avoiding QSplitter minimum-size jumps.
+    // shell, matching VkUI's multi-titlebar model and avoiding QSplitter minimum-size jumps.
     const int sidebarWidth = std::max(m_sidebarShell->width(), m_lastExpandedSidebarWidth);
     m_sidebar->setGeometry(0, 0, sidebarWidth, m_sidebarShell->height());
 }
@@ -823,6 +836,9 @@ void RootWidget::layoutTitleBars() {
 #endif
         } else {
             m_titleBar->setGeometry(0, 0, contentWidth, kTitleBarHeight);
+        }
+        if (m_pages) {
+            m_titleBar->stackUnder(m_pages);
         }
         m_titleBar->raiseChrome();
     }
@@ -906,6 +922,11 @@ void RootWidget::showPreferencesDialog() {
     auto* dialog = new AppDialog(tr("Preferences"), window());
     dialog->setObjectName(QStringLiteral("PreferencesDialog"));
     dialog->setAttribute(Qt::WA_DeleteOnClose);
+    // Preferences is a long-lived utility window, not a modal sheet. On macOS a window-modal
+    // child is presented with sheet semantics and intentionally has no traffic-light close.
+    dialog->setWindowModality(Qt::NonModal);
+    dialog->setCloseButtonPlacement(AppDialog::CloseButtonPlacement::Platform);
+    dialog->setResizable(true);
     dialog->setMinimumSize(720, 480);
     dialog->resize(860, 560);
 
@@ -957,8 +978,8 @@ void RootWidget::updateTitleBarLeadingReservation() {
 
 int RootWidget::minimumSidebarToggleX() const {
 #if defined(Q_OS_MACOS) || defined(Q_OS_MAC)
-    if (m_windowAgent &&
-        m_windowAgent->systemButtonVisibility() != QWK::WindowAgentBase::AlwaysHidden) {
+    if (m_windowAgent && m_windowAgent->systemButtonVisibility() !=
+                             vkui::VkWindowAgent::SystemButtonVisibility::AlwaysHidden) {
         const QRect area = m_windowAgent->systemButtonAreaGeometry();
         if (area.isValid()) {
             return area.right() + 9;
@@ -1060,7 +1081,10 @@ void RootWidget::setTitleEditorHitTestVisible(bool visible) {
     if (!m_windowAgent || !m_titleBar || !m_titleBar->titleEditor()) {
         return;
     }
-    m_windowAgent->setHitTestVisible(m_titleBar, m_titleBar->titleEditor(), visible);
+    if (!m_windowAgent->setHitTestVisible(m_titleBar, m_titleBar->titleEditor(), visible)) {
+        Logger::warn(
+            QStringLiteral("ui.window.agent.hittest.title-editor failed visible=%1").arg(visible));
+    }
 }
 
 void RootWidget::updatePageMargins(AppPage page) {
@@ -1105,4 +1129,4 @@ void RootWidget::updateUnsavedIndicators() {
     }
 }
 
-} // namespace tlm
+} // namespace qtm

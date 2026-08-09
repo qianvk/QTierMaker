@@ -15,7 +15,9 @@ class QResizeEvent;
 class QToolButton;
 class QWidget;
 
-namespace tlm {
+namespace qtm {
+
+class CompositionAwareLineEdit;
 
 /** Frameless draggable title bar containing document title and primary commands. */
 class AppTitleBar : public QWidget {
@@ -65,7 +67,7 @@ private:
     void installTitleEditOutsideClickFilter();
     void removeTitleEditOutsideClickFilter();
 
-    QLineEdit* m_titleEdit{nullptr};
+    CompositionAwareLineEdit* m_titleEdit{nullptr};
     QLabel* m_unsavedIndicator{nullptr};
     QToolButton* m_templatesButton{nullptr};
     QToolButton* m_backgroundButton{nullptr};
@@ -82,4 +84,4 @@ private:
     QString m_titleEditBaseline;
 };
 
-} // namespace tlm
+} // namespace qtm
