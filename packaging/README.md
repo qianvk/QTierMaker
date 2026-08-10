@@ -17,17 +17,12 @@ creates or updates the matching GitHub Release with the Windows x64 packages, ma
 DMG, and `updates.json`. Artifact hashes are recorded in the update manifest instead of being
 published as separate files.
 
-Unsigned packages are useful for local testing. Public distribution should configure these GitHub
-Actions secrets:
+macOS packages use ad-hoc signing and do not require certificates or private credentials. Gatekeeper
+therefore requires users to explicitly allow QTierMaker from System Settings on first launch.
+Windows Authenticode signing remains optional and uses these GitHub Actions secrets when present:
 
 | Platform | Secret | Purpose |
 | --- | --- | --- |
-| macOS | `MACOS_CERTIFICATE_BASE64` | Base64-encoded Developer ID Application `.p12` |
-| macOS | `MACOS_CERTIFICATE_PASSWORD` | Password for the `.p12` |
-| macOS | `MACOS_SIGNING_IDENTITY` | Full Developer ID Application identity |
-| macOS | `MACOS_NOTARY_KEY_BASE64` | Base64-encoded App Store Connect API `.p8` key |
-| macOS | `MACOS_NOTARY_KEY_ID` | App Store Connect API key ID |
-| macOS | `MACOS_NOTARY_ISSUER_ID` | App Store Connect issuer ID |
 | Windows | `WINDOWS_CERTIFICATE_BASE64` | Base64-encoded Authenticode `.pfx` |
 | Windows | `WINDOWS_CERTIFICATE_PASSWORD` | Password for the `.pfx` |
 

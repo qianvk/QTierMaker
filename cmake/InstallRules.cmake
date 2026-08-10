@@ -62,13 +62,12 @@ if(MSVC)
 endif()
 
 # Build a self-contained install tree before CPack turns it into a platform installer.
-set(QTM_MACOS_CODESIGN_IDENTITY "" CACHE STRING
-    "Developer ID Application identity used by macdeployqt (empty creates an unsigned bundle)")
 set(_qtm_deploy_tool_options)
 set(_qtm_deploy_plugin_options)
-if(APPLE AND QTM_MACOS_CODESIGN_IDENTITY)
-    list(APPEND _qtm_deploy_tool_options
-        "-sign-for-notarization=${QTM_MACOS_CODESIGN_IDENTITY}")
+if(APPLE)
+    # Re-sign after deployment so Qt frameworks and resources belong to the final app seal.
+    # Ad-hoc signing needs no private identity; Gatekeeper still requires an explicit user override.
+    list(APPEND _qtm_deploy_tool_options "-codesign=-")
 endif()
 if(WIN32)
     list(APPEND _qtm_deploy_tool_options

@@ -33,8 +33,6 @@ jobs:
     runs-on: ${{ matrix.os }}
     timeout-minutes: 45
     env:
-      HAS_MACOS_CERTIFICATE: ${{ secrets.MACOS_CERTIFICATE_BASE64 != '' }}
-      HAS_MACOS_NOTARY_KEY: ${{ secrets.MACOS_NOTARY_KEY_BASE64 != '' }}
       HAS_WINDOWS_CERTIFICATE: ${{ secrets.WINDOWS_CERTIFICATE_BASE64 != '' }}
 
     steps:
@@ -65,27 +63,6 @@ jobs:
           fi
           echo "QTM_PACKAGE_VERSION=${version}" >> "${GITHUB_ENV}"
 
-      - name: Import macOS signing certificate
-        if: runner.os == 'macOS' && env.HAS_MACOS_CERTIFICATE == 'true'
-        shell: bash
-        env:
-          MACOS_CERTIFICATE_BASE64: ${{ secrets.MACOS_CERTIFICATE_BASE64 }}
-          MACOS_CERTIFICATE_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
-        run: |
-          certificate_path="${RUNNER_TEMP}/qtiermaker-signing.p12"
-          keychain_path="${RUNNER_TEMP}/qtiermaker-signing.keychain-db"
-          keychain_password="$(openssl rand -hex 24)"
-          printf '%s' "${MACOS_CERTIFICATE_BASE64}" | base64 --decode > "${certificate_path}"
-          security create-keychain -p "${keychain_password}" "${keychain_path}"
-          security set-keychain-settings -lut 21600 "${keychain_path}"
-          security unlock-keychain -p "${keychain_password}" "${keychain_path}"
-          security import "${certificate_path}" -P "${MACOS_CERTIFICATE_PASSWORD}" \
-            -A -t cert -f pkcs12 -k "${keychain_path}"
-          security set-key-partition-list -S apple-tool:,apple: -s \
-            -k "${keychain_password}" "${keychain_path}"
-          security list-keychains -d user -s "${keychain_path}"
-          echo "MACOS_SIGNING_KEYCHAIN=${keychain_path}" >> "${GITHUB_ENV}"
-
       - name: Import Windows signing certificate
         if: runner.os == 'Windows' && env.HAS_WINDOWS_CERTIFICATE == 'true'
         shell: pwsh
@@ -101,14 +78,8 @@ jobs:
 
       - name: Configure
         shell: bash
-        env:
-          MACOS_SIGNING_IDENTITY: ${{ secrets.MACOS_SIGNING_IDENTITY }}
         run: |
-          signing_identity=""
           platform_args=()
-          if [[ "${RUNNER_OS}" == "macOS" && "${HAS_MACOS_CERTIFICATE}" == "true" ]]; then
-            signing_identity="${MACOS_SIGNING_IDENTITY}"
-          fi
           if [[ "${RUNNER_OS}" == "macOS" ]]; then
             platform_args+=("-DCMAKE_OSX_ARCHITECTURES=arm64")
           else
@@ -120,7 +91,6 @@ jobs:
             -DCMAKE_BUILD_TYPE=Release \
             -DQTM_BUILD_TESTS=ON \
             "-DQTM_PACKAGE_VERSION=${QTM_PACKAGE_VERSION}" \
-            "-DQTM_MACOS_CODESIGN_IDENTITY=${signing_identity}" \
             "${platform_args[@]}"
 
       - name: Build
@@ -211,29 +181,6 @@ jobs:
             if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           }
 
-      - name: Notarize macOS disk image
-        if: >-
-          runner.os == 'macOS' &&
-          env.HAS_MACOS_CERTIFICATE == 'true' &&
-          env.HAS_MACOS_NOTARY_KEY == 'true'
-        shell: bash
-        env:
-          MACOS_SIGNING_IDENTITY: ${{ secrets.MACOS_SIGNING_IDENTITY }}
-          MACOS_NOTARY_KEY_BASE64: ${{ secrets.MACOS_NOTARY_KEY_BASE64 }}
-          MACOS_NOTARY_KEY_ID: ${{ secrets.MACOS_NOTARY_KEY_ID }}
-          MACOS_NOTARY_ISSUER_ID: ${{ secrets.MACOS_NOTARY_ISSUER_ID }}
-        run: |
-          key_path="${RUNNER_TEMP}/AuthKey_${MACOS_NOTARY_KEY_ID}.p8"
-          printf '%s' "${MACOS_NOTARY_KEY_BASE64}" | base64 --decode > "${key_path}"
-          dmg_path="$(find dist -maxdepth 1 -name '*.dmg' -print -quit)"
-          codesign --force --timestamp --sign "${MACOS_SIGNING_IDENTITY}" "${dmg_path}"
-          xcrun notarytool submit "${dmg_path}" \
-            --key "${key_path}" \
-            --key-id "${MACOS_NOTARY_KEY_ID}" \
-            --issuer "${MACOS_NOTARY_ISSUER_ID}" \
-            --wait
-          xcrun stapler staple "${dmg_path}"
-
       - name: Generate checksum
         shell: bash
         run: |
@@ -256,12 +203,7 @@ jobs:
         if: always()
         shell: bash
         run: |
-          rm -f "${RUNNER_TEMP}/qtiermaker-signing.p12" \
-            "${RUNNER_TEMP}/qtiermaker-signing.pfx" \
-            "${RUNNER_TEMP}"/AuthKey_*.p8
-          if [[ -n "${MACOS_SIGNING_KEYCHAIN:-}" ]]; then
-            security delete-keychain "${MACOS_SIGNING_KEYCHAIN}"
-          fi
+          rm -f "${RUNNER_TEMP}/qtiermaker-signing.pfx"
 
   release:
     name: Publish GitHub Release
@@ -325,10 +267,10 @@ jobs:
               channel: $channel,
               localizations: {
                 en: {
-                  changelog: ("QTierMaker " + $version + " is available. See the release page for details.")
+                  changelog: ("QTierMaker " + $version + " is available. On macOS, allow the app from System Settings > Privacy & Security on first launch. See the release page for details.")
                 },
                 zh_CN: {
-                  changelog: ("QTierMaker " + $version + " 已发布。详细内容请查看发布页面。")
+                  changelog: ("QTierMaker " + $version + " 已发布。macOS 首次启动时，请在系统设置 > 隐私与安全性中选择仍要打开。详细内容请查看发布页面。")
                 }
               },
               updates: {
@@ -365,6 +307,16 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
         run: |
+          notice_marker='<!-- qtiermaker-macos-open-anyway -->'
+          macos_notice="${notice_marker}
+          ### macOS first launch
+
+          This build is not notarized. After copying QTierMaker to Applications, try to open it once, then open **System Settings > Privacy & Security** and choose **Open Anyway**.
+
+          ### macOS 首次启动
+
+          此版本未经 Apple 公证。将 QTierMaker 复制到“应用程序”并尝试启动一次，然后前往 **系统设置 > 隐私与安全性**，选择 **仍要打开**。"
+
           release_flags=()
           if [[ "${GITHUB_REF_NAME#v}" == *-* ]]; then
             release_flags+=(--prerelease)
@@ -375,8 +327,15 @@ jobs:
               release-assets/*.dmg \
               release-assets/updates.json \
               --clobber
+            current_notes="$(gh release view "${GITHUB_REF_NAME}" --json body --jq '.body // ""')"
+            if [[ "${current_notes}" != *"${notice_marker}"* ]]; then
+              current_notes="${macos_notice}
+
+          ${current_notes}"
+            fi
             gh release edit "${GITHUB_REF_NAME}" "${release_flags[@]}" \
-              --title "QTierMaker ${GITHUB_REF_NAME}"
+              --title "QTierMaker ${GITHUB_REF_NAME}" \
+              --notes "${current_notes}"
           else
             gh release create "${GITHUB_REF_NAME}" \
               release-assets/*.exe \
@@ -385,6 +344,7 @@ jobs:
               --verify-tag \
               --generate-notes \
               "${release_flags[@]}" \
+              --notes "${macos_notice}" \
               --title "QTierMaker ${GITHUB_REF_NAME}"
           fi
 

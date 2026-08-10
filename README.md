@@ -4,6 +4,12 @@ QTierMaker is a native Qt desktop app for building personal tier lists on Window
 and Linux. Projects stay local and keep their imported images, tier structure, background, and
 presentation settings together.
 
+## macOS Installation
+
+The macOS build is distributed without Apple notarization. After copying QTierMaker to
+Applications, try to open it once, then open **System Settings > Privacy & Security** and choose
+**Open Anyway**. Confirm **Open** when macOS asks again.
+
 ## Edit and Arrange
 
 ![Anime Girls v5 open in the tier editor](docs/screenshots/editor.webp)
