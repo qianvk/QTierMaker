@@ -31,7 +31,7 @@ package carries only the signed application executable, verifies the installed `
 waits for the running application to exit, replaces it with rollback protection, and restarts it.
 Clients use the compact package only when its runtime generation and GitHub asset metadata match;
 otherwise they use the full installer. Bump `QTM_UPDATE_RUNTIME_VERSION` whenever Qt or the deployed
-dynamic plugin/runtime set changes. macOS continues to update with the complete signed DMG.
+dynamic plugin/runtime set changes. macOS updates use the complete ad-hoc signed DMG.
 
 The Windows NSIS installer installs machine-wide under `Program Files` by default. It intentionally
 omits the software OpenGL renderer, legacy D3D compiler, DXC, Qt translations, and the VC
