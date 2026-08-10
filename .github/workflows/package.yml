@@ -31,7 +31,8 @@ jobs:
             artifact_glob: dist/*.exe
             runtime_metadata: dist/QTierMaker-Windows-runtime-version.txt
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 45
+    # A clean arm64 Qt build can take around 40 minutes on GitHub's macOS runners.
+    timeout-minutes: 75
     env:
       HAS_WINDOWS_CERTIFICATE: ${{ secrets.WINDOWS_CERTIFICATE_BASE64 != '' }}
 
