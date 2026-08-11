@@ -478,7 +478,7 @@ void PreferencesPage::refreshUpdateActions() {
         m_installUpdateButton->setEnabled(ready || available);
         m_installUpdateButton->setText(ready ? tr("Install Update") : tr("Download Update"));
         m_installUpdateButton->setIcon(
-            vkui::icon(ready ? vkui::VkSymbol::Checkmark : vkui::VkSymbol::Download,
+            vkui::icon(ready ? vkui::VkSymbol::Install : vkui::VkSymbol::Download,
                        vkui::VkIconRole::Accent));
     }
     if (m_openUpdateButton) {
