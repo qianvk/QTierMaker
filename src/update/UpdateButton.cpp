@@ -125,7 +125,7 @@ void UpdateButton::refreshPresentation() {
     const int width = installAction ? qBound(72, textWidth + iconSize().width() + 30, 116) : 34;
     setFixedSize(width, 34);
     setAccessibleName(installAction ? m_installText : toolTip());
-    setIcon(vkui::icon(installAction ? vkui::VkSymbol::Checkmark : vkui::VkSymbol::Download,
+    setIcon(vkui::icon(installAction ? vkui::VkSymbol::Install : vkui::VkSymbol::Download,
                        vkui::VkIconRole::Accent));
     updateGeometry();
 }

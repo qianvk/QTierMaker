@@ -6,6 +6,10 @@ SetCompressor /SOLID lzma
 
 !include "MUI2.nsh"
 
+!define PRODUCT_REGISTRY_KEY "Software\qianvk\QTierMaker"
+!define UNINSTALL_REGISTRY_KEY \
+    "Software\Microsoft\Windows\CurrentVersion\Uninstall\QTierMaker"
+
 !ifndef APP_EXECUTABLE
     !error "APP_EXECUTABLE is required"
 !endif
@@ -57,18 +61,57 @@ Var InstallRoot
 Var AppPath
 Var StagedPath
 Var WaitCount
+Var RegistryView
+Var FoundInstallation
 
 Function .onInit
+    StrCpy $FoundInstallation "0"
+
     SetRegView 64
-    ReadRegStr $InstallRoot HKLM "Software\qianvk\QTierMaker" ""
-    StrCmp $InstallRoot "" not_installed
+    ReadRegStr $InstallRoot HKLM "${PRODUCT_REGISTRY_KEY}" ""
+    StrCmp $InstallRoot "" read_uninstall_64 validate_64
 
+read_uninstall_64:
+    ReadRegStr $InstallRoot HKLM "${UNINSTALL_REGISTRY_KEY}" "InstallLocation"
+
+validate_64:
+    StrCmp $InstallRoot "" try_32
     StrCpy $AppPath "$InstallRoot\bin\QTierMaker.exe"
-    IfFileExists "$AppPath" runtime_check not_installed
+    IfFileExists "$AppPath" check_runtime_64 try_32
 
-runtime_check:
-    ReadRegStr $0 HKLM "Software\qianvk\QTierMaker" "RuntimeVersion"
-    StrCmp $0 "${RUNTIME_VERSION}" ready runtime_mismatch
+check_runtime_64:
+    StrCpy $FoundInstallation "1"
+    ReadRegStr $0 HKLM "${PRODUCT_REGISTRY_KEY}" "RuntimeVersion"
+    StrCmp $0 "${RUNTIME_VERSION}" use_64 try_32
+
+try_32:
+    SetRegView 32
+    ReadRegStr $InstallRoot HKLM "${PRODUCT_REGISTRY_KEY}" ""
+    StrCmp $InstallRoot "" read_uninstall_32 validate_32
+
+read_uninstall_32:
+    ReadRegStr $InstallRoot HKLM "${UNINSTALL_REGISTRY_KEY}" "InstallLocation"
+
+validate_32:
+    StrCmp $InstallRoot "" no_compatible_install
+    StrCpy $AppPath "$InstallRoot\bin\QTierMaker.exe"
+    IfFileExists "$AppPath" check_runtime_32 no_compatible_install
+
+check_runtime_32:
+    StrCpy $FoundInstallation "1"
+    ReadRegStr $0 HKLM "${PRODUCT_REGISTRY_KEY}" "RuntimeVersion"
+    StrCmp $0 "${RUNTIME_VERSION}" use_32 no_compatible_install
+
+use_64:
+    StrCpy $RegistryView "64"
+    Goto ready
+
+use_32:
+    StrCpy $RegistryView "32"
+    Goto ready
+
+no_compatible_install:
+    StrCmp $FoundInstallation "1" runtime_mismatch not_installed
 
 not_installed:
     MessageBox MB_OK|MB_ICONSTOP "$(NotInstalled)"
@@ -109,10 +152,16 @@ replace_executable:
 
 update_registry:
     Delete "$AppPath.old"
-    WriteRegStr HKLM "Software\qianvk\QTierMaker" "RuntimeVersion" "${RUNTIME_VERSION}"
-    WriteRegStr HKLM \
-        "Software\Microsoft\Windows\CurrentVersion\Uninstall\QTierMaker" \
-        "DisplayVersion" "${APP_VERSION}"
+    StrCmp $RegistryView "64" select_64_registry
+    SetRegView 32
+    Goto write_registry
+
+select_64_registry:
+    SetRegView 64
+
+write_registry:
+    WriteRegStr HKLM "${PRODUCT_REGISTRY_KEY}" "RuntimeVersion" "${RUNTIME_VERSION}"
+    WriteRegStr HKLM "${UNINSTALL_REGISTRY_KEY}" "DisplayVersion" "${APP_VERSION}"
     Exec '"$AppPath"'
     Goto done
 
