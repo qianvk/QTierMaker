@@ -511,6 +511,65 @@ void TierListView::updateImageVisual(const QString& imageId) {
     }
 }
 
+void TierListView::resetViewState() {
+    ++m_missionPressSerial;
+    ++m_blankPressSerial;
+    resetPressState();
+
+    stopReorderAnimations();
+    m_reorderRowOffsets.clear();
+    m_reorderSourceRow = -1;
+    m_reorderSourceRect = {};
+    m_placeholderY = 0.0;
+    m_rowDragCommitted = false;
+
+    stopImageAnimations();
+    m_imageTileOffsets.clear();
+    m_imageDragOriginalRects.clear();
+    m_imageDragActive = false;
+    m_imageDragId.clear();
+    m_imageDragSourceRow = -1;
+    m_imagePreviewTargetRow = -1;
+    m_imagePlaceholderRect = {};
+    m_imageDragSynchronousFeedback = false;
+    clearDropState();
+
+    stopMissionTransitionAnimation();
+    stopMissionHoverAnimation();
+    if (m_missionLiftAnimation) {
+        m_missionLiftAnimation->stop();
+        m_missionLiftAnimation->deleteLater();
+        m_missionLiftAnimation = nullptr;
+    }
+    if (m_missionLiftOverlay) {
+        m_missionLiftOverlay->hide();
+        m_missionLiftOverlay->deleteLater();
+        m_missionLiftOverlay = nullptr;
+    }
+    m_missionControlActive = false;
+    m_missionFromGallery = false;
+    m_missionTierRowId.clear();
+    m_missionTransitionProgress = 0.0;
+    m_missionNormalRects.clear();
+    m_missionHoverImageId.clear();
+    m_missionLiftImageId.clear();
+    m_missionHoverPosition = {};
+    m_missionHoverProgress = 0.0;
+    m_suppressBlankDoubleClick = false;
+    m_activeImageId.clear();
+    m_activeImageIndex = QPersistentModelIndex();
+    m_missionSourceSizeCache.clear();
+    m_canvasBackgroundCache.clear();
+    m_missionBackdropCache.clear();
+    invalidateMissionControlLayout();
+    updateInteractionMouseTracking();
+    clearSelection();
+    setCurrentIndex(QModelIndex());
+    unsetCursor();
+    viewport()->update();
+    Logger::debug(QStringLiteral("tier.list.view.reset mission=0 drag=0 selection=0"));
+}
+
 void TierListView::setMissionControlActiveForSource(bool active, MissionControlSource source,
                                                     const QString& tierRowId) {
     const bool gallerySource = source == MissionControlSource::Gallery;
@@ -993,9 +1052,11 @@ void TierListView::contextMenuEvent(QContextMenuEvent* event) {
                     vkui::icon(vkui::VkSymbol::Trash, vkui::VkIconRole::Destructive), tr("Delete"));
                 menu.addSeparator();
                 QAction* insertAboveAction =
-                    menu.addAction(vkui::icon(vkui::VkSymbol::Plus), tr("Insert Row Above"));
+                    menu.addAction(vkui::icon(vkui::VkSymbol::InsertAbove),
+                                   tr("Insert Row Above"));
                 QAction* insertBelowAction =
-                    menu.addAction(vkui::icon(vkui::VkSymbol::Plus), tr("Insert Row Below"));
+                    menu.addAction(vkui::icon(vkui::VkSymbol::InsertBelow),
+                                   tr("Insert Row Below"));
                 QAction* chosen = menu.exec(event->globalPos());
                 if (chosen == editAction) {
                     emit rowEditRequested(rowId);
@@ -1028,7 +1089,8 @@ void TierListView::contextMenuEvent(QContextMenuEvent* event) {
     if (!m_missionControlActive && imageId.isEmpty() && pointedIndex.isValid() &&
         !delegate->labelRect(visualRect(pointedIndex)).contains(event->pos())) {
         QMenu menu(this);
-        QMenu* appearanceMenu = menu.addMenu(tr("Image Appearance"));
+        QMenu* appearanceMenu =
+            menu.addMenu(vkui::icon(vkui::VkSymbol::Image), tr("Image Appearance"));
         auto* group = new QActionGroup(appearanceMenu);
         group->setExclusive(true);
         QAction* squareAction = appearanceMenu->addAction(tr("Square"));
@@ -1040,12 +1102,22 @@ void TierListView::contextMenuEvent(QContextMenuEvent* event) {
         const ImagePresentationMode currentMode = project->imagePresentationMode();
         squareAction->setChecked(currentMode == ImagePresentationMode::Square);
         noCropAction->setChecked(currentMode == ImagePresentationMode::NoCrop);
+        menu.addSeparator();
+        QAction* resetRowsAction =
+            menu.addAction(vkui::icon(vkui::VkSymbol::Reset), tr("Reset Rows"));
+        const bool canResetRows =
+            std::any_of(project->rows.cbegin(), project->rows.cend(),
+                        [](const TierRow& row) { return !row.imageIds.isEmpty(); });
+        resetRowsAction->setEnabled(canResetRows);
 
         QAction* chosen = menu.exec(event->globalPos());
         if (chosen == squareAction && currentMode != ImagePresentationMode::Square) {
             emit imagePresentationModeRequested(ImagePresentationMode::Square);
         } else if (chosen == noCropAction && currentMode != ImagePresentationMode::NoCrop) {
             emit imagePresentationModeRequested(ImagePresentationMode::NoCrop);
+        } else if (chosen == resetRowsAction) {
+            Logger::info(QStringLiteral("tier.list.context.rows.reset.requested"));
+            emit resetRowsRequested();
         }
         event->accept();
         return;
@@ -1294,16 +1366,18 @@ void TierListView::dropEvent(QDropEvent* event) {
         const QString imageId = TierDragController::imageIdFromMimeData(mimeData);
         updateImageDropIntentAt(event->position().toPoint());
         const QModelIndex target = m_imageDropIndex;
+        QString targetRowId;
+        int insertionIndex = -1;
         if (!imageId.isEmpty() && target.isValid()) {
             if (TierListModel* model = tierModel()) {
-                const int insertionIndex = m_imageDropInsertionIndex;
+                insertionIndex = m_imageDropInsertionIndex;
                 if (insertionIndex >= 0) {
+                    targetRowId = model->rowIdAt(target.row());
                     Logger::info(QStringLiteral("tier.list.image.drop imageId=%1 rowId=%2 row=%3 "
                                                 "index=%4 reason=viewDrop")
-                                     .arg(imageId, model->rowIdAt(target.row()))
+                                     .arg(imageId, targetRowId)
                                      .arg(target.row())
                                      .arg(insertionIndex));
-                    emit imageDropped(imageId, model->rowIdAt(target.row()), insertionIndex);
                 } else {
                     Logger::warn(QStringLiteral("tier.list.image.drop rejected imageId=%1 row=%2 "
                                                 "reason=invalidInsertion")
@@ -1318,6 +1392,18 @@ void TierListView::dropEvent(QDropEvent* event) {
                     .arg(imageId)
                     .arg(target.isValid()));
         }
+
+        // Drop feedback is transient view state. Clear it before publishing the data mutation so
+        // a synchronous model reset cannot preserve a hidden source tile or a stale placeholder.
+        finishImageDragVisuals();
+        clearDropState();
+        viewport()->update();
+        event->setDropAction(Qt::MoveAction);
+        event->accept();
+        if (!targetRowId.isEmpty() && insertionIndex >= 0) {
+            emit imageDropped(imageId, targetRowId, insertionIndex);
+        }
+        return;
     }
 
     finishImageDragVisuals();
@@ -2574,18 +2660,20 @@ void TierListView::startMissionImageLiftDrag(const QString& imageId, const QPoin
     const QRect sourceHostRect(host->mapFromGlobal(viewport()->mapToGlobal(sourceRect.topLeft())),
                                sourceRect.size());
     auto* overlay = new QLabel(host);
+    m_missionLiftOverlay = overlay;
     overlay->setAttribute(Qt::WA_TransparentForMouseEvents);
     overlay->setScaledContents(false);
     overlay->setGeometry(sourceHostRect);
     overlay->raise();
     overlay->show();
 
-    auto renderOverlay = [overlay, imagePixmap, dpr](const QRect& geometry) {
-        if (!overlay) {
+    const QPointer<QLabel> overlayGuard(overlay);
+    auto renderOverlay = [overlayGuard, imagePixmap, dpr](const QRect& geometry) {
+        if (!overlayGuard) {
             return;
         }
-        overlay->setGeometry(geometry);
-        overlay->setPixmap(centeredDragPixmap(imagePixmap, geometry.size(), dpr));
+        overlayGuard->setGeometry(geometry);
+        overlayGuard->setPixmap(centeredDragPixmap(imagePixmap, geometry.size(), dpr));
     };
     renderOverlay(sourceHostRect);
 
@@ -2604,11 +2692,11 @@ void TierListView::startMissionImageLiftDrag(const QString& imageId, const QPoin
     }
 
     auto* animation = new QVariantAnimation(this);
+    m_missionLiftAnimation = animation;
     animation->setDuration(kMissionTransitionMs + 40);
     animation->setEasingCurve(QEasingCurve::OutCubic);
     animation->setStartValue(0.0);
     animation->setEndValue(1.0);
-    QPointer<QLabel> overlayGuard(overlay);
     connect(
         animation, &QVariantAnimation::valueChanged, this,
         [host, sourceHostRect, targetSize, renderOverlay](const QVariant& value) {
@@ -2627,6 +2715,12 @@ void TierListView::startMissionImageLiftDrag(const QString& imageId, const QPoin
         });
     connect(animation, &QVariantAnimation::finished, this,
             [this, animation, overlayGuard, imageId, imagePixmap, targetSize, dpr]() {
+                if (m_missionLiftAnimation == animation) {
+                    m_missionLiftAnimation = nullptr;
+                }
+                if (m_missionLiftOverlay == overlayGuard) {
+                    m_missionLiftOverlay = nullptr;
+                }
                 animation->deleteLater();
                 if (!(QApplication::mouseButtons() & Qt::LeftButton)) {
                     if (overlayGuard) {

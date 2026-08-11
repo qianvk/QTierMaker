@@ -6,6 +6,8 @@
 
 #include "logging/Logger.h"
 #include "pages/ProjectLocationDialog.h"
+#include "persistence/ProjectFileLayout.h"
+#include "persistence/ProjectStorage.h"
 #include "theme/Theme.h"
 #include "tier/ImageEditDialog.h"
 #include "tier/ImageGalleryPopover.h"
@@ -27,6 +29,7 @@
 #include <QFileInfo>
 #include <QFormLayout>
 #include <QFrame>
+#include <QHash>
 #include <QHBoxLayout>
 #include <QKeyEvent>
 #include <QLabel>
@@ -68,6 +71,43 @@ constexpr int kTierBoardOuterMargin = 16;
 constexpr int kTierBoardShadowExtent = 18;
 constexpr auto kDefaultBackgroundIconPath = ":/images/app-icon.png";
 constexpr qreal kDefaultBackgroundIconVisibility = 0.22;
+
+struct ProjectIntegrityStats {
+    int rowImageReferences{0};
+    int duplicateReferences{0};
+    int missingImages{0};
+    int assignmentMismatches{0};
+};
+
+ProjectIntegrityStats inspectProjectIntegrity(const TierProject& project) {
+    ProjectIntegrityStats result;
+    QHash<QString, QString> rowForImage;
+    rowForImage.reserve(project.images.size());
+    for (const TierRow& row : project.rows) {
+        for (const QString& imageId : row.imageIds) {
+            ++result.rowImageReferences;
+            if (!project.imageById(imageId)) {
+                ++result.missingImages;
+                continue;
+            }
+            if (rowForImage.contains(imageId)) {
+                ++result.duplicateReferences;
+                continue;
+            }
+            rowForImage.insert(imageId, row.id);
+        }
+    }
+    for (const TierImage& image : project.images) {
+        const auto membership = rowForImage.constFind(image.id);
+        if (membership == rowForImage.cend()) {
+            result.assignmentMismatches += image.assignedTierRowId.has_value() ? 1 : 0;
+        } else if (!image.assignedTierRowId.has_value() ||
+                   *image.assignedTierRowId != membership.value()) {
+            ++result.assignmentMismatches;
+        }
+    }
+    return result;
+}
 
 QSize displayDecodeTarget(const QWidget* context) {
     QScreen* screen = context ? context->screen() : QApplication::primaryScreen();
@@ -449,6 +489,20 @@ EditPage::EditPage(ProjectRepository* repository, RecentProjectsStore* recentPro
       m_project(TierProject::createUntitled()) {
     m_project = createProjectFromDefaultTemplate();
     m_project.dirty = false;
+    m_history = new ProjectHistory(
+        [this](const ProjectHistory::State& state) { applyHistoryState(state); }, this);
+    connect(m_history, &ProjectHistory::stateChanged, this, [this](bool clean, int index) {
+        if (m_resettingProjectState) {
+            return;
+        }
+        m_project.dirty = !clean;
+        Logger::debug(QStringLiteral("tier.edit.history.state index=%1 clean=%2 canUndo=%3 canRedo=%4")
+                          .arg(index)
+                          .arg(clean)
+                          .arg(m_history->canUndo())
+                          .arg(m_history->canRedo()));
+        refreshUi();
+    });
     setFocusPolicy(Qt::StrongFocus);
     setMouseTracking(true);
     // The page is the opaque backing surface revealed through the transparent title bar.
@@ -492,7 +546,7 @@ bool EditPage::openProjectFromDialog() {
     }
     const QString directory = m_settings ? m_settings->defaultProjectDirectory() : QString();
     const QString path = QFileDialog::getOpenFileName(this, tr("Open Project"), directory,
-                                                      tr("QTierMaker Projects (*.qtmproject *.tlmproject)"));
+                                                      tr("QTierMaker Projects (*.qtm)"));
     if (path.isEmpty()) {
         return false;
     }
@@ -519,20 +573,29 @@ bool EditPage::saveProject() {
         QString projectName = m_project.name;
         const QString path = uniqueDefaultProjectPath(&projectName);
         if (projectName != m_project.name) {
-            m_project.name = projectName;
-            m_project.dirty = true;
+            renameProject(projectName);
         }
         return saveProjectToPath(path);
     }
-    return saveProjectToPath(m_project.filePath);
+    const QString renamedPath =
+        ProjectFileLayout::renamedProjectFilePath(m_project.filePath, m_project.name);
+    const QString currentPath = QFileInfo(m_project.filePath).absoluteFilePath();
+    if (renamedPath != currentPath) {
+        Logger::info(QStringLiteral("tier.edit.project.storage.rename source=\"%1\" target=\"%2\"")
+                         .arg(currentPath, renamedPath));
+        return saveProjectToPath(renamedPath, ProjectSaveMode::MovePreviousStorage);
+    }
+    return saveProjectToPath(currentPath);
 }
 
 bool EditPage::saveProjectAs() {
+    const bool hasPreviousStorage = !m_project.filePath.isEmpty();
     const QString path = chooseSavePath();
     if (path.isEmpty()) {
         return false;
     }
-    return saveProjectToPath(path);
+    return saveProjectToPath(path, hasPreviousStorage ? ProjectSaveMode::MovePreviousStorage
+                                                      : ProjectSaveMode::PreservePreviousStorage);
 }
 
 void EditPage::showTemplateMenu(QWidget* anchor) {
@@ -700,9 +763,8 @@ void EditPage::showTemplateMenu(QWidget* anchor) {
 
     addSection(tr("Custom"));
     QDir directory(managedTemplateDirectory());
-    const QFileInfoList files = directory.entryInfoList(
-        {QStringLiteral("*.qtmtemplate"), QStringLiteral("*.tlmtemplate")}, QDir::Files,
-        QDir::Name);
+    const QFileInfoList files =
+        directory.entryInfoList({QStringLiteral("*.qtmtemplate")}, QDir::Files, QDir::Name);
     if (files.isEmpty()) {
         auto* empty = new QLabel(tr("No custom templates saved."), content);
         empty->setObjectName(QStringLiteral("TemplatePopoverEmpty"));
@@ -790,9 +852,10 @@ void EditPage::renameProject(const QString& name) {
         emit titleChanged(displayTitle());
         return;
     }
+    const ProjectHistory::State before = captureProjectState();
     m_project.name = trimmed;
     Logger::info(QStringLiteral("tier.edit.project.rename name=\"%1\"").arg(trimmed));
-    markDirty();
+    commitProjectEdit(before, QStringLiteral("Rename project"));
 }
 
 void EditPage::resetRows() {
@@ -801,11 +864,11 @@ void EditPage::resetRows() {
             tr("Reset rows to S/A/B/C/D and remove row assignments from images?"))) {
         return;
     }
+    const ProjectHistory::State before = captureProjectState();
     m_project.resetDefaultRows();
     m_selectedImageId.clear();
     Logger::info(QStringLiteral("tier.edit.rows.reset"));
-    markDirty();
-    refreshUi();
+    commitProjectEdit(before, QStringLiteral("Reset rows"));
 }
 
 void EditPage::importImagesFromDialog() {
@@ -819,6 +882,7 @@ void EditPage::importImages(const QStringList& filePaths) {
     if (m_project.filePath.isEmpty() && !ensureProjectFile()) {
         return;
     }
+    const ProjectHistory::State before = captureProjectState();
     auto result = m_assetManager->importImages(m_project, filePaths);
     if (!result) {
         showError(tr("Import Failed"), result.error());
@@ -826,8 +890,7 @@ void EditPage::importImages(const QStringList& filePaths) {
     }
     if (!result.value().isEmpty()) {
         m_selectedImageId = result.value().last();
-        markDirty();
-        refreshUi();
+        commitProjectEdit(before, QStringLiteral("Import images"));
     }
 }
 
@@ -865,6 +928,8 @@ void EditPage::configureBackground(QWidget* anchor) {
     }
     closeTransientPopovers(TransientPopover::Background);
 
+    const quint64 projectGeneration = m_projectGeneration;
+    const ProjectHistory::State editBefore = captureProjectState();
     const QJsonObject originalCanvas = m_project.canvas;
     const bool originalDirty = m_project.dirty;
     const QDateTime originalUpdatedAt = m_project.updatedAt;
@@ -973,7 +1038,8 @@ void EditPage::configureBackground(QWidget* anchor) {
     layout->addWidget(opacitySlider);
 
     auto* buttons =
-        new QDialogButtonBox(QDialogButtonBox::Save | QDialogButtonBox::Cancel, popoverContent);
+        new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, popoverContent);
+    buttons->button(QDialogButtonBox::Ok)->setText(tr("Confirm"));
     layout->addWidget(buttons);
 
     connect(choose, &QPushButton::clicked, &dialog, [&]() {
@@ -1019,6 +1085,10 @@ void EditPage::configureBackground(QWidget* anchor) {
     updatePreviewContent();
     const int backgroundResult = dialog.execFor(anchor ? anchor : this);
     m_closeBackgroundPopover = {};
+    if (projectGeneration != m_projectGeneration) {
+        Logger::debug(QStringLiteral("tier.edit.background.cancel reason=project-changed"));
+        return;
+    }
     if (m_activePopover == TransientPopover::Background) {
         m_activePopover = TransientPopover::None;
     }
@@ -1102,20 +1172,18 @@ void EditPage::configureBackground(QWidget* anchor) {
     m_project.canvas.remove(QStringLiteral("imagesVisible"));
     m_project.canvas.remove(QStringLiteral("previewImagesHidden"));
     m_backgroundPreviewActive = false;
-    if (changed) {
-        markDirty();
-    } else {
-        refreshUi();
-    }
+    const bool committed = commitProjectEdit(editBefore, QStringLiteral("Change background"));
     if (m_board) {
         m_board->refreshVisuals();
     }
     Logger::info(
         QStringLiteral("tier.edit.background.apply hasImage=%1 backgroundVisibility=%2 "
-                       "previewImagesHidden=false")
+                       "previewImagesHidden=false detectedChanged=%3 committed=%4")
             .arg(
                 !m_project.canvas.value(QStringLiteral("backgroundImagePath")).toString().isEmpty())
-            .arg(backgroundVisibility, 0, 'f', 2));
+            .arg(backgroundVisibility, 0, 'f', 2)
+            .arg(changed)
+            .arg(committed));
 }
 
 void EditPage::deleteSelectedImage() {
@@ -1126,14 +1194,14 @@ void EditPage::deleteSelectedImage() {
                                   tr("Remove the selected image from this project?"))) {
         return;
     }
+    const ProjectHistory::State before = captureProjectState();
     removeImageFromRows(m_selectedImageId);
     auto it =
         std::remove_if(m_project.images.begin(), m_project.images.end(),
                        [this](const TierImage& image) { return image.id == m_selectedImageId; });
     m_project.images.erase(it, m_project.images.end());
     m_selectedImageId.clear();
-    markDirty();
-    refreshUi();
+    commitProjectEdit(before, QStringLiteral("Remove image"));
 }
 
 void EditPage::previewSelectedImage() {
@@ -1273,10 +1341,6 @@ void EditPage::toggleGallery(QWidget* anchor) {
 }
 
 void EditPage::clearProject() {
-    closeTransientPopovers();
-    emit imagePreviewCloseRequested();
-    m_backgroundPreviewActive = false;
-
     TierProject empty = TierProject::createUntitled();
     empty.name = tr("Untitled Tier List");
     empty.filePath.clear();
@@ -1296,12 +1360,33 @@ void EditPage::toggleGalleryMissionControlMode() {
 }
 
 void EditPage::restoreGalleryAfterPreview() {
+    if (m_resettingProjectState) {
+        return;
+    }
     if (!m_galleryPopover || !m_galleryPopover->restoreAfterPreview()) {
         return;
     }
     m_activePopover = TransientPopover::Gallery;
     Logger::debug(
         QStringLiteral("tier.gallery.popover.preview.restore imageId=%1").arg(m_selectedImageId));
+}
+
+void EditPage::undo() {
+    if (!m_history || !m_history->canUndo() || m_backgroundPreviewActive) {
+        return;
+    }
+    closeTransientPopovers();
+    Logger::info(QStringLiteral("tier.edit.history.undo index=%1").arg(m_history->index()));
+    m_history->undo();
+}
+
+void EditPage::redo() {
+    if (!m_history || !m_history->canRedo() || m_backgroundPreviewActive) {
+        return;
+    }
+    closeTransientPopovers();
+    Logger::info(QStringLiteral("tier.edit.history.redo index=%1").arg(m_history->index()));
+    m_history->redo();
 }
 
 void EditPage::layoutOverlays() {
@@ -1386,6 +1471,7 @@ void EditPage::buildUi() {
             &EditPage::removeImageFromGallery);
     connect(m_board, &TierBoardWidget::imagePresentationModeRequested, this,
             &EditPage::setImagePresentationMode);
+    connect(m_board, &TierBoardWidget::resetRowsRequested, this, &EditPage::resetRows);
     connect(m_board, &TierBoardWidget::imageSelected, this, &EditPage::setSelectedImageId);
     connect(m_board, &TierBoardWidget::imagePreviewRequested, this,
             [this](const QString& imageId, const QRect& source) {
@@ -1403,19 +1489,96 @@ void EditPage::refreshUi() {
     }
     emit titleChanged(displayTitle());
     emit dirtyChanged(m_project.dirty);
-    emit resetRowsAvailableChanged(hasImagesInRows());
 }
 
-void EditPage::markDirty() {
+ProjectHistory::State EditPage::captureProjectState() const {
+    return {m_project, m_selectedImageId};
+}
+
+bool EditPage::commitProjectEdit(const ProjectHistory::State& before,
+                                 const QString& operation) {
     m_project.touch();
-    emit dirtyChanged(true);
-    emit titleChanged(displayTitle());
-    emit resetRowsAvailableChanged(hasImagesInRows());
+    const ProjectHistory::State after = captureProjectState();
+    const ProjectIntegrityStats integrity = inspectProjectIntegrity(after.project);
+    if (integrity.duplicateReferences > 0 || integrity.missingImages > 0 ||
+        integrity.assignmentMismatches > 0) {
+        Logger::error(
+            QStringLiteral("tier.edit.history.integrity operation=\"%1\" rowImageRefs=%2 "
+                           "duplicates=%3 missing=%4 assignmentMismatches=%5")
+                .arg(operation)
+                .arg(integrity.rowImageReferences)
+                .arg(integrity.duplicateReferences)
+                .arg(integrity.missingImages)
+                .arg(integrity.assignmentMismatches));
+    }
+    if (m_history->push(before, after, operation)) {
+        Logger::info(QStringLiteral("tier.edit.history.push operation=\"%1\" index=%2 "
+                                    "rowImageRefs=%3 images=%4")
+                         .arg(operation)
+                         .arg(m_history->index())
+                         .arg(integrity.rowImageReferences)
+                         .arg(after.project.images.size()));
+        return true;
+    }
+
+    const QString currentPath = m_project.filePath;
+    const QString currentSelection = m_selectedImageId;
+    m_project = before.project.detachedCopy();
+    m_project.filePath = currentPath;
+    m_selectedImageId = currentSelection;
+    Logger::debug(QStringLiteral("tier.edit.history.noop operation=\"%1\"").arg(operation));
+    refreshUi();
+    return false;
+}
+
+void EditPage::applyHistoryState(const ProjectHistory::State& state) {
+    // Storage identity is outside undo history. Save As and first-save transitions establish a
+    // new clean baseline, while commands only restore content inside the current project file.
+    const QString currentPath = m_project.filePath;
+    const QDateTime currentUpdatedAt = m_project.updatedAt;
+    m_project = state.project.detachedCopy();
+    m_project.filePath = currentPath;
+    m_project.updatedAt = currentUpdatedAt;
+    m_selectedImageId = state.selectedImageId;
+    const ProjectIntegrityStats integrity = inspectProjectIntegrity(m_project);
+    Logger::debug(QStringLiteral("tier.edit.history.apply rows=%1 images=%2 rowImageRefs=%3 "
+                                 "duplicates=%4 missing=%5 assignmentMismatches=%6")
+                      .arg(m_project.rows.size())
+                      .arg(m_project.images.size())
+                      .arg(integrity.rowImageReferences)
+                      .arg(integrity.duplicateReferences)
+                      .arg(integrity.missingImages)
+                      .arg(integrity.assignmentMismatches));
+}
+
+void EditPage::resetProjectViewState() {
+    m_resettingProjectState = true;
+    closeTransientPopovers(TransientPopover::None, true);
+    if (m_galleryPopover) {
+        m_galleryPopover->resetViewState();
+    }
+    if (m_board) {
+        m_board->resetViewState();
+    }
+    m_activePopover = TransientPopover::None;
+    m_galleryPopoverAnchor = nullptr;
+    m_templatePopoverAnchor = nullptr;
+    m_selectedImageId.clear();
+    m_backgroundPreviewActive = false;
+    emit imagePreviewResetRequested();
+    emit projectViewResetRequested();
+    m_resettingProjectState = false;
+    Logger::debug(QStringLiteral("tier.edit.view.reset preview=0 popover=0 mission=0 selection=0"));
 }
 
 void EditPage::setProject(TierProject project) {
+    ++m_projectGeneration;
+    resetProjectViewState();
+    m_resettingProjectState = true;
+    m_history->clear();
     m_project = std::move(project);
     m_selectedImageId.clear();
+    m_resettingProjectState = false;
     m_thumbnailCache->clear();
     refreshUi();
 }
@@ -1434,11 +1597,13 @@ QString EditPage::chooseSavePath() {
     QString parentDirectory = defaultDirectory;
     if (!m_project.filePath.isEmpty()) {
         const QFileInfo projectFile(m_project.filePath);
-        const QFileInfo projectFolder(projectFile.absolutePath());
-        parentDirectory = projectFolder.fileName().compare(projectFile.completeBaseName(),
-                                                           Qt::CaseInsensitive) == 0
-                              ? projectFolder.absolutePath()
-                              : projectFile.absolutePath();
+        parentDirectory = projectFile.absolutePath();
+        if (ProjectFileLayout::isManagedProjectPath(m_project.filePath)) {
+            QDir managedDirectory(parentDirectory);
+            if (managedDirectory.cdUp()) {
+                parentDirectory = managedDirectory.absolutePath();
+            }
+        }
     }
 
     ProjectLocationDialog dialog(m_project.name, parentDirectory, defaultDirectory, this);
@@ -1448,10 +1613,7 @@ QString EditPage::chooseSavePath() {
 
     const QString nextName = dialog.projectName();
     if (!nextName.isEmpty() && nextName != m_project.name) {
-        m_project.name = nextName;
-        m_project.dirty = true;
-        emit dirtyChanged(true);
-        emit titleChanged(displayTitle());
+        renameProject(nextName);
     }
     if (m_settings && dialog.shouldUseAsDefaultDirectory()) {
         m_settings->setDefaultProjectDirectory(dialog.parentDirectory());
@@ -1472,8 +1634,7 @@ QString EditPage::chooseTemplatePath(bool saveDialog) {
     const QString filter =
         saveDialog
             ? tr("QTierMaker Templates (*.qtmtemplate)")
-            : tr("QTierMaker Templates (*.qtmtemplate *.tlmtemplate);;QTierMaker Projects "
-                 "(*.qtmproject *.tlmproject)");
+            : tr("QTierMaker Templates (*.qtmtemplate);;QTierMaker Projects (*.qtm)");
     QString path =
         saveDialog ? QFileDialog::getSaveFileName(this, tr("Save Template"), suggested, filter)
                    : QFileDialog::getOpenFileName(this, tr("Apply Template"), suggested, filter);
@@ -1530,8 +1691,7 @@ bool EditPage::ensureProjectFile() {
     QString projectName = m_project.name;
     const QString path = uniqueDefaultProjectPath(&projectName);
     if (projectName != m_project.name) {
-        m_project.name = projectName;
-        m_project.dirty = true;
+        renameProject(projectName);
     }
     return saveProjectToPath(path);
 }
@@ -1575,16 +1735,13 @@ QString EditPage::uniqueDefaultProjectPath(QString* projectName) const {
                                  ? projectName->trimmed()
                                  : tr("Untitled Tier List");
     auto pathForName = [](const QString& parent, const QString& name) {
-        TierProject candidate = TierProject::createUntitled();
-        candidate.name = name;
-        const QString folder = QFileInfo(candidate.suggestedFileName()).completeBaseName();
-        return QDir(QDir(parent).filePath(folder)).filePath(candidate.suggestedFileName());
+        return ProjectFileLayout::projectFilePath(parent, name);
     };
 
     QString name = baseName;
     QString path = pathForName(directory, name);
     int suffix = 2;
-    while (QFileInfo::exists(path)) {
+    while (QFileInfo::exists(QFileInfo(path).absolutePath())) {
         name = QStringLiteral("%1 %2").arg(baseName).arg(suffix++);
         path = pathForName(directory, name);
     }
@@ -1599,14 +1756,13 @@ bool EditPage::autosaveCurrentProject() {
         return true;
     }
     if (!m_project.filePath.isEmpty()) {
-        return saveProjectToPath(m_project.filePath);
+        return saveProject();
     }
 
     QString projectName = m_project.name;
     const QString path = uniqueDefaultProjectPath(&projectName);
     if (projectName != m_project.name) {
-        m_project.name = projectName;
-        m_project.dirty = true;
+        renameProject(projectName);
     }
     return saveProjectToPath(path);
 }
@@ -1735,26 +1891,7 @@ QString EditPage::managedTemplateDirectory() const {
     if (base.isEmpty()) {
         base = QDir(QDir::homePath()).filePath(QStringLiteral(".qtiermaker"));
     }
-    const QString target = QDir(base).filePath(QStringLiteral("templates"));
-    QDir parent(base);
-    QString legacy;
-    if (parent.cdUp()) {
-        legacy = parent.filePath(QStringLiteral("TierListMaker/templates"));
-    } else {
-        legacy = QDir(QDir::homePath()).filePath(QStringLiteral(".tierlistmaker/templates"));
-    }
-    if (QFileInfo(legacy).isDir() && QDir().mkpath(target)) {
-        const QFileInfoList files = QDir(legacy).entryInfoList(
-            {QStringLiteral("*.tlmtemplate"), QStringLiteral("*.qtmtemplate")}, QDir::Files);
-        for (const QFileInfo& file : files) {
-            const QString targetName = file.completeBaseName() + QStringLiteral(".qtmtemplate");
-            const QString targetPath = QDir(target).filePath(targetName);
-            if (!QFileInfo::exists(targetPath)) {
-                QFile::copy(file.absoluteFilePath(), targetPath);
-            }
-        }
-    }
-    return target;
+    return QDir(base).filePath(QStringLiteral("templates"));
 }
 
 bool EditPage::applyTemplateFromDialog() {
@@ -1795,6 +1932,7 @@ bool EditPage::applyTemplateProject(const TierProject& templateProject) {
     if (!confirmTemplateApplication()) {
         return false;
     }
+    const ProjectHistory::State editBefore = captureProjectState();
     TierProject previous = m_project;
     QVector<TierRow> rows = templateProject.rows;
     for (TierRow& row : rows) {
@@ -1835,14 +1973,14 @@ bool EditPage::applyTemplateProject(const TierProject& templateProject) {
         }
     }
 
-    markDirty();
-    refreshUi();
+    commitProjectEdit(editBefore, QStringLiteral("Apply template"));
     return true;
 }
 
 void EditPage::moveImageToRow(const QString& imageId, const QString& rowId, int index) {
-    TierImage* image = m_project.imageById(imageId);
-    TierRow* row = m_project.rowById(rowId);
+    const TierProject& project = m_project;
+    const TierImage* image = project.imageById(imageId);
+    const TierRow* row = project.rowById(rowId);
     if (!image || !row) {
         Logger::warn(QStringLiteral("tier.edit.image.move.to.row rejected imageId=%1 rowId=%2 "
                                     "imageFound=%3 rowFound=%4")
@@ -1853,18 +1991,31 @@ void EditPage::moveImageToRow(const QString& imageId, const QString& rowId, int 
     }
 
     const std::optional<QString> previousRowId = image->assignedTierRowId;
+    const int previousIndex = previousRowId.has_value() && *previousRowId == rowId
+                                  ? static_cast<int>(row->imageIds.indexOf(imageId))
+                                  : -1;
+    const ProjectHistory::State before = captureProjectState();
     if (previousRowId.has_value() && *previousRowId == rowId) {
-        const int previousIndex = static_cast<int>(row->imageIds.indexOf(imageId));
         if (previousIndex >= 0 && previousIndex < index) {
             --index;
         }
     }
 
     removeImageFromRows(imageId);
-    image->assignedTierRowId = rowId;
-    index = qBound(0, index, static_cast<int>(row->imageIds.size()));
-    row->imageIds.insert(index, imageId);
-    const int rowImageCount = static_cast<int>(row->imageIds.size());
+    TierRow* mutableRow = m_project.rowById(rowId);
+    TierImage* mutableImage = m_project.imageById(imageId);
+    if (!mutableImage || !mutableRow) {
+        Logger::error(QStringLiteral("tier.edit.image.move.to.row aborted imageId=%1 rowId=%2 "
+                                     "reason=model-invalidated")
+                          .arg(imageId, rowId));
+        m_project = before.project.detachedCopy();
+        refreshUi();
+        return;
+    }
+    mutableImage->assignedTierRowId = rowId;
+    index = qBound(0, index, static_cast<int>(mutableRow->imageIds.size()));
+    mutableRow->imageIds.insert(index, imageId);
+    const int rowImageCount = static_cast<int>(mutableRow->imageIds.size());
     m_project.normalizeOrdering();
     m_selectedImageId = imageId;
     Logger::info(
@@ -1872,12 +2023,11 @@ void EditPage::moveImageToRow(const QString& imageId, const QString& rowId, int 
             .arg(imageId, rowId)
             .arg(index)
             .arg(rowImageCount));
-    markDirty();
-    refreshUi();
+    commitProjectEdit(before, QStringLiteral("Move image"));
 }
 
 void EditPage::editImage(const QString& imageId) {
-    TierImage* image = m_project.imageById(imageId);
+    const TierImage* image = static_cast<const TierProject&>(m_project).imageById(imageId);
     if (!image) {
         Logger::warn(
             QStringLiteral("tier.edit.image.edit rejected imageId=%1 reason=missing").arg(imageId));
@@ -1912,8 +2062,16 @@ void EditPage::editImage(const QString& imageId) {
         return;
     }
 
-    image->displayName = nextName;
-    image->cropRect = nextCrop;
+    const ProjectHistory::State before = captureProjectState();
+    TierImage* mutableImage = m_project.imageById(imageId);
+    if (!mutableImage) {
+        Logger::error(
+            QStringLiteral("tier.edit.image.edit aborted imageId=%1 reason=model-invalidated")
+                .arg(imageId));
+        return;
+    }
+    mutableImage->displayName = nextName;
+    mutableImage->cropRect = nextCrop;
     m_selectedImageId = imageId;
     Logger::info(
         QStringLiteral("tier.edit.image.edit.apply imageId=%1 name=\"%2\" crop=(%3,%4,%5,%6)")
@@ -1922,12 +2080,11 @@ void EditPage::editImage(const QString& imageId) {
             .arg(nextCrop.y(), 0, 'f', 4)
             .arg(nextCrop.width(), 0, 'f', 4)
             .arg(nextCrop.height(), 0, 'f', 4));
-    markDirty();
-    refreshUi();
+    commitProjectEdit(before, QStringLiteral("Edit image"));
 }
 
 void EditPage::removeImageFromTierRow(const QString& imageId) {
-    TierImage* image = m_project.imageById(imageId);
+    const TierImage* image = static_cast<const TierProject&>(m_project).imageById(imageId);
     if (!image) {
         Logger::warn(
             QStringLiteral("tier.edit.image.remove.from.row rejected imageId=%1 reason=missing")
@@ -1936,29 +2093,39 @@ void EditPage::removeImageFromTierRow(const QString& imageId) {
     }
 
     const QString previousRowId = image->assignedTierRowId.value_or(QString());
+    const ProjectHistory::State before = captureProjectState();
     removeImageFromRows(imageId);
-    image->assignedTierRowId.reset();
+    if (TierImage* mutableImage = m_project.imageById(imageId)) {
+        mutableImage->assignedTierRowId.reset();
+    } else {
+        Logger::error(
+            QStringLiteral("tier.edit.image.remove.from.row aborted imageId=%1 "
+                           "reason=model-invalidated")
+                .arg(imageId));
+        m_project = before.project.detachedCopy();
+        refreshUi();
+        return;
+    }
     m_project.normalizeOrdering();
     m_selectedImageId = imageId;
     Logger::info(QStringLiteral("tier.edit.image.remove.from.row imageId=%1 previousRowId=%2")
                      .arg(imageId, previousRowId));
-    markDirty();
-    refreshUi();
+    commitProjectEdit(before, QStringLiteral("Move image to gallery"));
 }
 
 void EditPage::removeImageFromGallery(const QString& imageId) {
-    const qsizetype before = m_project.images.size();
-    removeImageFromRows(imageId);
-    m_project.images.erase(
-        std::remove_if(m_project.images.begin(), m_project.images.end(),
-                       [&](const TierImage& image) { return image.id == imageId; }),
-        m_project.images.end());
-    if (m_project.images.size() == before) {
+    if (!static_cast<const TierProject&>(m_project).imageById(imageId)) {
         Logger::warn(
             QStringLiteral("tier.edit.image.remove.from.gallery rejected imageId=%1 reason=missing")
                 .arg(imageId));
         return;
     }
+    const ProjectHistory::State before = captureProjectState();
+    removeImageFromRows(imageId);
+    m_project.images.erase(
+        std::remove_if(m_project.images.begin(), m_project.images.end(),
+                       [&](const TierImage& image) { return image.id == imageId; }),
+        m_project.images.end());
     if (m_selectedImageId == imageId) {
         m_selectedImageId.clear();
     }
@@ -1966,8 +2133,7 @@ void EditPage::removeImageFromGallery(const QString& imageId) {
     Logger::info(QStringLiteral("tier.edit.image.remove.from.gallery imageId=%1 remaining=%2")
                      .arg(imageId)
                      .arg(m_project.images.size()));
-    markDirty();
-    refreshUi();
+    commitProjectEdit(before, QStringLiteral("Remove image"));
 }
 
 void EditPage::setImagePresentationMode(ImagePresentationMode mode) {
@@ -1976,6 +2142,7 @@ void EditPage::setImagePresentationMode(ImagePresentationMode mode) {
         return;
     }
 
+    const ProjectHistory::State before = captureProjectState();
     int customCropCount = 0;
     if (previous == ImagePresentationMode::Square && mode == ImagePresentationMode::NoCrop) {
         customCropCount = m_project.customCropCount();
@@ -2009,8 +2176,7 @@ void EditPage::setImagePresentationMode(ImagePresentationMode mode) {
                      .arg(mode == ImagePresentationMode::NoCrop ? QStringLiteral("noCrop")
                                                                 : QStringLiteral("square"))
                      .arg(customCropCount));
-    markDirty();
-    refreshUi();
+    commitProjectEdit(before, QStringLiteral("Change image appearance"));
 }
 
 void EditPage::moveRowToIndex(const QString& rowId, int destinationIndex) {
@@ -2038,6 +2204,7 @@ void EditPage::moveRowToIndex(const QString& rowId, int destinationIndex) {
         return;
     }
 
+    const ProjectHistory::State before = captureProjectState();
     TierRow moved = m_project.rows.takeAt(sourceIndex);
     m_project.rows.insert(qBound(0, destinationIndex, static_cast<int>(m_project.rows.size())),
                           moved);
@@ -2049,12 +2216,11 @@ void EditPage::moveRowToIndex(const QString& rowId, int destinationIndex) {
                      .arg(rowId)
                      .arg(sourceIndex)
                      .arg(destinationIndex));
-    markDirty();
-    refreshUi();
+    commitProjectEdit(before, QStringLiteral("Move tier row"));
 }
 
 void EditPage::editTierRow(const QString& rowId) {
-    TierRow* row = m_project.rowById(rowId);
+    const TierRow* row = static_cast<const TierProject&>(m_project).rowById(rowId);
     if (!row) {
         return;
     }
@@ -2063,24 +2229,31 @@ void EditPage::editTierRow(const QString& rowId) {
     if (dialog.exec() != QDialog::Accepted) {
         return;
     }
-    row = m_project.rowById(rowId);
+    row = static_cast<const TierProject&>(m_project).rowById(rowId);
     if (!row) {
         return;
     }
     const QString nextLabel = dialog.labelText();
     const QColor selectedColor = dialog.color();
     if (!nextLabel.isEmpty() && (row->label != nextLabel || row->color != selectedColor)) {
-        row->label = nextLabel;
-        row->color = selectedColor;
+        const ProjectHistory::State before = captureProjectState();
+        TierRow* mutableRow = m_project.rowById(rowId);
+        if (!mutableRow) {
+            Logger::error(
+                QStringLiteral("tier.edit.row.update aborted rowId=%1 reason=model-invalidated")
+                    .arg(rowId));
+            return;
+        }
+        mutableRow->label = nextLabel;
+        mutableRow->color = selectedColor;
         Logger::info(QStringLiteral("tier.edit.row.update rowId=%1 label=\"%2\" color=%3")
                          .arg(rowId, nextLabel, selectedColor.name(QColor::HexRgb)));
-        markDirty();
-        refreshUi();
+        commitProjectEdit(before, QStringLiteral("Edit tier row"));
     }
 }
 
 void EditPage::clearTierRowImages(const QString& rowId) {
-    TierRow* row = m_project.rowById(rowId);
+    const TierRow* row = static_cast<const TierProject&>(m_project).rowById(rowId);
     if (!row || row->imageIds.isEmpty()) {
         return;
     }
@@ -2090,7 +2263,15 @@ void EditPage::clearTierRowImages(const QString& rowId) {
     }
 
     const QStringList imageIds = row->imageIds;
-    row->imageIds.clear();
+    const ProjectHistory::State before = captureProjectState();
+    TierRow* mutableRow = m_project.rowById(rowId);
+    if (!mutableRow) {
+        Logger::error(
+            QStringLiteral("tier.edit.row.clear aborted rowId=%1 reason=model-invalidated")
+                .arg(rowId));
+        return;
+    }
+    mutableRow->imageIds.clear();
     for (const QString& imageId : imageIds) {
         if (TierImage* image = m_project.imageById(imageId)) {
             image->assignedTierRowId.reset();
@@ -2099,8 +2280,7 @@ void EditPage::clearTierRowImages(const QString& rowId) {
     m_project.normalizeOrdering();
     Logger::info(
         QStringLiteral("tier.edit.row.clear rowId=%1 count=%2").arg(rowId).arg(imageIds.size()));
-    markDirty();
-    refreshUi();
+    commitProjectEdit(before, QStringLiteral("Clear tier row"));
 }
 
 void EditPage::deleteTierRow(const QString& rowId) {
@@ -2108,7 +2288,7 @@ void EditPage::deleteTierRow(const QString& rowId) {
         AppMessageDialog::information(this, tr("Delete Row"), tr("At least one row is required."));
         return;
     }
-    const TierRow* row = m_project.rowById(rowId);
+    const TierRow* row = static_cast<const TierProject&>(m_project).rowById(rowId);
     if (!row) {
         return;
     }
@@ -2118,7 +2298,9 @@ void EditPage::deleteTierRow(const QString& rowId) {
         return;
     }
 
-    for (const QString& imageId : row->imageIds) {
+    const QStringList imageIds = row->imageIds;
+    const ProjectHistory::State before = captureProjectState();
+    for (const QString& imageId : imageIds) {
         if (TierImage* image = m_project.imageById(imageId)) {
             image->assignedTierRowId.reset();
         }
@@ -2133,8 +2315,7 @@ void EditPage::deleteTierRow(const QString& rowId) {
     Logger::info(QStringLiteral("tier.edit.row.delete rowId=%1 remaining=%2")
                      .arg(rowId)
                      .arg(m_project.rows.size()));
-    markDirty();
-    refreshUi();
+    commitProjectEdit(before, QStringLiteral("Delete tier row"));
 }
 
 void EditPage::insertTierRow(const QString& rowId, bool below) {
@@ -2158,6 +2339,7 @@ void EditPage::insertTierRow(const QString& rowId, bool below) {
     }
 
     const QString label = dialog.labelText().isEmpty() ? tr("New Tier") : dialog.labelText();
+    const ProjectHistory::State before = captureProjectState();
     const int insertionIndex = referenceIndex + (below ? 1 : 0);
     TierRow row = TierRow::makeDefault(label, dialog.color(), insertionIndex);
     m_project.rows.insert(qBound(0, insertionIndex, m_project.rows.size()), row);
@@ -2169,11 +2351,10 @@ void EditPage::insertTierRow(const QString& rowId, bool below) {
                      .arg(row.id, rowId)
                      .arg(insertionIndex)
                      .arg(label));
-    markDirty();
-    refreshUi();
+    commitProjectEdit(before, QStringLiteral("Insert tier row"));
 }
 
-bool EditPage::saveProjectToPath(const QString& filePath) {
+bool EditPage::saveProjectToPath(const QString& filePath, ProjectSaveMode mode) {
     const QString absolutePath = QFileInfo(filePath).absoluteFilePath();
     const QString previousPath = m_project.filePath;
     const bool pathChanged =
@@ -2183,12 +2364,45 @@ bool EditPage::saveProjectToPath(const QString& filePath) {
                                   tr("A project with this name already exists."));
         return false;
     }
+    const QString targetDirectory = QFileInfo(absolutePath).absolutePath();
+    const QString previousDirectory =
+        previousPath.isEmpty() ? QString() : QFileInfo(previousPath).absolutePath();
+    const bool directoryChanged = previousDirectory.isEmpty() ||
+                                  QDir::cleanPath(previousDirectory) !=
+                                      QDir::cleanPath(targetDirectory);
+    const bool targetDirectoryExisted = QFileInfo::exists(targetDirectory);
+    if (pathChanged && directoryChanged && targetDirectoryExisted) {
+        AppMessageDialog::warning(this, tr("Save Project"),
+                                  tr("A project folder with this name already exists."));
+        return false;
+    }
     if (!m_project.dirty && !pathChanged) {
         Logger::debug(QStringLiteral("tier.edit.project.save.noop path=\"%1\" reason=clean")
                           .arg(absolutePath));
+        m_history->setClean();
         emit dirtyChanged(false);
         emit titleChanged(displayTitle());
         return true;
+    }
+
+    const TierProject projectBeforeStorage = m_project.detachedCopy();
+    auto rollbackNewStorage = [&]() {
+        if (pathChanged && directoryChanged && !targetDirectoryExisted &&
+            QFileInfo::exists(targetDirectory)) {
+            QDir(targetDirectory).removeRecursively();
+        }
+        m_project = projectBeforeStorage.detachedCopy();
+    };
+
+    bool assetsCopied = false;
+    if (pathChanged && directoryChanged && !previousPath.isEmpty()) {
+        auto copied = m_assetManager->copyProjectAssets(previousPath, absolutePath);
+        if (!copied) {
+            rollbackNewStorage();
+            showError(tr("Save Failed"), copied.error());
+            return false;
+        }
+        assetsCopied = copied.value();
     }
 
     m_project.filePath = absolutePath;
@@ -2196,7 +2410,7 @@ bool EditPage::saveProjectToPath(const QString& filePath) {
 
     auto migrate = m_assetManager->migrateSessionAssets(m_project, absolutePath);
     if (!migrate) {
-        m_project.filePath = previousPath;
+        rollbackNewStorage();
         showError(tr("Save Failed"), migrate.error());
         return false;
     }
@@ -2204,12 +2418,14 @@ bool EditPage::saveProjectToPath(const QString& filePath) {
 
     auto result = m_repository->saveProject(m_project, absolutePath);
     if (!result) {
-        m_project.filePath = previousPath;
+        rollbackNewStorage();
         showError(tr("Save Failed"), result.error());
         return false;
     }
 
-    auto recentResult = m_recentProjects->addOrUpdate(m_project);
+    const bool movePreviousStorage = mode == ProjectSaveMode::MovePreviousStorage;
+    auto recentResult = m_recentProjects->addOrUpdate(
+        m_project, movePreviousStorage && pathChanged ? previousPath : QString());
     if (!recentResult) {
         AppMessageDialog::warning(
             this, tr("Recent Projects"),
@@ -2219,14 +2435,42 @@ bool EditPage::saveProjectToPath(const QString& filePath) {
                       .arg(recentResult.error().message, recentResult.error().details));
     }
 
+    if (movePreviousStorage && pathChanged && recentResult) {
+        auto removed = ProjectStorage::remove(previousPath);
+        if (!removed) {
+            AppMessageDialog::warning(
+                this, tr("Project Moved"),
+                tr("The project was saved at its new location, but the previous project storage "
+                   "could not be removed.\n\n%1")
+                    .arg(removed.error().details));
+            Logger::warn(
+                QStringLiteral("tier.edit.project.storage.cleanup.failed source=\"%1\" details=\"%2\"")
+                    .arg(previousPath, removed.error().details));
+        }
+    }
+
+    if (pathChanged || assetsCopied || assetsMigrated) {
+        // File identity and migrated relative asset paths are a new storage baseline. Keeping
+        // snapshots from the previous location would make an undo restore stale paths.
+        m_resettingProjectState = true;
+        m_history->clear();
+        m_resettingProjectState = false;
+        m_project.dirty = false;
+    } else {
+        m_history->setClean();
+    }
+
     emit dirtyChanged(false);
     emit titleChanged(displayTitle());
     emit projectSaved();
     Logger::info(
-        QStringLiteral("tier.edit.project.save path=\"%1\" assetsMigrated=%2 pathChanged=%3")
+        QStringLiteral("tier.edit.project.save path=\"%1\" assetsCopied=%2 assetsMigrated=%3 "
+                       "pathChanged=%4 movedPrevious=%5")
             .arg(absolutePath)
+            .arg(assetsCopied)
             .arg(assetsMigrated)
-            .arg(pathChanged));
+            .arg(pathChanged)
+            .arg(movePreviousStorage));
     return true;
 }
 
@@ -2234,11 +2478,6 @@ void EditPage::removeImageFromRows(const QString& imageId) {
     for (TierRow& row : m_project.rows) {
         row.imageIds.removeAll(imageId);
     }
-}
-
-bool EditPage::hasImagesInRows() const {
-    return std::any_of(m_project.rows.cbegin(), m_project.rows.cend(),
-                       [](const TierRow& row) { return !row.imageIds.isEmpty(); });
 }
 
 void EditPage::setSelectedImageId(const QString& imageId) {

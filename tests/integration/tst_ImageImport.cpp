@@ -20,7 +20,7 @@ private slots:
         QVERIFY(image.save(source));
 
         TierProject project = TierProject::createUntitled();
-        const QString projectPath = dir.filePath(QStringLiteral("import.qtmproject"));
+        const QString projectPath = dir.filePath(QStringLiteral("import.qtm"));
         project.filePath = projectPath;
 
         AssetManager assets;
@@ -39,4 +39,3 @@ private slots:
 
 QTEST_MAIN(tst_ImageImport)
 #include "tst_ImageImport.moc"
-

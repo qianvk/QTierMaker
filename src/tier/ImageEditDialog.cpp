@@ -6,6 +6,7 @@
 #include <QFormLayout>
 #include <QLabel>
 #include <QLineEdit>
+#include <QPushButton>
 #include <QVBoxLayout>
 
 namespace qtm {
@@ -50,7 +51,8 @@ ImageEditDialog::ImageEditDialog(const TierImage& image, const QPixmap& pixmap, 
     form->addRow(tr("Name"), m_nameEdit);
     layout->addLayout(form);
 
-    auto* buttons = new QDialogButtonBox(QDialogButtonBox::Cancel | QDialogButtonBox::Save, this);
+    auto* buttons = new QDialogButtonBox(QDialogButtonBox::Cancel | QDialogButtonBox::Ok, this);
+    buttons->button(QDialogButtonBox::Ok)->setText(tr("Confirm"));
     connect(buttons, &QDialogButtonBox::accepted, this, &QDialog::accept);
     connect(buttons, &QDialogButtonBox::rejected, this, &QDialog::reject);
     layout->addWidget(buttons);

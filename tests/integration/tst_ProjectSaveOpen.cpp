@@ -15,7 +15,7 @@ private slots:
         ProjectRepository repository;
         TierProject project = TierProject::createUntitled();
         project.name = QStringLiteral("Round Trip");
-        const QString path = dir.filePath(QStringLiteral("roundtrip.qtmproject"));
+        const QString path = dir.filePath(QStringLiteral("roundtrip.qtm"));
         QVERIFY(repository.saveProject(project, path));
         auto opened = repository.openProject(path);
         QVERIFY(opened);
@@ -26,4 +26,3 @@ private slots:
 
 QTEST_MAIN(tst_ProjectSaveOpen)
 #include "tst_ProjectSaveOpen.moc"
-

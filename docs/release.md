@@ -1,7 +1,10 @@
 # Release Process
 
-QTierMaker follows Semantic Versioning. Stable releases use tags such as `v0.2.0`; internal and
-public test builds use prerelease tags such as `v0.2.0-beta.1`.
+QTierMaker follows Semantic Versioning. Stable releases use tags such as `v1.0.0`; internal and
+public test builds use prerelease tags such as `v1.1.0-beta.1`.
+
+The localized changelog in each release's `updates.json` is the canonical version history.
+QTierMaker intentionally does not maintain a separate `CHANGELOG.md`.
 
 1. Release and tag VkUI first. The dependency release contains source only.
 2. Update the QTierMaker VkUI submodule to that exact release commit.

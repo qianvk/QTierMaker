@@ -17,7 +17,7 @@ if(NOT EXISTS "${QTM_VKUI_DIR}/CMakeLists.txt")
 endif()
 
 # Embed VkUI statically so installers only deploy Qt runtime libraries. VkUI owns the sole native
-# window implementation; applications consume its stable facade rather than QWindowKit internals.
+# window implementation; applications consume its stable facade without a second window dependency.
 set(VKUI_BUILD_SHARED OFF CACHE BOOL "Build VkUI statically" FORCE)
 set(VKUI_BUILD_EXAMPLES OFF CACHE BOOL "Build VkUI examples" FORCE)
 set(VKUI_BUILD_TESTS OFF CACHE BOOL "Build VkUI tests" FORCE)

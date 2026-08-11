@@ -1,5 +1,7 @@
 #include "assets/AssetManager.h"
 
+#include <QDir>
+#include <QFileInfo>
 #include <QImage>
 #include <QTemporaryDir>
 #include <QtTest>
@@ -23,15 +25,32 @@ private slots:
         QCOMPARE(project.images.size(), 1);
         QVERIFY(QFileInfo(project.images.first().importedAssetPath).isAbsolute());
 
-        const QString projectPath = dir.filePath(QStringLiteral("project.qtmproject"));
+        const QString projectPath = dir.filePath(QStringLiteral("project.qtm"));
         QVERIFY(assets.migrateSessionAssets(project, projectPath));
         QVERIFY(!QFileInfo(project.images.first().importedAssetPath).isAbsolute());
         QVERIFY(QFileInfo::exists(assets.resolvedImagePath(project, project.images.first())) ||
                 QFileInfo::exists(QDir(QFileInfo(projectPath).absolutePath())
                                       .filePath(project.images.first().importedAssetPath)));
     }
+
+    void copiesExistingProjectAssetsToNewStorage() {
+        QTemporaryDir dir;
+        QVERIFY(dir.isValid());
+        const QString sourceProject = dir.filePath(QStringLiteral("Source/Source.qtm"));
+        const QString targetProject = dir.filePath(QStringLiteral("Renamed/Renamed.qtm"));
+        const QString sourceAsset =
+            QDir(QFileInfo(sourceProject).absolutePath()).filePath(QStringLiteral("assets/a.png"));
+        QVERIFY(QDir().mkpath(QFileInfo(sourceAsset).absolutePath()));
+        QVERIFY(QImage(20, 20, QImage::Format_ARGB32_Premultiplied).save(sourceAsset));
+
+        AssetManager assets;
+        auto copied = assets.copyProjectAssets(sourceProject, targetProject);
+        QVERIFY(copied);
+        QVERIFY(copied.value());
+        QVERIFY(QFileInfo::exists(QDir(QFileInfo(targetProject).absolutePath())
+                                      .filePath(QStringLiteral("assets/a.png"))));
+    }
 };
 
 QTEST_MAIN(tst_AssetManager)
 #include "tst_AssetManager.moc"
-

@@ -28,6 +28,7 @@ private slots:
     void liquidGlassSelectsUnfilteredProjectBackground();
     void plusAndMinusScaleTheLiquidGlassLayer();
     void windowChromeDoesNotStealPreviewInput();
+    void resetClosesImmediatelyAndOnlyOnce();
 };
 
 #if defined(Q_OS_WIN)
@@ -189,6 +190,28 @@ void PreviewOverlayTest::escapeCloseRestoresUnderlyingInput() {
     QVERIFY(!QWidget::keyboardGrabber());
     QTest::mouseClick(&underlyingButton, Qt::LeftButton);
     QCOMPARE(clickCount, 1);
+}
+
+void PreviewOverlayTest::resetClosesImmediatelyAndOnlyOnce() {
+    QWidget host;
+    host.resize(800, 600);
+    PreviewOverlay overlay(&host);
+    overlay.setGeometry(host.rect());
+    QPixmap image(640, 360);
+    image.fill(QColor(68, 126, 214));
+    QSignalSpy closedSpy(&overlay, &PreviewOverlay::closed);
+
+    overlay.openPreview(QRect(220, 180, 72, 72), image);
+    QVERIFY(overlay.isOpen());
+    overlay.resetPreview();
+
+    QVERIFY(!overlay.isOpen());
+    QVERIFY(!overlay.isVisible());
+    QCOMPARE(overlay.backdropProgress(), 0.0);
+    QCOMPARE(closedSpy.count(), 1);
+
+    overlay.resetPreview();
+    QCOMPARE(closedSpy.count(), 1);
 }
 
 void PreviewOverlayTest::operationToolTipPreferenceIncludesPreview() {

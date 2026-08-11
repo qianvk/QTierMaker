@@ -329,7 +329,7 @@ void Application::seedBundledSampleProject() {
 
     auto seeded = SampleProjectSeeder::seed(
         sourceDirectory, m_settings->defaultProjectDirectory(), QStringLiteral("Anime Girls v5"),
-        QStringLiteral("Anime Girls v5.qtmproject"));
+        QStringLiteral("Anime Girls v5.qtm"));
     if (!seeded) {
         Logger::warn(QStringLiteral("sample.project.seed.failed message=\"%1\" details=\"%2\"")
                          .arg(seeded.error().message, seeded.error().details));

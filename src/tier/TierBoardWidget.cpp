@@ -37,6 +37,7 @@ TierBoardWidget::TierBoardWidget(QWidget* parent) : QWidget(parent) {
             &TierBoardWidget::imageRemoveFromGalleryRequested);
     connect(m_view, &TierListView::imagePresentationModeRequested, this,
             &TierBoardWidget::imagePresentationModeRequested);
+    connect(m_view, &TierListView::resetRowsRequested, this, &TierBoardWidget::resetRowsRequested);
     connect(m_view, &TierListView::rowEditRequested, this, &TierBoardWidget::rowEditRequested);
     connect(m_view, &TierListView::rowClearRequested, this, &TierBoardWidget::rowClearRequested);
     connect(m_view, &TierListView::rowDeleteRequested, this, &TierBoardWidget::rowDeleteRequested);
@@ -87,6 +88,16 @@ void TierBoardWidget::setSelectedImageId(const QString& selectedImageId) {
 void TierBoardWidget::refreshVisuals() {
     if (m_view && m_view->viewport()) {
         m_view->viewport()->update();
+    }
+}
+
+void TierBoardWidget::resetViewState() {
+    m_selectedImageId.clear();
+    if (m_view) {
+        m_view->resetViewState();
+    }
+    if (m_delegate) {
+        m_delegate->setSelectedImageId({});
     }
 }
 

@@ -41,7 +41,8 @@ TierRowEditDialog::TierRowEditDialog(const QString& title, const QString& label,
     form->addRow(tr("Color"), m_colorButton);
     contentLayout()->addLayout(form);
 
-    auto* buttons = new QDialogButtonBox(QDialogButtonBox::Cancel | QDialogButtonBox::Save, this);
+    auto* buttons = new QDialogButtonBox(QDialogButtonBox::Cancel | QDialogButtonBox::Ok, this);
+    buttons->button(QDialogButtonBox::Ok)->setText(tr("Confirm"));
     connect(buttons, &QDialogButtonBox::accepted, this, &QDialog::accept);
     connect(buttons, &QDialogButtonBox::rejected, this, &QDialog::reject);
     contentLayout()->addWidget(buttons);

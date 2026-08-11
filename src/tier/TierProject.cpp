@@ -1,7 +1,8 @@
 #include "tier/TierProject.h"
 
-#include <QFileInfo>
-#include <QRegularExpression>
+#include "persistence/ProjectFileLayout.h"
+
+#include <QSet>
 #include <QUuid>
 
 #include <algorithm>
@@ -131,6 +132,54 @@ int TierProject::clearCustomCrops() {
     return cleared;
 }
 
+bool TierProject::hasSamePersistentContent(const TierProject& other) const {
+    if (id != other.id || name != other.name || createdAt != other.createdAt ||
+        thumbnailPath != other.thumbnailPath || cover != other.cover || canvas != other.canvas ||
+        settings != other.settings || rows.size() != other.rows.size() ||
+        images.size() != other.images.size()) {
+        return false;
+    }
+
+    for (qsizetype index = 0; index < rows.size(); ++index) {
+        const TierRow& left = rows.at(index);
+        const TierRow& right = other.rows.at(index);
+        if (left.id != right.id || left.label != right.label || left.color != right.color ||
+            left.order != right.order || left.height != right.height ||
+            left.imageIds != right.imageIds) {
+            return false;
+        }
+    }
+
+    for (qsizetype index = 0; index < images.size(); ++index) {
+        const TierImage& left = images.at(index);
+        const TierImage& right = other.images.at(index);
+        if (left.id != right.id || left.sourcePath != right.sourcePath ||
+            left.importedAssetPath != right.importedAssetPath ||
+            left.originalFileName != right.originalFileName ||
+            left.displayName != right.displayName || left.width != right.width ||
+            left.height != right.height || left.thumbnailPath != right.thumbnailPath ||
+            left.assignedTierRowId != right.assignedTierRowId || left.order != right.order ||
+            left.cropRect != right.cropRect) {
+            return false;
+        }
+    }
+    return true;
+}
+
+TierProject TierProject::detachedCopy() const {
+    TierProject copy = *this;
+
+    // History snapshots must not share collection storage with the editable project. A mutable
+    // pointer into a shared QVector can otherwise write into a snapshot or become invalid when a
+    // later container operation detaches the live model.
+    copy.rows.detach();
+    for (TierRow& row : copy.rows) {
+        row.imageIds.detach();
+    }
+    copy.images.detach();
+    return copy;
+}
+
 void TierProject::resetDefaultRows() {
     rows = makeDefaultRows();
     for (TierImage& image : images) {
@@ -144,21 +193,27 @@ void TierProject::normalizeOrdering() {
     std::sort(rows.begin(), rows.end(), [](const TierRow& lhs, const TierRow& rhs) {
         return lhs.order < rhs.order;
     });
+    QSet<QString> assignedImageIds;
     for (int i = 0; i < rows.size(); ++i) {
         rows[i].order = i;
         QStringList valid;
         for (const QString& imageId : rows[i].imageIds) {
-            if (TierImage* image = imageById(imageId)) {
-                image->assignedTierRowId = rows[i].id;
-                image->order = static_cast<int>(valid.size());
-                valid.push_back(imageId);
+            TierImage* image = imageById(imageId);
+            if (!image || assignedImageIds.contains(imageId)) {
+                continue;
             }
+            assignedImageIds.insert(imageId);
+            image->assignedTierRowId = rows[i].id;
+            image->order = static_cast<int>(valid.size());
+            valid.push_back(imageId);
         }
         rows[i].imageIds = valid;
     }
     int unassignedOrder = 0;
     for (TierImage& image : images) {
-        if (!image.assignedTierRowId.has_value() || !rowById(*image.assignedTierRowId)) {
+        // Ordered row membership is authoritative because it carries both ownership and position.
+        // Any assignment not represented there is stale and belongs back in the gallery.
+        if (!assignedImageIds.contains(image.id)) {
             image.assignedTierRowId.reset();
             image.order = unassignedOrder++;
         }
@@ -171,18 +226,7 @@ void TierProject::touch() {
 }
 
 QString TierProject::suggestedFileName() const {
-    QString base = name.trimmed();
-    if (base.isEmpty()) {
-        base = QStringLiteral("Untitled Tier List");
-    }
-    base.replace(QRegularExpression(QStringLiteral(R"([\\/:*?"<>|]+)")), QStringLiteral("-"));
-    if (base.endsWith(QStringLiteral(".tlmproject"), Qt::CaseInsensitive)) {
-        base.chop(QStringLiteral(".tlmproject").size());
-    }
-    if (!base.endsWith(QStringLiteral(".qtmproject"), Qt::CaseInsensitive)) {
-        base += QStringLiteral(".qtmproject");
-    }
-    return base;
+    return ProjectFileLayout::fileName(name);
 }
 
 } // namespace qtm

@@ -16,7 +16,7 @@ private slots:
         ProjectSerializer serializer;
         auto data = serializer.serialize(project);
         QVERIFY(data);
-        auto loaded = serializer.deserialize(data.value(), QStringLiteral("/tmp/test.qtmproject"));
+        auto loaded = serializer.deserialize(data.value(), QStringLiteral("/tmp/test.qtm"));
         QVERIFY(loaded);
         QCOMPARE(loaded.value().name, project.name);
         QCOMPARE(loaded.value().rows.size(), 5);
@@ -57,16 +57,20 @@ private slots:
         project.images = {alpha, beta, gamma};
 
         const QString rowId = project.rows.at(1).id;
+        project.rows[1].label = QStringLiteral("Renamed Tier");
+        project.rows[1].color = QColor(QStringLiteral("#2468ac"));
         project.rows[1].imageIds = {QStringLiteral("image-gamma"), QStringLiteral("image-alpha")};
         project.normalizeOrdering();
 
         ProjectSerializer serializer;
         auto data = serializer.serialize(project);
         QVERIFY(data);
-        auto loaded = serializer.deserialize(data.value(), QStringLiteral("/tmp/ordered.qtmproject"));
+        auto loaded = serializer.deserialize(data.value(), QStringLiteral("/tmp/ordered.qtm"));
         QVERIFY(loaded);
 
         QCOMPARE(loaded.value().rows.at(1).id, rowId);
+        QCOMPARE(loaded.value().rows.at(1).label, QStringLiteral("Renamed Tier"));
+        QCOMPARE(loaded.value().rows.at(1).color, QColor(QStringLiteral("#2468ac")));
         QCOMPARE(loaded.value().rows.at(1).imageIds,
                  QStringList({QStringLiteral("image-gamma"), QStringLiteral("image-alpha")}));
         const TierImage* gammaImage = loaded.value().imageById(QStringLiteral("image-gamma"));
@@ -100,6 +104,26 @@ private slots:
         QVERIFY(loaded);
         QCOMPARE(loaded.value().imagePresentationMode(), ImagePresentationMode::NoCrop);
         QVERIFY(!loaded.value().imageById(QStringLiteral("cropped-image"))->hasCropRect());
+    }
+
+    void repairsDuplicateAndStaleImageAssignments() {
+        TierProject project = TierProject::createUntitled();
+        TierImage assigned;
+        assigned.id = QStringLiteral("assigned");
+        assigned.assignedTierRowId = project.rows.at(1).id;
+        TierImage stale;
+        stale.id = QStringLiteral("stale");
+        stale.assignedTierRowId = project.rows.at(2).id;
+        project.images = {assigned, stale};
+        project.rows[0].imageIds = {assigned.id};
+        project.rows[1].imageIds = {assigned.id};
+
+        project.normalizeOrdering();
+
+        QCOMPARE(project.rows.at(0).imageIds, QStringList{assigned.id});
+        QVERIFY(project.rows.at(1).imageIds.isEmpty());
+        QCOMPARE(project.imageById(assigned.id)->assignedTierRowId.value(), project.rows.at(0).id);
+        QVERIFY(!project.imageById(stale.id)->assignedTierRowId.has_value());
     }
 };
 

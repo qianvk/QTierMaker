@@ -1,6 +1,7 @@
 #include "persistence/RecentProjectsStore.h"
 
 #include "persistence/AtomicFileWriter.h"
+#include "persistence/ProjectFileLayout.h"
 
 #include <QDir>
 #include <QFile>
@@ -22,14 +23,15 @@ QString canonicalOrAbsolute(const QString& path) {
 }
 
 QJsonObject toJson(const RecentProjectEntry& entry) {
-    return QJsonObject{{QStringLiteral("filePath"), entry.filePath},
-                       {QStringLiteral("name"), entry.name},
-                       {QStringLiteral("thumbnailPath"), entry.thumbnailPath},
-                       {QStringLiteral("backgroundImagePath"), entry.backgroundImagePath},
-                       {QStringLiteral("createdAt"), entry.createdAt.toUTC().toString(Qt::ISODateWithMs)},
-                       {QStringLiteral("updatedAt"), entry.updatedAt.toUTC().toString(Qt::ISODateWithMs)},
-                       {QStringLiteral("rowCount"), entry.rowCount},
-                       {QStringLiteral("imageCount"), entry.imageCount}};
+    return QJsonObject{
+        {QStringLiteral("filePath"), entry.filePath},
+        {QStringLiteral("name"), entry.name},
+        {QStringLiteral("thumbnailPath"), entry.thumbnailPath},
+        {QStringLiteral("backgroundImagePath"), entry.backgroundImagePath},
+        {QStringLiteral("createdAt"), entry.createdAt.toUTC().toString(Qt::ISODateWithMs)},
+        {QStringLiteral("updatedAt"), entry.updatedAt.toUTC().toString(Qt::ISODateWithMs)},
+        {QStringLiteral("rowCount"), entry.rowCount},
+        {QStringLiteral("imageCount"), entry.imageCount}};
 }
 
 RecentProjectEntry fromJson(const QJsonObject& object) {
@@ -49,33 +51,47 @@ RecentProjectEntry fromJson(const QJsonObject& object) {
 } // namespace
 
 RecentProjectsStore::RecentProjectsStore(QString storePath, QObject* parent)
-    : QObject(parent), m_storePath(storePath.isEmpty() ? defaultStorePath() : std::move(storePath)) {
+    : QObject(parent),
+      m_storePath(storePath.isEmpty() ? defaultStorePath() : std::move(storePath)) {
     load();
 }
 
 QVector<RecentProjectEntry> RecentProjectsStore::entries() const {
     QVector<RecentProjectEntry> sorted = m_entries;
-    std::sort(sorted.begin(), sorted.end(), [](const RecentProjectEntry& lhs,
-                                               const RecentProjectEntry& rhs) {
-        return lhs.updatedAt > rhs.updatedAt;
-    });
+    std::sort(sorted.begin(), sorted.end(),
+              [](const RecentProjectEntry& lhs, const RecentProjectEntry& rhs) {
+                  return lhs.updatedAt > rhs.updatedAt;
+              });
     return sorted;
 }
 
-Result<void> RecentProjectsStore::addOrUpdate(const TierProject& project) {
+Result<void> RecentProjectsStore::addOrUpdate(const TierProject& project,
+                                              const QString& replacedFilePath) {
     if (project.filePath.isEmpty()) {
         return Result<void>::success();
     }
+    if (!ProjectFileLayout::hasProjectExtension(project.filePath)) {
+        return Result<void>::failure(tr("Only .qtm projects can be added to recent projects."),
+                                     project.filePath);
+    }
+    const QVector<RecentProjectEntry> previousEntries = m_entries;
     RecentProjectEntry entry;
     entry.filePath = canonicalOrAbsolute(project.filePath);
     entry.name = project.name;
     entry.thumbnailPath = project.thumbnailPath;
-    entry.backgroundImagePath = project.canvas.value(QStringLiteral("backgroundImagePath")).toString();
+    entry.backgroundImagePath =
+        project.canvas.value(QStringLiteral("backgroundImagePath")).toString();
     entry.createdAt = project.createdAt;
     entry.updatedAt = project.updatedAt;
     entry.rowCount = static_cast<int>(project.rows.size());
     entry.imageCount = static_cast<int>(project.images.size());
 
+    if (!replacedFilePath.isEmpty()) {
+        const int replaced = indexOf(replacedFilePath);
+        if (replaced >= 0) {
+            m_entries.removeAt(replaced);
+        }
+    }
     const int existing = indexOf(entry.filePath);
     if (existing >= 0) {
         m_entries[existing] = entry;
@@ -86,10 +102,12 @@ Result<void> RecentProjectsStore::addOrUpdate(const TierProject& project) {
         m_entries.removeLast();
     }
     auto result = save();
-    if (result) {
-        emit changed();
+    if (!result) {
+        m_entries = previousEntries;
+        return result;
     }
-    return result;
+    emit changed();
+    return Result<void>::success();
 }
 
 Result<void> RecentProjectsStore::remove(const QString& filePath) {
@@ -134,7 +152,7 @@ Result<void> RecentProjectsStore::load() {
     }
     for (const QJsonValue& value : document.array()) {
         const RecentProjectEntry entry = fromJson(value.toObject());
-        if (!entry.filePath.isEmpty()) {
+        if (!entry.filePath.isEmpty() && ProjectFileLayout::hasProjectExtension(entry.filePath)) {
             m_entries.append(entry);
         }
     }
@@ -146,27 +164,13 @@ Result<void> RecentProjectsStore::save() const {
     for (const RecentProjectEntry& entry : m_entries) {
         array.append(toJson(entry));
     }
-    return AtomicFileWriter::write(m_storePath, QJsonDocument(array).toJson(QJsonDocument::Indented));
+    return AtomicFileWriter::write(m_storePath,
+                                   QJsonDocument(array).toJson(QJsonDocument::Indented));
 }
 
 QString RecentProjectsStore::defaultStorePath() {
     const QString base = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
-    const QString storePath = QDir(base).filePath(QStringLiteral("recent-projects.json"));
-    if (QFileInfo::exists(storePath) || base.isEmpty()) {
-        return storePath;
-    }
-
-    // QStandardPaths includes the application name. Look beside the new directory for the
-    // pre-rename store and copy it once, preserving old project paths exactly as recorded.
-    QDir parent(base);
-    if (parent.cdUp()) {
-        const QString legacyPath =
-            parent.filePath(QStringLiteral("TierListMaker/recent-projects.json"));
-        if (QFileInfo::exists(legacyPath) && QDir().mkpath(base)) {
-            QFile::copy(legacyPath, storePath);
-        }
-    }
-    return storePath;
+    return QDir(base).filePath(QStringLiteral("recent-projects.json"));
 }
 
 int RecentProjectsStore::indexOf(const QString& filePath) const {

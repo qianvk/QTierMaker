@@ -1,18 +1,32 @@
 #include "persistence/ProjectRepository.h"
 
 #include "persistence/AtomicFileWriter.h"
-
+#include "persistence/ProjectFileLayout.h"
 #include <QFile>
 #include <QFileInfo>
 
 namespace qtm {
 
+namespace {
+bool isSupportedDocumentPath(const QString& filePath) {
+    const QString suffix = QFileInfo(filePath).suffix();
+    return ProjectFileLayout::hasProjectExtension(filePath) ||
+           suffix.compare(QStringLiteral("qtmtemplate"), Qt::CaseInsensitive) == 0;
+}
+} // namespace
+
 ProjectRepository::ProjectRepository(QObject* parent) : QObject(parent) {}
 
 Result<TierProject> ProjectRepository::openProject(const QString& filePath) const {
+    if (!isSupportedDocumentPath(filePath)) {
+        return Result<TierProject>::failure(
+            tr("Unsupported project file."),
+            tr("QTierMaker opens .qtm projects and .qtmtemplate templates only."));
+    }
     QFile file(filePath);
     if (!file.open(QIODevice::ReadOnly)) {
-        return Result<TierProject>::failure(tr("Could not open the project file."), file.errorString());
+        return Result<TierProject>::failure(tr("Could not open the project file."),
+                                            file.errorString());
     }
     auto result = m_serializer.deserialize(file.readAll(), QFileInfo(filePath).absoluteFilePath());
     if (!result) {
@@ -22,6 +36,11 @@ Result<TierProject> ProjectRepository::openProject(const QString& filePath) cons
 }
 
 Result<void> ProjectRepository::saveProject(TierProject& project, const QString& filePath) const {
+    if (!isSupportedDocumentPath(filePath)) {
+        return Result<void>::failure(
+            tr("Unsupported project file."),
+            tr("QTierMaker saves .qtm projects and .qtmtemplate templates only."));
+    }
     auto serialized = m_serializer.serialize(project);
     if (!serialized) {
         return Result<void>::failure(serialized.error().message, serialized.error().details);

@@ -6,6 +6,7 @@
 #include "persistence/ProjectRepository.h"
 #include "persistence/RecentProjectsStore.h"
 #include "settings/AppSettings.h"
+#include "tier/ProjectHistory.h"
 #include "tier/TierProject.h"
 
 #include <QPointer>
@@ -67,18 +68,20 @@ public slots:
     void toggleGallery(QWidget* anchor = nullptr);
     void toggleGalleryMissionControlMode();
     void restoreGalleryAfterPreview();
+    void undo();
+    void redo();
 
 signals:
     void titleChanged(const QString& title);
     void dirtyChanged(bool dirty);
-    void resetRowsAvailableChanged(bool available);
     void projectSaved();
     void projectOpened(const QString& filePath);
     void galleryMissionControlRequested();
     void imagePreviewRequested(const QRect& sourceRectInWindow, const QPixmap& pixmap,
                                const QString& projectBackgroundPath,
                                qreal projectBackgroundVisibility);
-    void imagePreviewCloseRequested();
+    void imagePreviewResetRequested();
+    void projectViewResetRequested();
 
 protected:
     void keyPressEvent(QKeyEvent* event) override;
@@ -86,10 +89,14 @@ protected:
 
 private:
     enum class TransientPopover { None, Templates, Background, Gallery };
+    enum class ProjectSaveMode { PreservePreviousStorage, MovePreviousStorage };
 
     void buildUi();
     void refreshUi();
-    void markDirty();
+    ProjectHistory::State captureProjectState() const;
+    bool commitProjectEdit(const ProjectHistory::State& before, const QString& operation);
+    void applyHistoryState(const ProjectHistory::State& state);
+    void resetProjectViewState();
     void setProject(TierProject project);
     void showError(const QString& title, const Error& error);
     QString chooseSavePath();
@@ -119,10 +126,11 @@ private:
     void clearTierRowImages(const QString& rowId);
     void deleteTierRow(const QString& rowId);
     void insertTierRow(const QString& rowId, bool below);
-    bool saveProjectToPath(const QString& filePath);
+    bool saveProjectToPath(
+        const QString& filePath,
+        ProjectSaveMode mode = ProjectSaveMode::PreservePreviousStorage);
     void removeImageFromRows(const QString& imageId);
     void layoutOverlays();
-    bool hasImagesInRows() const;
     void setSelectedImageId(const QString& imageId);
     void requestImagePreview(const QString& imageId, QRect sourceRect, bool fromGallery);
     QPixmap pixmapForImage(const QString& imageId) const;
@@ -135,6 +143,7 @@ private:
     TierListExporter* m_exporter{nullptr};
     TierProject m_project;
     QString m_selectedImageId;
+    ProjectHistory* m_history{nullptr};
 
     QVBoxLayout* m_rootLayout{nullptr};
     QWidget* m_boardShadow{nullptr};
@@ -148,6 +157,8 @@ private:
     QTimer* m_autosaveTimer{nullptr};
     bool m_tierFocusMode{false};
     bool m_backgroundPreviewActive{false};
+    bool m_resettingProjectState{false};
+    quint64 m_projectGeneration{0};
 };
 
 } // namespace qtm

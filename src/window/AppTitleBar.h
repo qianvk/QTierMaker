@@ -30,7 +30,6 @@ public:
     void setDocumentTitle(const QString& title);
     void setTitleEditable(bool editable);
     void setEditorActionsVisible(bool visible);
-    void setResetRowsActionEnabled(bool enabled);
     void setTierFocusMode(bool enabled);
     void setUnsavedIndicatorVisible(bool visible);
     void setLeadingReservedWidth(int width);
@@ -44,7 +43,6 @@ signals:
     void templatesRequested(QWidget* anchor);
     void backgroundRequested(QWidget* anchor);
     void galleryRequested(QWidget* anchor);
-    void resetRowsRequested();
     void tierFocusModeRequested();
     void projectTitleEdited(const QString& title);
 
@@ -72,7 +70,6 @@ private:
     QToolButton* m_templatesButton{nullptr};
     QToolButton* m_backgroundButton{nullptr};
     QToolButton* m_galleryButton{nullptr};
-    QToolButton* m_resetButton{nullptr};
     QToolButton* m_focusButton{nullptr};
     bool m_tierFocusMode{false};
     bool m_editorActionsVisible{true};

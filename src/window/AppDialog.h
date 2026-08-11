@@ -2,6 +2,8 @@
 
 #include <vkui/window/VkFramelessDialog.h>
 
+class QShowEvent;
+
 namespace qtm {
 
 /**
@@ -13,10 +15,10 @@ namespace qtm {
  */
 class AppDialog : public vkui::VkFramelessDialog {
 public:
-    explicit AppDialog(const QString& title, QWidget* parent = nullptr)
-        : vkui::VkFramelessDialog(title, parent) {
-        setCloseButtonPlacement(CloseButtonPlacement::Hidden);
-    }
+    explicit AppDialog(const QString& title, QWidget* parent = nullptr);
+
+protected:
+    void showEvent(QShowEvent* event) override;
 };
 
 } // namespace qtm

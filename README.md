@@ -1,8 +1,14 @@
 # QTierMaker
 
 QTierMaker is a native Qt desktop app for building personal tier lists on Windows, macOS,
-and Linux. Projects stay local and keep their imported images, tier structure, background, and
-presentation settings together.
+and macOS. Projects stay local and keep their imported images, tier structure, background, and
+presentation settings together in a self-contained project folder.
+
+## Project Status
+
+QTierMaker is a personal vibe-coding project published for use and reference. It does not accept
+external code contributions or pull requests. Release changes are maintained in the localized
+`updates.json` attached to each GitHub Release instead of a repository changelog.
 
 ## macOS Installation
 

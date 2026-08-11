@@ -32,6 +32,7 @@
 #include <QSizePolicy>
 #include <QSplitter>
 #include <QStackedWidget>
+#include <QTextEdit>
 #include <QTimer>
 #include <QToolButton>
 #include <QVBoxLayout>
@@ -270,8 +271,18 @@ void RootWidget::buildUi(ProjectRepository* repository, RecentProjectsStore* rec
     m_previewOverlay->setToolTipsEnabled(settings ? settings->tierListToolTipsEnabled() : true);
     connect(m_editPage, &EditPage::imagePreviewRequested, m_previewOverlay,
             &PreviewOverlay::openPreview);
-    connect(m_editPage, &EditPage::imagePreviewCloseRequested, m_previewOverlay,
-            &PreviewOverlay::closePreview);
+    connect(m_editPage, &EditPage::imagePreviewResetRequested, m_previewOverlay,
+            &PreviewOverlay::resetPreview);
+    connect(m_editPage, &EditPage::projectViewResetRequested, this, [this]() {
+        if (m_tierFocusMode) {
+            setTierFocusMode(false);
+        }
+        if (m_titleBar) {
+            // Clearing editability commits no text and guarantees that the incoming project's
+            // title replaces any preedit or selection left by the previous project.
+            m_titleBar->setTitleEditable(false);
+        }
+    });
     if (settings) {
         connect(settings, &AppSettings::previewBackgroundModeChanged, m_previewOverlay,
                 &PreviewOverlay::setBackgroundMode);
@@ -431,7 +442,6 @@ void RootWidget::buildUi(ProjectRepository* repository, RecentProjectsStore* rec
     connect(m_titleBar, &AppTitleBar::backgroundRequested, m_editPage,
             &EditPage::configureBackground);
     connect(m_titleBar, &AppTitleBar::galleryRequested, m_editPage, &EditPage::toggleGallery);
-    connect(m_titleBar, &AppTitleBar::resetRowsRequested, m_editPage, &EditPage::resetRows);
     connect(m_titleBar, &AppTitleBar::projectTitleEdited, m_editPage, &EditPage::renameProject);
     connect(m_titleBar, &AppTitleBar::tierFocusModeRequested, this,
             [this]() { setTierFocusMode(!m_tierFocusMode); });
@@ -440,9 +450,6 @@ void RootWidget::buildUi(ProjectRepository* repository, RecentProjectsStore* rec
             m_editPage->toggleGalleryMissionControlMode();
         }
     });
-    connect(m_editPage, &EditPage::resetRowsAvailableChanged, m_titleBar,
-            &AppTitleBar::setResetRowsActionEnabled);
-    m_titleBar->setResetRowsActionEnabled(false);
     connect(languageManager, &LanguageManager::languageChanged, m_sidebarModel,
             &SidebarModel::retranslate);
     connect(languageManager, &LanguageManager::languageChanged, this, [this]() {
@@ -1010,6 +1017,29 @@ void RootWidget::setupShortcuts() {
             m_editPage->saveProject();
         }
     });
+    const auto dispatchHistory = [this](bool redo) {
+        QWidget* focus = QApplication::focusWidget();
+        if (auto* lineEdit = qobject_cast<QLineEdit*>(focus); lineEdit && !lineEdit->isReadOnly()) {
+            redo ? lineEdit->redo() : lineEdit->undo();
+            return;
+        }
+        if (auto* textEdit = qobject_cast<QTextEdit*>(focus); textEdit && !textEdit->isReadOnly()) {
+            redo ? textEdit->redo() : textEdit->undo();
+            return;
+        }
+        if (!m_editPage || !hasActiveProject() || m_currentPage != AppPage::Edit) {
+            return;
+        }
+        redo ? m_editPage->redo() : m_editPage->undo();
+    };
+    auto* undoShortcut = new QShortcut(QKeySequence::Undo, this);
+    undoShortcut->setContext(Qt::WindowShortcut);
+    connect(undoShortcut, &QShortcut::activated, this,
+            [dispatchHistory]() { dispatchHistory(false); });
+    auto* redoShortcut = new QShortcut(QKeySequence::Redo, this);
+    redoShortcut->setContext(Qt::WindowShortcut);
+    connect(redoShortcut, &QShortcut::activated, this,
+            [dispatchHistory]() { dispatchHistory(true); });
     auto* missionShortcut =
         new QShortcut(QKeySequence(QKeyCombination(physicalControlModifier(), Qt::Key_I)), this);
     connect(missionShortcut, &QShortcut::activated, m_editPage,

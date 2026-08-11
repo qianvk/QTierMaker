@@ -13,5 +13,12 @@ QTierMaker is split into small modules:
 - `settings`, `theme`, and `i18n` centralize app-wide state.
 - `platform` isolates Finder/Explorer/file-manager behavior.
 
-Domain data uses stable UUIDs rather than indexes. The UI mutates a `TierProject`, emits change signals, and persistence serializes the project into a readable schema-versioned JSON file.
+Domain data uses stable UUIDs rather than indexes. `ProjectHistory` records complete persistent
+states in a `QUndoStack`, skips no-op edits, and treats the model as authoritative when restoring a
+state. Persistence serializes the project into a readable schema-versioned JSON file and writes it
+atomically.
 
+`ProjectFileLayout` owns the `.qtm` naming contract. A managed project is stored as
+`<project-name>/<project-name>.qtm` with assets beside the project file. A title rename first builds
+the new storage, saves the new project, updates recent-project metadata, and only then removes the
+old storage.
