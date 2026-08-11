@@ -98,58 +98,58 @@
         <translation>Untitled Tier List</translation>
     </message>
     <message>
-        <location filename="../../src/update/AppUpdater.cpp" line="488"/>
-        <location filename="../../src/update/AppUpdater.cpp" line="710"/>
+        <location filename="../../src/update/AppUpdater.cpp" line="626"/>
+        <location filename="../../src/update/AppUpdater.cpp" line="850"/>
         <source>No update package is published for this platform.</source>
         <translation>No update package is published for this platform.</translation>
     </message>
     <message>
-        <location filename="../../src/update/AppUpdater.cpp" line="544"/>
+        <location filename="../../src/update/AppUpdater.cpp" line="686"/>
         <source>The update response does not contain a valid latest version.</source>
         <translation>The update response does not contain a valid latest version.</translation>
     </message>
     <message>
-        <location filename="../../src/update/AppUpdater.cpp" line="550"/>
+        <location filename="../../src/update/AppUpdater.cpp" line="692"/>
         <source>The update package URL is not secure.</source>
         <translation>The update package URL is not secure.</translation>
     </message>
     <message>
-        <location filename="../../src/update/AppUpdater.cpp" line="556"/>
+        <location filename="../../src/update/AppUpdater.cpp" line="698"/>
         <source>The update page URL is not secure.</source>
         <translation>The update page URL is not secure.</translation>
     </message>
     <message>
-        <location filename="../../src/update/AppUpdater.cpp" line="562"/>
+        <location filename="../../src/update/AppUpdater.cpp" line="704"/>
         <source>The update metadata URL is not secure.</source>
         <translation>The update metadata URL is not secure.</translation>
     </message>
     <message>
-        <location filename="../../src/update/AppUpdater.cpp" line="568"/>
-        <source>The executable update URL is not secure.</source>
-        <translation>The executable update URL is not secure.</translation>
+        <location filename="../../src/update/AppUpdater.cpp" line="710"/>
+        <source>The application update URL is not secure.</source>
+        <translation>The application update URL is not secure.</translation>
     </message>
     <message>
-        <location filename="../../src/update/AppUpdater.cpp" line="576"/>
+        <location filename="../../src/update/AppUpdater.cpp" line="727"/>
+        <source>The application update checksum is invalid.</source>
+        <translation>The application update checksum is invalid.</translation>
+    </message>
+    <message>
+        <location filename="../../src/update/AppUpdater.cpp" line="738"/>
+        <source>The application update metadata is incomplete.</source>
+        <translation>The application update metadata is incomplete.</translation>
+    </message>
+    <message>
+        <location filename="../../src/update/AppUpdater.cpp" line="718"/>
         <source>The update package checksum is invalid.</source>
         <translation>The update package checksum is invalid.</translation>
     </message>
     <message>
-        <location filename="../../src/update/AppUpdater.cpp" line="585"/>
-        <source>The executable update checksum is invalid.</source>
-        <translation>The executable update checksum is invalid.</translation>
-    </message>
-    <message>
-        <location filename="../../src/update/AppUpdater.cpp" line="594"/>
-        <source>The executable update metadata is incomplete.</source>
-        <translation>The executable update metadata is incomplete.</translation>
-    </message>
-    <message>
-        <location filename="../../src/update/AppUpdater.cpp" line="610"/>
+        <location filename="../../src/update/AppUpdater.cpp" line="754"/>
         <source>The update package type is not supported on this platform.</source>
         <translation>The update package type is not supported on this platform.</translation>
     </message>
     <message>
-        <location filename="../../src/update/AppUpdater.cpp" line="757"/>
+        <location filename="../../src/update/AppUpdater.cpp" line="897"/>
         <source>The update response is not valid JSON.</source>
         <translation>The update response is not valid JSON.</translation>
     </message>
@@ -239,68 +239,73 @@
 <context>
     <name>qtm::AppUpdater</name>
     <message>
-        <location filename="../../src/update/AppUpdater.cpp" line="806"/>
+        <location filename="../../src/update/AppUpdater.cpp" line="946"/>
         <source>The update definition URL is not secure.</source>
         <translation>The update definition URL is not secure.</translation>
     </message>
     <message>
-        <location filename="../../src/update/AppUpdater.cpp" line="847"/>
+        <location filename="../../src/update/AppUpdater.cpp" line="987"/>
         <source>The update response is too large.</source>
         <translation>The update response is too large.</translation>
     </message>
     <message>
-        <location filename="../../src/update/AppUpdater.cpp" line="1045"/>
+        <location filename="../../src/update/AppUpdater.cpp" line="1193"/>
         <source>The update cache directory could not be created.</source>
         <translation>The update cache directory could not be created.</translation>
     </message>
     <message>
-        <location filename="../../src/update/AppUpdater.cpp" line="1094"/>
+        <location filename="../../src/update/AppUpdater.cpp" line="1242"/>
         <source>The update package is larger than expected.</source>
         <translation>The update package is larger than expected.</translation>
     </message>
     <message>
-        <location filename="../../src/update/AppUpdater.cpp" line="83"/>
+        <location filename="../../src/update/AppUpdater.cpp" line="84"/>
         <source>The update service is temporarily rate-limited. Please try again later.</source>
         <translation>The update service is temporarily rate-limited. Please try again later.</translation>
     </message>
     <message>
-        <location filename="../../src/update/AppUpdater.cpp" line="88"/>
+        <location filename="../../src/update/AppUpdater.cpp" line="89"/>
         <source>No update metadata is published for this channel.</source>
         <translation>No update metadata is published for this channel.</translation>
     </message>
     <message>
-        <location filename="../../src/update/AppUpdater.cpp" line="92"/>
+        <location filename="../../src/update/AppUpdater.cpp" line="93"/>
         <source>The update service denied the request (HTTP 403).</source>
         <translation>The update service denied the request (HTTP 403).</translation>
     </message>
     <message>
-        <location filename="../../src/update/AppUpdater.cpp" line="99"/>
-        <location filename="../../src/update/AppUpdater.cpp" line="1122"/>
+        <location filename="../../src/update/AppUpdater.cpp" line="100"/>
+        <location filename="../../src/update/AppUpdater.cpp" line="1270"/>
         <source>The update server returned HTTP %1.</source>
         <translation>The update server returned HTTP %1.</translation>
     </message>
     <message>
-        <location filename="../../src/update/AppUpdater.cpp" line="963"/>
+        <location filename="../../src/update/AppUpdater.cpp" line="1103"/>
         <source>The update metadata version does not match the release.</source>
         <translation>The update metadata version does not match the release.</translation>
     </message>
     <message>
-        <location filename="../../src/update/AppUpdater.cpp" line="1126"/>
+        <location filename="../../src/update/AppUpdater.cpp" line="1274"/>
         <source>The downloaded update package has an unexpected size.</source>
         <translation>The downloaded update package has an unexpected size.</translation>
     </message>
     <message>
-        <location filename="../../src/update/AppUpdater.cpp" line="1130"/>
+        <location filename="../../src/update/AppUpdater.cpp" line="1278"/>
         <source>The downloaded update package failed checksum verification.</source>
         <translation>The downloaded update package failed checksum verification.</translation>
     </message>
     <message>
-        <location filename="../../src/update/AppUpdater.cpp" line="1154"/>
+        <location filename="../../src/update/AppUpdater.cpp" line="1302"/>
         <source>The staged update package is no longer valid.</source>
         <translation>The staged update package is no longer valid.</translation>
     </message>
     <message>
-        <location filename="../../src/update/AppUpdater.cpp" line="1164"/>
+        <location filename="../../src/update/AppUpdater.cpp" line="1317"/>
+        <source>The application update could not be started.</source>
+        <translation>The application update could not be started.</translation>
+    </message>
+    <message>
+        <location filename="../../src/update/AppUpdater.cpp" line="1326"/>
         <source>The update installer could not be opened.</source>
         <translation>The update installer could not be opened.</translation>
     </message>
@@ -1201,43 +1206,43 @@ https://github.com/qianvk/QTierMaker</translation>
         <translation>Untitled Tier List</translation>
     </message>
     <message>
-        <location filename="../../src/pages/ProjectLocationDialog.cpp" line="56"/>
+        <location filename="../../src/pages/ProjectLocationDialog.cpp" line="58"/>
         <source>Choose</source>
         <translation>Choose</translation>
     </message>
     <message>
-        <location filename="../../src/pages/ProjectLocationDialog.cpp" line="74"/>
+        <location filename="../../src/pages/ProjectLocationDialog.cpp" line="79"/>
         <source>Project name</source>
         <translation>Project name</translation>
     </message>
     <message>
-        <location filename="../../src/pages/ProjectLocationDialog.cpp" line="75"/>
+        <location filename="../../src/pages/ProjectLocationDialog.cpp" line="80"/>
         <source>Parent folder</source>
         <translation>Parent folder</translation>
     </message>
     <message>
-        <location filename="../../src/pages/ProjectLocationDialog.cpp" line="76"/>
+        <location filename="../../src/pages/ProjectLocationDialog.cpp" line="81"/>
         <source>Save path</source>
         <translation>Save path</translation>
     </message>
     <message>
-        <location filename="../../src/pages/ProjectLocationDialog.cpp" line="84"/>
-        <location filename="../../src/pages/ProjectLocationDialog.cpp" line="88"/>
+        <location filename="../../src/pages/ProjectLocationDialog.cpp" line="89"/>
+        <location filename="../../src/pages/ProjectLocationDialog.cpp" line="93"/>
         <source>Save Project</source>
         <translation>Save Project</translation>
     </message>
     <message>
-        <location filename="../../src/pages/ProjectLocationDialog.cpp" line="84"/>
+        <location filename="../../src/pages/ProjectLocationDialog.cpp" line="89"/>
         <source>Enter a project name.</source>
         <translation>Enter a project name.</translation>
     </message>
     <message>
-        <location filename="../../src/pages/ProjectLocationDialog.cpp" line="88"/>
+        <location filename="../../src/pages/ProjectLocationDialog.cpp" line="93"/>
         <source>Choose a parent folder.</source>
         <translation>Choose a parent folder.</translation>
     </message>
     <message>
-        <location filename="../../src/pages/ProjectLocationDialog.cpp" line="126"/>
+        <location filename="../../src/pages/ProjectLocationDialog.cpp" line="131"/>
         <source>Choose Parent Folder</source>
         <translation>Choose Parent Folder</translation>
     </message>

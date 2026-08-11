@@ -4,9 +4,13 @@ install(TARGETS QTierMaker
     BUNDLE DESTINATION .
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
+if(APPLE)
+    install(TARGETS QTierMakerMacUpdateHelper
+        RUNTIME DESTINATION "QTierMaker.app/Contents/Helpers")
+endif()
 
-# Keep the sample outside the executable so binary-only updates stay small. The application copies
-# it to the user's project directory once and never merges it into an existing project.
+# Keep the sample outside the Windows executable so executable-only updates stay small. The
+# application copies it to the user's project directory once and never merges an existing project.
 if(APPLE)
     install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/samples/Anime Girls v5/"
         DESTINATION "QTierMaker.app/Contents/Resources/samples/Anime Girls v5")
@@ -96,6 +100,11 @@ qt_generate_deploy_app_script(
     DEPLOY_TOOL_OPTIONS ${_qtm_deploy_tool_options}
 )
 install(SCRIPT "${QTM_QT_DEPLOY_SCRIPT}")
+if(APPLE)
+    # The same deterministic finalizer is used by CPack and the in-app update archive. It removes
+    # SDK-dependent deployment extras, thins universal Qt binaries, re-signs, and audits the bundle.
+    install(SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/packaging/macos/FinalizeBundle.cmake")
+endif()
 
 set(CPACK_PACKAGE_NAME "QTierMaker")
 set(CPACK_PACKAGE_VENDOR "qianvk")
@@ -115,6 +124,25 @@ if(APPLE)
     set(CPACK_DMG_VOLUME_NAME "QTierMaker ${CPACK_PACKAGE_VERSION}")
     set(CPACK_DMG_FORMAT "UDZO")
     set(CPACK_DMG_FILESYSTEM "APFS")
+
+    set(QTM_MACOS_UPDATE_PACKAGE
+        "${CMAKE_BINARY_DIR}/updates/QTierMaker-${QTM_PACKAGE_VERSION}-macOS-arm64-Update.zip")
+    set(_qtm_macos_update_stage "${CMAKE_BINARY_DIR}/updates/macos-stage")
+    add_custom_command(
+        OUTPUT "${QTM_MACOS_UPDATE_PACKAGE}"
+        COMMAND "${CMAKE_COMMAND}"
+            "-DQTM_BUILD_DIR=${CMAKE_BINARY_DIR}"
+            "-DQTM_CONFIG=$<CONFIG>"
+            "-DQTM_STAGE_DIR=${_qtm_macos_update_stage}"
+            "-DQTM_OUTPUT_FILE=${QTM_MACOS_UPDATE_PACKAGE}"
+            -P "${CMAKE_CURRENT_SOURCE_DIR}/packaging/macos/CreateUpdatePackage.cmake"
+        DEPENDS QTierMaker QTierMakerMacUpdateHelper
+            "${CMAKE_CURRENT_SOURCE_DIR}/packaging/macos/CreateUpdatePackage.cmake"
+            "${CMAKE_CURRENT_SOURCE_DIR}/packaging/macos/FinalizeBundle.cmake"
+        COMMENT "Creating complete macOS application update archive"
+        VERBATIM
+    )
+    add_custom_target(QTierMakerMacUpdatePackage DEPENDS "${QTM_MACOS_UPDATE_PACKAGE}")
 elseif(WIN32)
     if(NOT CMAKE_SYSTEM_PROCESSOR MATCHES "^(AMD64|amd64|x86_64)$")
         message(FATAL_ERROR "The public Windows package must be built for x64")

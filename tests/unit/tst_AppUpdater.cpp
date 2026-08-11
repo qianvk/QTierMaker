@@ -100,7 +100,13 @@ void AppUpdaterTest::parsesPlatformManifest() {
       "release-url": "https://github.com/qianvk/QTierMaker/releases/tag/v0.2.0-beta.2",
       "file-name": "QTierMaker-0.2.0-beta.2-Darwin-arm64.dmg",
       "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-      "size": 1234
+      "size": 1234,
+      "update": {
+        "download-url": "https://github.com/qianvk/QTierMaker/releases/download/v0.2.0-beta.2/QTierMaker-0.2.0-beta.2-macOS-arm64-Update.zip",
+        "file-name": "QTierMaker-0.2.0-beta.2-macOS-arm64-Update.zip",
+        "sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "size": 789
+      }
     },
     "linux": {
       "latest-version": "0.2.0-beta.2",
@@ -127,7 +133,7 @@ void AppUpdaterTest::parsesPlatformManifest() {
     QVERIFY(result.downloadUrl.isValid());
 #if defined(Q_OS_WIN)
     QCOMPARE(AppUpdater::runtimeVersion(), QStringLiteral("qt-6.10.1-r1"));
-    QVERIFY(result.lightweightPackage);
+    QVERIFY(result.updatePackage);
     QCOMPARE(result.fileName, QStringLiteral("QTierMaker-0.2.0-beta.2-WinUpdate-AMD64.exe"));
     QCOMPARE(result.packageSize, 567);
 
@@ -138,12 +144,20 @@ void AppUpdaterTest::parsesPlatformManifest() {
                                        QStringLiteral("0.2.0-beta.1"),
                                        &error);
     QVERIFY2(error.isEmpty(), qPrintable(error));
-    QVERIFY(!fallbackResult.lightweightPackage);
+    QVERIFY(!fallbackResult.updatePackage);
     QCOMPARE(fallbackResult.fileName,
              QStringLiteral("QTierMaker-0.2.0-beta.2-Windows-AMD64.exe"));
     QCOMPARE(fallbackResult.packageSize, 1234);
+#elif defined(Q_OS_MACOS) || defined(Q_OS_MAC)
+    QVERIFY(result.updatePackage);
+    QCOMPARE(result.fileName,
+             QStringLiteral("QTierMaker-0.2.0-beta.2-macOS-arm64-Update.zip"));
+    QCOMPARE(result.packageSize, 789);
+    QCOMPARE(result.installerFileName,
+             QStringLiteral("QTierMaker-0.2.0-beta.2-Darwin-arm64.dmg"));
+    QCOMPARE(result.installerPackageSize, 1234);
 #else
-    QVERIFY(!result.lightweightPackage);
+    QVERIFY(!result.updatePackage);
     QCOMPARE(result.packageSize, 1234);
 #endif
 }
@@ -151,10 +165,25 @@ void AppUpdaterTest::parsesPlatformManifest() {
 void AppUpdaterTest::parsesGitHubReleaseFeed() {
 #if defined(Q_OS_WIN)
     constexpr auto packageName = "QTierMaker-0.2.0-beta.3-Windows-AMD64.exe";
+    const QString updateAsset = QStringLiteral(R"json(,
+      {
+        "name": "QTierMaker-0.2.0-beta.3-WinUpdate-AMD64.exe",
+        "browser_download_url": "https://github.com/qianvk/QTierMaker/releases/download/v0.2.0-beta.3/QTierMaker-0.2.0-beta.3-WinUpdate-AMD64.exe",
+        "size": 678,
+        "digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+      })json");
 #elif defined(Q_OS_MACOS) || defined(Q_OS_MAC)
     constexpr auto packageName = "QTierMaker-0.2.0-beta.3-Darwin-universal.dmg";
+    const QString updateAsset = QStringLiteral(R"json(,
+      {
+        "name": "QTierMaker-0.2.0-beta.3-macOS-arm64-Update.zip",
+        "browser_download_url": "https://github.com/qianvk/QTierMaker/releases/download/v0.2.0-beta.3/QTierMaker-0.2.0-beta.3-macOS-arm64-Update.zip",
+        "size": 679,
+        "digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+      })json");
 #else
     constexpr auto packageName = "QTierMaker-0.2.0-beta.3-Linux-x86_64.AppImage";
+    const QString updateAsset;
 #endif
     const QByteArray releaseTemplate = R"json(
 [
@@ -182,13 +211,7 @@ void AppUpdaterTest::parsesGitHubReleaseFeed() {
         "name": "updates.json",
         "browser_download_url": "https://github.com/qianvk/QTierMaker/releases/download/v0.2.0-beta.3/updates.json",
         "size": 1024
-      },
-      {
-        "name": "QTierMaker-0.2.0-beta.3-WinUpdate-AMD64.exe",
-        "browser_download_url": "https://github.com/qianvk/QTierMaker/releases/download/v0.2.0-beta.3/QTierMaker-0.2.0-beta.3-WinUpdate-AMD64.exe",
-        "size": 678,
-        "digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
-      }
+      }%2
     ]
   },
   {
@@ -201,7 +224,9 @@ void AppUpdaterTest::parsesGitHubReleaseFeed() {
 ]
 )json";
     const QByteArray payload =
-        QString::fromUtf8(releaseTemplate).arg(QString::fromLatin1(packageName)).toUtf8();
+        QString::fromUtf8(releaseTemplate)
+            .arg(QString::fromLatin1(packageName), updateAsset)
+            .toUtf8();
 
     QString error;
     const UpdateCheckResult result =
@@ -210,19 +235,35 @@ void AppUpdaterTest::parsesGitHubReleaseFeed() {
     QVERIFY(result.updateAvailable);
     QCOMPARE(result.latestVersion, QStringLiteral("0.2.0-beta.3"));
     QCOMPARE(result.channel, QStringLiteral("beta"));
+    QCOMPARE(result.metadataUrl,
+             QUrl(QStringLiteral("https://github.com/qianvk/QTierMaker/releases/download/"
+                                 "v0.2.0-beta.3/updates.json")));
+#if !defined(Q_OS_MACOS) && !defined(Q_OS_MAC)
     QCOMPARE(result.fileName, QString::fromLatin1(packageName));
     QCOMPARE(result.packageSize, 4321);
     QCOMPARE(result.sha256,
              QStringLiteral("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"));
-    QCOMPARE(result.metadataUrl,
-             QUrl(QStringLiteral("https://github.com/qianvk/QTierMaker/releases/download/"
-                                 "v0.2.0-beta.3/updates.json")));
+#endif
 #if defined(Q_OS_WIN)
     QCOMPARE(result.updateFileName,
              QStringLiteral("QTierMaker-0.2.0-beta.3-WinUpdate-AMD64.exe"));
     QCOMPARE(result.updatePackageSize, 678);
     QCOMPARE(result.updateSha256,
              QStringLiteral("dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"));
+#elif defined(Q_OS_MACOS) || defined(Q_OS_MAC)
+    QVERIFY(result.updatePackage);
+    QCOMPARE(result.fileName,
+             QStringLiteral("QTierMaker-0.2.0-beta.3-macOS-arm64-Update.zip"));
+    QCOMPARE(result.packageSize, 679);
+    QCOMPARE(result.sha256,
+             QStringLiteral("eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"));
+    QCOMPARE(result.installerFileName, QString::fromLatin1(packageName));
+    QCOMPARE(result.installerPackageSize, 4321);
+    QCOMPARE(result.updateFileName,
+             QStringLiteral("QTierMaker-0.2.0-beta.3-macOS-arm64-Update.zip"));
+    QCOMPARE(result.updatePackageSize, 679);
+    QCOMPARE(result.updateSha256,
+             QStringLiteral("eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"));
 #endif
 }
 

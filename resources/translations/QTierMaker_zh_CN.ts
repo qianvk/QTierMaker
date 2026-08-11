@@ -98,58 +98,58 @@
         <translation>图片元数据格式错误。</translation>
     </message>
     <message>
-        <location filename="../../src/update/AppUpdater.cpp" line="488"/>
-        <location filename="../../src/update/AppUpdater.cpp" line="710"/>
+        <location filename="../../src/update/AppUpdater.cpp" line="626"/>
+        <location filename="../../src/update/AppUpdater.cpp" line="850"/>
         <source>No update package is published for this platform.</source>
         <translation>此平台尚未发布更新包。</translation>
     </message>
     <message>
-        <location filename="../../src/update/AppUpdater.cpp" line="544"/>
+        <location filename="../../src/update/AppUpdater.cpp" line="686"/>
         <source>The update response does not contain a valid latest version.</source>
         <translation>更新响应中没有有效的最新版本。</translation>
     </message>
     <message>
-        <location filename="../../src/update/AppUpdater.cpp" line="550"/>
+        <location filename="../../src/update/AppUpdater.cpp" line="692"/>
         <source>The update package URL is not secure.</source>
         <translation>更新包 URL 不安全。</translation>
     </message>
     <message>
-        <location filename="../../src/update/AppUpdater.cpp" line="556"/>
+        <location filename="../../src/update/AppUpdater.cpp" line="698"/>
         <source>The update page URL is not secure.</source>
         <translation>更新页面 URL 不安全。</translation>
     </message>
     <message>
-        <location filename="../../src/update/AppUpdater.cpp" line="562"/>
+        <location filename="../../src/update/AppUpdater.cpp" line="704"/>
         <source>The update metadata URL is not secure.</source>
         <translation>更新元数据 URL 不安全。</translation>
     </message>
     <message>
-        <location filename="../../src/update/AppUpdater.cpp" line="568"/>
-        <source>The executable update URL is not secure.</source>
-        <translation>可执行更新包 URL 不安全。</translation>
+        <location filename="../../src/update/AppUpdater.cpp" line="710"/>
+        <source>The application update URL is not secure.</source>
+        <translation>应用更新包 URL 不安全。</translation>
     </message>
     <message>
-        <location filename="../../src/update/AppUpdater.cpp" line="576"/>
+        <location filename="../../src/update/AppUpdater.cpp" line="727"/>
+        <source>The application update checksum is invalid.</source>
+        <translation>应用更新包校验和无效。</translation>
+    </message>
+    <message>
+        <location filename="../../src/update/AppUpdater.cpp" line="738"/>
+        <source>The application update metadata is incomplete.</source>
+        <translation>应用更新包元数据不完整。</translation>
+    </message>
+    <message>
+        <location filename="../../src/update/AppUpdater.cpp" line="718"/>
         <source>The update package checksum is invalid.</source>
         <translation>更新包校验和无效。</translation>
     </message>
     <message>
-        <location filename="../../src/update/AppUpdater.cpp" line="585"/>
-        <source>The executable update checksum is invalid.</source>
-        <translation>可执行更新包校验值无效。</translation>
-    </message>
-    <message>
-        <location filename="../../src/update/AppUpdater.cpp" line="594"/>
-        <source>The executable update metadata is incomplete.</source>
-        <translation>可执行更新包元数据不完整。</translation>
-    </message>
-    <message>
-        <location filename="../../src/update/AppUpdater.cpp" line="610"/>
+        <location filename="../../src/update/AppUpdater.cpp" line="754"/>
         <source>The update package type is not supported on this platform.</source>
         <translation>此平台不支持该更新包类型。</translation>
     </message>
     <message>
-        <location filename="../../src/update/AppUpdater.cpp" line="757"/>
+        <location filename="../../src/update/AppUpdater.cpp" line="897"/>
         <source>The update response is not valid JSON.</source>
         <translation>更新响应不是有效的 JSON。</translation>
     </message>
@@ -239,68 +239,73 @@
 <context>
     <name>qtm::AppUpdater</name>
     <message>
-        <location filename="../../src/update/AppUpdater.cpp" line="806"/>
+        <location filename="../../src/update/AppUpdater.cpp" line="946"/>
         <source>The update definition URL is not secure.</source>
         <translation>更新定义 URL 不安全。</translation>
     </message>
     <message>
-        <location filename="../../src/update/AppUpdater.cpp" line="847"/>
+        <location filename="../../src/update/AppUpdater.cpp" line="987"/>
         <source>The update response is too large.</source>
         <translation>更新响应过大。</translation>
     </message>
     <message>
-        <location filename="../../src/update/AppUpdater.cpp" line="1045"/>
+        <location filename="../../src/update/AppUpdater.cpp" line="1193"/>
         <source>The update cache directory could not be created.</source>
         <translation>无法创建更新缓存目录。</translation>
     </message>
     <message>
-        <location filename="../../src/update/AppUpdater.cpp" line="1094"/>
+        <location filename="../../src/update/AppUpdater.cpp" line="1242"/>
         <source>The update package is larger than expected.</source>
         <translation>更新包大于预期大小。</translation>
     </message>
     <message>
-        <location filename="../../src/update/AppUpdater.cpp" line="83"/>
+        <location filename="../../src/update/AppUpdater.cpp" line="84"/>
         <source>The update service is temporarily rate-limited. Please try again later.</source>
         <translation>更新服务暂时受到频率限制，请稍后重试。</translation>
     </message>
     <message>
-        <location filename="../../src/update/AppUpdater.cpp" line="88"/>
+        <location filename="../../src/update/AppUpdater.cpp" line="89"/>
         <source>No update metadata is published for this channel.</source>
         <translation>当前更新通道尚未发布更新元数据。</translation>
     </message>
     <message>
-        <location filename="../../src/update/AppUpdater.cpp" line="92"/>
+        <location filename="../../src/update/AppUpdater.cpp" line="93"/>
         <source>The update service denied the request (HTTP 403).</source>
         <translation>更新服务拒绝了请求（HTTP 403）。</translation>
     </message>
     <message>
-        <location filename="../../src/update/AppUpdater.cpp" line="99"/>
-        <location filename="../../src/update/AppUpdater.cpp" line="1122"/>
+        <location filename="../../src/update/AppUpdater.cpp" line="100"/>
+        <location filename="../../src/update/AppUpdater.cpp" line="1270"/>
         <source>The update server returned HTTP %1.</source>
         <translation>更新服务器返回了 HTTP %1。</translation>
     </message>
     <message>
-        <location filename="../../src/update/AppUpdater.cpp" line="963"/>
+        <location filename="../../src/update/AppUpdater.cpp" line="1103"/>
         <source>The update metadata version does not match the release.</source>
         <translation>更新元数据版本与发布版本不匹配。</translation>
     </message>
     <message>
-        <location filename="../../src/update/AppUpdater.cpp" line="1126"/>
+        <location filename="../../src/update/AppUpdater.cpp" line="1274"/>
         <source>The downloaded update package has an unexpected size.</source>
         <translation>下载的更新包大小与预期不符。</translation>
     </message>
     <message>
-        <location filename="../../src/update/AppUpdater.cpp" line="1130"/>
+        <location filename="../../src/update/AppUpdater.cpp" line="1278"/>
         <source>The downloaded update package failed checksum verification.</source>
         <translation>下载的更新包未通过校验和验证。</translation>
     </message>
     <message>
-        <location filename="../../src/update/AppUpdater.cpp" line="1154"/>
+        <location filename="../../src/update/AppUpdater.cpp" line="1302"/>
         <source>The staged update package is no longer valid.</source>
         <translation>已暂存的更新包不再有效。</translation>
     </message>
     <message>
-        <location filename="../../src/update/AppUpdater.cpp" line="1164"/>
+        <location filename="../../src/update/AppUpdater.cpp" line="1317"/>
+        <source>The application update could not be started.</source>
+        <translation>无法启动应用更新。</translation>
+    </message>
+    <message>
+        <location filename="../../src/update/AppUpdater.cpp" line="1326"/>
         <source>The update installer could not be opened.</source>
         <translation>无法打开更新安装程序。</translation>
     </message>
@@ -1200,43 +1205,43 @@ https://github.com/qianvk/QTierMaker</translation>
         <translation>未命名分级列表</translation>
     </message>
     <message>
-        <location filename="../../src/pages/ProjectLocationDialog.cpp" line="56"/>
+        <location filename="../../src/pages/ProjectLocationDialog.cpp" line="58"/>
         <source>Choose</source>
         <translation>选择</translation>
     </message>
     <message>
-        <location filename="../../src/pages/ProjectLocationDialog.cpp" line="74"/>
+        <location filename="../../src/pages/ProjectLocationDialog.cpp" line="79"/>
         <source>Project name</source>
         <translation>项目名称</translation>
     </message>
     <message>
-        <location filename="../../src/pages/ProjectLocationDialog.cpp" line="75"/>
+        <location filename="../../src/pages/ProjectLocationDialog.cpp" line="80"/>
         <source>Parent folder</source>
         <translation>父文件夹</translation>
     </message>
     <message>
-        <location filename="../../src/pages/ProjectLocationDialog.cpp" line="76"/>
+        <location filename="../../src/pages/ProjectLocationDialog.cpp" line="81"/>
         <source>Save path</source>
         <translation>保存路径</translation>
     </message>
     <message>
-        <location filename="../../src/pages/ProjectLocationDialog.cpp" line="84"/>
-        <location filename="../../src/pages/ProjectLocationDialog.cpp" line="88"/>
+        <location filename="../../src/pages/ProjectLocationDialog.cpp" line="89"/>
+        <location filename="../../src/pages/ProjectLocationDialog.cpp" line="93"/>
         <source>Save Project</source>
         <translation>保存项目</translation>
     </message>
     <message>
-        <location filename="../../src/pages/ProjectLocationDialog.cpp" line="84"/>
+        <location filename="../../src/pages/ProjectLocationDialog.cpp" line="89"/>
         <source>Enter a project name.</source>
         <translation>请输入项目名称。</translation>
     </message>
     <message>
-        <location filename="../../src/pages/ProjectLocationDialog.cpp" line="88"/>
+        <location filename="../../src/pages/ProjectLocationDialog.cpp" line="93"/>
         <source>Choose a parent folder.</source>
         <translation>请选择父文件夹。</translation>
     </message>
     <message>
-        <location filename="../../src/pages/ProjectLocationDialog.cpp" line="126"/>
+        <location filename="../../src/pages/ProjectLocationDialog.cpp" line="131"/>
         <source>Choose Parent Folder</source>
         <translation>选择父文件夹</translation>
     </message>
