@@ -145,6 +145,8 @@ jobs:
         run: |
           set -euo pipefail
           update_app="${GITHUB_WORKSPACE}/build/package/updates/macos-stage/QTierMaker.app"
+          test ! -e "${update_app}/Contents/Resources/samples"
+          test -z "$(find "${update_app}" -type f -name '*.qtm' -print -quit)"
           cmake -DQTM_APPLICATION="${update_app}" -DQTM_AUDIT_ONLY=ON \
             -P packaging/macos/FinalizeBundle.cmake
           "${update_app}/Contents/MacOS/QTierMaker" --deployment-smoke-test
@@ -159,6 +161,8 @@ jobs:
           trap cleanup EXIT
           hdiutil attach -nobrowse -readonly -mountpoint "${mount_dir}" "${dmg_path}" >/dev/null
           dmg_app="${mount_dir}/QTierMaker.app"
+          test ! -e "${dmg_app}/Contents/Resources/samples"
+          test -z "$(find "${dmg_app}" -type f -name '*.qtm' -print -quit)"
           cmake -DQTM_APPLICATION="${dmg_app}" -DQTM_AUDIT_ONLY=ON \
             -P packaging/macos/FinalizeBundle.cmake
           "${dmg_app}/Contents/MacOS/QTierMaker" --deployment-smoke-test
@@ -184,6 +188,10 @@ jobs:
             Where-Object { $forbidden -contains $_.Name.ToLowerInvariant() }
           if ($unexpected) {
             throw "Forbidden deployment dependencies: $($unexpected.Name -join ', ')"
+          }
+          $bundledProjects = Get-ChildItem runtime-audit -Recurse -File -Filter *.qtm
+          if ($bundledProjects) {
+            throw "Sample projects must not be installed: $($bundledProjects.FullName -join ', ')"
           }
           $required = @(
             'msvcp140.dll',

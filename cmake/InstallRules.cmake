@@ -9,16 +9,6 @@ if(APPLE)
         RUNTIME DESTINATION "QTierMaker.app/Contents/Helpers")
 endif()
 
-# Keep the sample outside the Windows executable so executable-only updates stay small. The
-# application copies it to the user's project directory once and never merges an existing project.
-if(APPLE)
-    install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/samples/Anime Girls v5/"
-        DESTINATION "QTierMaker.app/Contents/Resources/samples/Anime Girls v5")
-else()
-    install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/samples/Anime Girls v5/"
-        DESTINATION "${CMAKE_INSTALL_DATADIR}/QTierMaker/samples/Anime Girls v5")
-endif()
-
 if(MSVC)
     # Qt and the application import only these ABI-compatible VC runtime libraries. Resolve the
     # active toolchain instead of relying on CMake's compiler-version table, which can lag MSVC.

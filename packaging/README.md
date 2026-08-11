@@ -8,6 +8,10 @@ create the platform-native installer:
 
 Linux packages are not currently built or published.
 
+Example projects remain available in the source repository but are deliberately excluded from
+installers and update payloads. This keeps first-time downloads compact and avoids writing demo
+content into a user's project directory during startup.
+
 This keeps dependency discovery in Qt/CMake instead of duplicating `macdeployqt` and `windeployqt`
 logic in shell scripts. The commands and signing details are documented in the platform folders.
 
