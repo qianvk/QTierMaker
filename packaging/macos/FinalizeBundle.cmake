@@ -3,6 +3,8 @@ cmake_minimum_required(VERSION 3.24)
 if(NOT DEFINED QTM_APPLICATION OR QTM_APPLICATION STREQUAL "")
     set(QTM_APPLICATION "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/QTierMaker.app")
 endif()
+get_filename_component(QTM_APPLICATION "${QTM_APPLICATION}" ABSOLUTE
+    BASE_DIR "${CMAKE_CURRENT_BINARY_DIR}")
 
 set(_qtm_contents "${QTM_APPLICATION}/Contents")
 set(_qtm_frameworks "${_qtm_contents}/Frameworks")
