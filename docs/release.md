@@ -18,6 +18,7 @@ Stable releases publish only the supported native architectures:
 - `QTierMaker-<version>-Windows-x64-Setup.exe`
 - `QTierMaker-<version>-WinUpdate-x64.exe`
 - `QTierMaker-<version>-macOS-arm64.dmg`
+- `QTierMaker-<version>-macOS-arm64-Update.zip`
 
 The application reads the GitHub Releases API. Stable builds ignore prereleases; beta builds accept
 both prerelease and stable releases and select the highest compatible Semantic Version. Downloads
@@ -34,7 +35,16 @@ package carries only the signed application executable, verifies the installed `
 waits for the running application to exit, replaces it with rollback protection, and restarts it.
 Clients use the compact package only when its runtime generation and GitHub asset metadata match;
 otherwise they use the full installer. Bump `QTM_UPDATE_RUNTIME_VERSION` whenever Qt or the deployed
-dynamic plugin/runtime set changes. macOS updates use the complete ad-hoc signed DMG.
+dynamic plugin/runtime set changes.
+
+Every macOS release contains both the drag-install DMG and a direct-update ZIP. The ZIP contains the
+complete ad-hoc signed `QTierMaker.app`, rather than only its main executable, so Qt frameworks,
+plugins, resources, metadata, and the bundle signature always move together. The application
+verifies the manifest size and SHA-256 digest, then launches a standalone helper that validates the
+bundle identifier, version, executable, and code signature. After QTierMaker exits, the helper
+replaces the application on the same volume with rollback protection and relaunches it. The DMG is
+used when the current application is on a read-only/translocated volume, its parent directory is not
+writable, or the helper is unavailable.
 
 The Windows NSIS installer installs machine-wide under `Program Files` by default. It intentionally
 omits the software OpenGL renderer, legacy D3D compiler, DXC, Qt translations, and the VC

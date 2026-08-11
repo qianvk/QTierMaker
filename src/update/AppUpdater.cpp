@@ -14,6 +14,9 @@
 #include <QLocale>
 #include <QNetworkReply>
 #include <QNetworkRequest>
+#if defined(Q_OS_MACOS) || defined(Q_OS_MAC)
+#include <QProcess>
+#endif
 #include <QRegularExpression>
 #include <QSaveFile>
 #include <QStandardPaths>
@@ -381,7 +384,7 @@ QString packageFileName(const UpdateCheckResult& result) {
     return fileName;
 }
 
-bool packageTypeSupported(const QString& fileName) {
+bool installerPackageTypeSupported(const QString& fileName) {
 #if defined(Q_OS_WIN)
     return fileName.endsWith(QStringLiteral(".exe"), Qt::CaseInsensitive);
 #elif defined(Q_OS_MACOS) || defined(Q_OS_MAC)
@@ -405,10 +408,14 @@ bool packageMatchesPlatform(const QString& fileName) {
 #endif
 }
 
-bool isWindowsUpdatePackage(const QString& fileName) {
+bool isPlatformUpdatePackage(const QString& fileName) {
 #if defined(Q_OS_WIN)
     return fileName.endsWith(QStringLiteral(".exe"), Qt::CaseInsensitive) &&
            fileName.contains(QStringLiteral("WinUpdate"), Qt::CaseInsensitive);
+#elif defined(Q_OS_MACOS) || defined(Q_OS_MAC)
+    return fileName.endsWith(QStringLiteral(".zip"), Qt::CaseInsensitive) &&
+           fileName.contains(QStringLiteral("Update"), Qt::CaseInsensitive) &&
+           packageMatchesPlatform(fileName);
 #else
     Q_UNUSED(fileName)
     return false;
@@ -446,6 +453,139 @@ bool packageMatchesArchitecture(const QString& fileName) {
         return name.contains(architecture);
     });
 }
+
+bool shouldUseUpdatePackage(const UpdateCheckResult& result) {
+    if (!result.updateDownloadUrl.isValid() ||
+        !isPlatformUpdatePackage(result.updateFileName) ||
+        !packageMatchesArchitecture(result.updateFileName)) {
+        return false;
+    }
+#if defined(Q_OS_WIN)
+    return result.runtimeVersion == AppUpdater::runtimeVersion();
+#elif defined(Q_OS_MACOS) || defined(Q_OS_MAC)
+    // The macOS update carries the complete app bundle, including its Qt runtime and plugins.
+    return true;
+#else
+    return false;
+#endif
+}
+
+void selectUpdatePackage(UpdateCheckResult* result) {
+    result->downloadUrl = result->updateDownloadUrl;
+    result->fileName = result->updateFileName;
+    result->sha256 = result->updateSha256;
+    result->packageSize = result->updatePackageSize;
+    result->updatePackage = true;
+}
+
+#if defined(Q_OS_MACOS) || defined(Q_OS_MAC)
+bool selectInstallerPackage(UpdateCheckResult* result) {
+    if (!result->installerDownloadUrl.isValid() || result->installerSha256.size() != 64 ||
+        result->installerPackageSize <= 0) {
+        return false;
+    }
+    result->downloadUrl = result->installerDownloadUrl;
+    result->fileName = result->installerFileName;
+    result->sha256 = result->installerSha256;
+    result->packageSize = result->installerPackageSize;
+    result->updatePackage = false;
+    return true;
+}
+
+QString applicationBundlePath() {
+    QDir directory(QCoreApplication::applicationDirPath());
+    if (!directory.cdUp() || !directory.cdUp()) {
+        return {};
+    }
+    const QString path = QDir::cleanPath(directory.absolutePath());
+    return path.endsWith(QStringLiteral(".app"), Qt::CaseInsensitive) ? path : QString();
+}
+
+QString macUpdateHelperPath(const QString& applicationPath) {
+    return QDir(applicationPath).filePath(
+        QStringLiteral("Contents/Helpers/QTierMakerMacUpdateHelper"));
+}
+
+bool canReplaceMacApplication(QString* reason = nullptr) {
+    const QString applicationPath = applicationBundlePath();
+    const QString normalizedPath = QDir::fromNativeSeparators(applicationPath);
+    QString failure;
+    if (applicationPath.isEmpty() || !QFileInfo(applicationPath).isDir()) {
+        failure = QStringLiteral("not-an-application-bundle");
+    } else if (normalizedPath.startsWith(QStringLiteral("/Volumes/")) ||
+               normalizedPath.contains(QStringLiteral("/AppTranslocation/"))) {
+        failure = QStringLiteral("transient-application-location");
+    } else if (!QFileInfo(QFileInfo(applicationPath).absolutePath()).isWritable()) {
+        failure = QStringLiteral("application-parent-not-writable");
+    } else {
+        const QFileInfo helper(macUpdateHelperPath(applicationPath));
+        if (!helper.isFile() || !helper.isExecutable()) {
+            failure = QStringLiteral("update-helper-unavailable");
+        }
+    }
+    if (reason) {
+        *reason = failure;
+    }
+    return failure.isEmpty();
+}
+
+bool launchMacUpdateHelper(const QString& archivePath, const QString& expectedVersion,
+                           QString* reason) {
+    const QString applicationPath = applicationBundlePath();
+    const QString sourcePath = macUpdateHelperPath(applicationPath);
+    QString helperDirectory = QStandardPaths::writableLocation(QStandardPaths::CacheLocation);
+    if (helperDirectory.isEmpty()) {
+        helperDirectory = QStandardPaths::writableLocation(QStandardPaths::TempLocation);
+    }
+    helperDirectory = QDir(helperDirectory).filePath(QStringLiteral("updates/helper"));
+    if (!QDir().mkpath(helperDirectory)) {
+        if (reason) {
+            *reason = QStringLiteral("helper-cache-unavailable");
+        }
+        return false;
+    }
+    QFile::setPermissions(helperDirectory,
+                          QFileDevice::ReadOwner | QFileDevice::WriteOwner |
+                              QFileDevice::ExeOwner);
+    const QString helperPath = QDir(helperDirectory).filePath(
+        QStringLiteral("QTierMakerMacUpdateHelper-%1")
+            .arg(QCoreApplication::applicationPid()));
+    QFile::remove(helperPath);
+    if (!QFile::copy(sourcePath, helperPath) ||
+        !QFile::setPermissions(helperPath,
+                               QFileDevice::ReadOwner | QFileDevice::WriteOwner |
+                                   QFileDevice::ExeOwner)) {
+        if (reason) {
+            *reason = QStringLiteral("helper-copy-failed");
+        }
+        return false;
+    }
+
+    const QStringList arguments{
+        QStringLiteral("--pid"),
+        QString::number(QCoreApplication::applicationPid()),
+        QStringLiteral("--archive"),
+        archivePath,
+        QStringLiteral("--application"),
+        applicationPath,
+        QStringLiteral("--expected-version"),
+        expectedVersion,
+    };
+    qint64 helperPid = 0;
+    if (!QProcess::startDetached(helperPath, arguments,
+                                 QFileInfo(applicationPath).absolutePath(), &helperPid)) {
+        QFile::remove(helperPath);
+        if (reason) {
+            *reason = QStringLiteral("helper-launch-failed");
+        }
+        return false;
+    }
+    Logger::info(QStringLiteral("app.update.helper.start pid=%1 application=\"%2\"")
+                     .arg(helperPid)
+                     .arg(applicationPath));
+    return true;
+}
+#endif
 
 QString packageCachePath(const UpdateCheckResult& result) {
     QString cacheRoot = QStandardPaths::writableLocation(QStandardPaths::CacheLocation);
@@ -526,6 +666,10 @@ UpdateCheckResult parseDefinition(const QJsonObject& root, const QString& curren
     result.fileName = stringValue(object, {"file-name", "fileName", "name"});
     result.sha256 = stringValue(object, {"sha256", "checksum"}).toLower();
     result.packageSize = integerValue(object, {"size", "package-size", "packageSize"});
+    result.installerDownloadUrl = result.downloadUrl;
+    result.installerFileName = result.fileName;
+    result.installerSha256 = result.sha256;
+    result.installerPackageSize = result.packageSize;
     result.mandatory =
         boolValue(object, {"mandatory-update", "mandatoryUpdate", "mandatory"}, false);
 
@@ -565,7 +709,7 @@ UpdateCheckResult parseDefinition(const QJsonObject& root, const QString& curren
     }
     if (result.updateDownloadUrl.isValid() && !isSecureWebUrl(result.updateDownloadUrl)) {
         if (error) {
-            *error = QObject::tr("The executable update URL is not secure.");
+            *error = QObject::tr("The application update URL is not secure.");
         }
         return {};
     }
@@ -582,16 +726,18 @@ UpdateCheckResult parseDefinition(const QJsonObject& root, const QString& curren
         static const QRegularExpression shaPattern(QStringLiteral("^[0-9a-f]{64}$"));
         if (!shaPattern.match(result.updateSha256).hasMatch()) {
             if (error) {
-                *error = QObject::tr("The executable update checksum is invalid.");
+                *error = QObject::tr("The application update checksum is invalid.");
             }
             return {};
         }
     }
-    if (result.updateDownloadUrl.isValid() &&
-        (!isWindowsUpdatePackage(result.updateFileName) || result.updateSha256.size() != 64 ||
-         result.updatePackageSize <= 0)) {
+    if (!updateObject.isEmpty() &&
+        (!result.updateDownloadUrl.isValid() ||
+         !isPlatformUpdatePackage(result.updateFileName) ||
+         !packageMatchesArchitecture(result.updateFileName) ||
+         result.updateSha256.size() != 64 || result.updatePackageSize <= 0)) {
         if (error) {
-            *error = QObject::tr("The executable update metadata is incomplete.");
+            *error = QObject::tr("The application update metadata is incomplete.");
         }
         return {};
     }
@@ -605,7 +751,7 @@ UpdateCheckResult parseDefinition(const QJsonObject& root, const QString& curren
     result.updateAvailable = compareSemanticVersions(currentVersion, result.latestVersion) < 0;
     if (result.updateAvailable && result.downloadUrl.isValid()) {
         const QString fileName = packageFileName(result);
-        if (fileName.isEmpty() || !packageTypeSupported(fileName)) {
+        if (fileName.isEmpty() || !installerPackageTypeSupported(fileName)) {
             if (error) {
                 *error = QObject::tr("The update package type is not supported on this platform.");
             }
@@ -613,13 +759,8 @@ UpdateCheckResult parseDefinition(const QJsonObject& root, const QString& curren
         }
         result.fileName = fileName;
     }
-    if (result.updateAvailable && result.runtimeVersion == AppUpdater::runtimeVersion() &&
-        result.updateDownloadUrl.isValid()) {
-        result.downloadUrl = result.updateDownloadUrl;
-        result.fileName = result.updateFileName;
-        result.sha256 = result.updateSha256;
-        result.packageSize = result.updatePackageSize;
-        result.lightweightPackage = true;
+    if (result.updateAvailable && shouldUseUpdatePackage(result)) {
+        selectUpdatePackage(&result);
     }
     if (!result.openUrl.isValid()) {
         result.openUrl = AppUpdater::defaultProjectUrl();
@@ -658,9 +799,10 @@ UpdateCheckResult parseGitHubRelease(const QJsonObject& root, const QString& cur
         if (name.compare(QStringLiteral("updates.json"), Qt::CaseInsensitive) == 0) {
             definition.insert(QStringLiteral("metadata-url"),
                               stringValue(asset, {"browser_download_url"}));
-        } else if (isWindowsUpdatePackage(name) && packageMatchesArchitecture(name)) {
+        } else if (isPlatformUpdatePackage(name) && packageMatchesArchitecture(name)) {
             definition.insert(QStringLiteral("update"), packageDefinitionFromGitHubAsset(asset));
-        } else if (!packageFound && packageTypeSupported(name) && packageMatchesPlatform(name) &&
+        } else if (!packageFound && installerPackageTypeSupported(name) &&
+                   packageMatchesPlatform(name) &&
                    packageMatchesArchitecture(name)) {
             const QJsonObject package = packageDefinitionFromGitHubAsset(asset);
             for (auto it = package.constBegin(); it != package.constEnd(); ++it) {
@@ -985,13 +1127,10 @@ void AppUpdater::finishMetadataReply() {
         releaseResult.updateFileName == metadataResult.updateFileName &&
         releaseResult.updateSha256 == metadataResult.updateSha256 &&
         releaseResult.updatePackageSize == metadataResult.updatePackageSize;
-    if (matchingUpdateAsset && releaseResult.runtimeVersion == runtimeVersion()) {
-        releaseResult.downloadUrl = releaseResult.updateDownloadUrl;
-        releaseResult.fileName = releaseResult.updateFileName;
-        releaseResult.sha256 = releaseResult.updateSha256;
-        releaseResult.packageSize = releaseResult.updatePackageSize;
-        releaseResult.lightweightPackage = true;
-        Logger::info(QStringLiteral("app.update.package.select kind=executable runtime=%1")
+    if (matchingUpdateAsset && shouldUseUpdatePackage(releaseResult)) {
+        selectUpdatePackage(&releaseResult);
+        Logger::info(QStringLiteral("app.update.package.select kind=application-update "
+                                    "runtime=%1")
                          .arg(releaseResult.runtimeVersion));
     } else {
         Logger::info(QStringLiteral("app.update.package.select kind=installer currentRuntime=%1 "
@@ -1003,7 +1142,18 @@ void AppUpdater::finishMetadataReply() {
 }
 
 void AppUpdater::completeCheck(UpdateCheckResult result) {
-
+#if defined(Q_OS_MACOS) || defined(Q_OS_MAC)
+    if (result.updatePackage) {
+        QString reason;
+        if (!canReplaceMacApplication(&reason)) {
+            const bool fellBack = selectInstallerPackage(&result);
+            Logger::info(QStringLiteral("app.update.package.fallback platform=macos reason=%1 "
+                                        "installer=%2")
+                             .arg(reason)
+                             .arg(fellBack));
+        }
+    }
+#endif
     Logger::info(QStringLiteral("app.update.check.finish current=%1 latest=%2 available=%3 "
                                 "mandatory=%4 channel=%5")
                      .arg(result.currentVersion, result.latestVersion)
@@ -1157,9 +1307,23 @@ void AppUpdater::installDownloadedUpdate() {
 
     setState(UpdateState::Installing);
     Logger::info(QStringLiteral("app.update.install.start kind=%1 path=\"%2\"")
-                     .arg(m_lastResult.lightweightPackage ? QStringLiteral("executable")
-                                                          : QStringLiteral("installer"),
+                     .arg(m_lastResult.updatePackage ? QStringLiteral("application-update")
+                                                     : QStringLiteral("installer"),
                           m_downloadedPackagePath));
+#if defined(Q_OS_MACOS) || defined(Q_OS_MAC)
+    if (m_lastResult.updatePackage) {
+        QString reason;
+        if (!launchMacUpdateHelper(m_downloadedPackagePath, m_lastResult.latestVersion, &reason)) {
+            Logger::warn(QStringLiteral("app.update.helper.failed reason=%1").arg(reason));
+            setState(UpdateState::Ready);
+            emit updateFailed(tr("The application update could not be started."));
+            return;
+        }
+        // The detached helper waits until this process has fully released the app bundle.
+        QTimer::singleShot(250, QCoreApplication::instance(), []() { QCoreApplication::quit(); });
+        return;
+    }
+#endif
     if (!QDesktopServices::openUrl(QUrl::fromLocalFile(m_downloadedPackagePath))) {
         const QString reason = tr("The update installer could not be opened.");
         setState(UpdateState::Ready);

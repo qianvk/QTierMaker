@@ -45,10 +45,14 @@ struct UpdateCheckResult {
     QString updateFileName;
     QString updateSha256;
     qint64 updatePackageSize{-1};
-    bool lightweightPackage{false};
+    QUrl installerDownloadUrl;
+    QString installerFileName;
+    QString installerSha256;
+    qint64 installerPackageSize{-1};
+    bool updatePackage{false};
 };
 
-/** Checks release metadata and stages checksum-verified platform installers. */
+/** Checks release metadata and stages checksum-verified platform update packages. */
 class AppUpdater : public QObject {
     Q_OBJECT
 

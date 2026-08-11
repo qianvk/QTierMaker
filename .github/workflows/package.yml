@@ -23,12 +23,10 @@ jobs:
           - os: macos-15
             cpack_generator: DragNDrop
             artifact_name: QTierMaker-macOS
-            artifact_glob: dist/*.dmg
             runtime_metadata: ''
           - os: windows-latest
             cpack_generator: NSIS
             artifact_name: QTierMaker-Windows
-            artifact_glob: dist/*.exe
             runtime_metadata: dist/QTierMaker-Windows-runtime-version.txt
     runs-on: ${{ matrix.os }}
     # A clean arm64 Qt build can take around 40 minutes on GitHub's macOS runners.
@@ -47,6 +45,7 @@ jobs:
         uses: jurplel/install-qt-action@v4
         with:
           version: '6.10.1'
+          modules: qtimageformats
           cache: true
 
       - name: Install NSIS
@@ -133,6 +132,41 @@ jobs:
           Copy-Item build/package/updates/*-WinUpdate-*.exe dist/
           Copy-Item build/package/QTierMaker-Windows-runtime-version.txt dist/
 
+      - name: Build macOS application update
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          cmake --build build/package --config Release --target QTierMakerMacUpdatePackage
+          cp build/package/updates/*-macOS-arm64-Update.zip dist/
+
+      - name: Audit minimized macOS packages
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          set -euo pipefail
+          update_app="build/package/updates/macos-stage/QTierMaker.app"
+          cmake -DQTM_APPLICATION="${update_app}" -DQTM_AUDIT_ONLY=ON \
+            -P packaging/macos/FinalizeBundle.cmake
+          "${update_app}/Contents/MacOS/QTierMaker" --deployment-smoke-test
+
+          dmg_path="$(find dist -maxdepth 1 -name '*-macOS-arm64.dmg' -print -quit)"
+          test -n "${dmg_path}"
+          mount_dir="$(mktemp -d)"
+          cleanup() {
+            hdiutil detach "${mount_dir}" >/dev/null 2>&1 || true
+            rmdir "${mount_dir}" 2>/dev/null || true
+          }
+          trap cleanup EXIT
+          hdiutil attach -nobrowse -readonly -mountpoint "${mount_dir}" "${dmg_path}" >/dev/null
+          dmg_app="${mount_dir}/QTierMaker.app"
+          cmake -DQTM_APPLICATION="${dmg_app}" -DQTM_AUDIT_ONLY=ON \
+            -P packaging/macos/FinalizeBundle.cmake
+          "${dmg_app}/Contents/MacOS/QTierMaker" --deployment-smoke-test
+
+          echo "Minimized app: $(du -sh "${update_app}" | cut -f1)"
+          echo "DMG: $(du -sh "${dmg_path}" | cut -f1)"
+          echo "Update ZIP: $(du -sh dist/*-macOS-arm64-Update.zip | cut -f1)"
+
       - name: Audit Windows runtime payload
         if: runner.os == 'Windows'
         shell: pwsh
@@ -187,15 +221,19 @@ jobs:
         run: |
           while IFS= read -r artifact; do
             cmake -E sha256sum "${artifact}" > "${artifact}.sha256"
-          done < <(find dist -maxdepth 1 \( -name '*.dmg' -o -name '*.exe' \) -print)
+          done < <(find dist -maxdepth 1 \( -name '*.dmg' -o -name '*.exe' -o -name '*.zip' \) -print)
 
       - name: Upload installer artifact
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact_name }}
           path: |
-            ${{ matrix.artifact_glob }}
-            ${{ matrix.artifact_glob }}.sha256
+            dist/*.dmg
+            dist/*.dmg.sha256
+            dist/*.exe
+            dist/*.exe.sha256
+            dist/*.zip
+            dist/*.zip.sha256
             ${{ matrix.runtime_metadata }}
           if-no-files-found: error
           retention-days: 14
@@ -231,19 +269,24 @@ jobs:
           windows_path="$(find release-assets -maxdepth 1 -name '*-Windows-x64-Setup.exe' -print -quit)"
           windows_update_path="$(find release-assets -maxdepth 1 -name '*-WinUpdate-*.exe' -print -quit)"
           macos_path="$(find release-assets -maxdepth 1 -name '*-macOS-arm64.dmg' -print -quit)"
+          macos_update_path="$(find release-assets -maxdepth 1 -name '*-macOS-arm64-Update.zip' -print -quit)"
           runtime_path="release-assets/QTierMaker-Windows-runtime-version.txt"
           test -n "${windows_path}" && test -n "${windows_update_path}" && \
-            test -n "${macos_path}" && test -f "${runtime_path}"
+            test -n "${macos_path}" && test -n "${macos_update_path}" && \
+            test -f "${runtime_path}"
 
           windows_name="$(basename "${windows_path}")"
           windows_update_name="$(basename "${windows_update_path}")"
           macos_name="$(basename "${macos_path}")"
+          macos_update_name="$(basename "${macos_update_path}")"
           windows_sha="$(shasum -a 256 "${windows_path}" | cut -d ' ' -f 1)"
           windows_update_sha="$(shasum -a 256 "${windows_update_path}" | cut -d ' ' -f 1)"
           macos_sha="$(shasum -a 256 "${macos_path}" | cut -d ' ' -f 1)"
+          macos_update_sha="$(shasum -a 256 "${macos_update_path}" | cut -d ' ' -f 1)"
           windows_size="$(stat -f '%z' "${windows_path}")"
           windows_update_size="$(stat -f '%z' "${windows_update_path}")"
           macos_size="$(stat -f '%z' "${macos_path}")"
+          macos_update_size="$(stat -f '%z' "${macos_update_path}")"
           runtime_version="$(tr -d '\r\n' < "${runtime_path}")"
           release_url="https://github.com/${GITHUB_REPOSITORY}/releases/tag/${GITHUB_REF_NAME}"
           asset_root="https://github.com/${GITHUB_REPOSITORY}/releases/download/${GITHUB_REF_NAME}"
@@ -263,6 +306,9 @@ jobs:
             --arg macos_name "${macos_name}" \
             --arg macos_sha "${macos_sha}" \
             --argjson macos_size "${macos_size}" \
+            --arg macos_update_name "${macos_update_name}" \
+            --arg macos_update_sha "${macos_update_sha}" \
+            --argjson macos_update_size "${macos_update_size}" \
             '{
               "schema-version": 2,
               channel: $channel,
@@ -296,7 +342,13 @@ jobs:
                   "release-url": $release_url,
                   "file-name": $macos_name,
                   sha256: $macos_sha,
-                  size: $macos_size
+                  size: $macos_size,
+                  update: {
+                    "download-url": ($asset_root + "/" + $macos_update_name),
+                    "file-name": $macos_update_name,
+                    sha256: $macos_update_sha,
+                    size: $macos_update_size
+                  }
                 }
               }
             }' > release-assets/updates.json
@@ -326,6 +378,7 @@ jobs:
             gh release upload "${GITHUB_REF_NAME}" \
               release-assets/*.exe \
               release-assets/*.dmg \
+              release-assets/*.zip \
               release-assets/updates.json \
               --clobber
             current_notes="$(gh release view "${GITHUB_REF_NAME}" --json body --jq '.body // ""')"
@@ -341,6 +394,7 @@ jobs:
             gh release create "${GITHUB_REF_NAME}" \
               release-assets/*.exe \
               release-assets/*.dmg \
+              release-assets/*.zip \
               release-assets/updates.json \
               --verify-tag \
               --generate-notes \

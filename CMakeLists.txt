@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.24)
 
 project(QTierMaker
-    VERSION 1.0.1
+    VERSION 1.0.0
     DESCRIPTION "A native Qt 6 desktop tier-list editor"
     HOMEPAGE_URL "https://github.com/qianvk/QTierMaker"
     LANGUAGES CXX
@@ -264,6 +264,13 @@ qt_add_translations(QTierMaker
 )
 qtm_apply_project_options(QTierMaker)
 qtm_apply_compiler_warnings(QTierMaker)
+
+if(APPLE)
+    add_executable(QTierMakerMacUpdateHelper src/update/MacUpdateHelper.mm)
+    target_link_libraries(QTierMakerMacUpdateHelper PRIVATE "-framework Foundation")
+    qtm_apply_project_options(QTierMakerMacUpdateHelper)
+    qtm_apply_compiler_warnings(QTierMakerMacUpdateHelper)
+endif()
 
 set_target_properties(QTierMaker PROPERTIES
     WIN32_EXECUTABLE TRUE
