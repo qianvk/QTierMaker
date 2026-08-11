@@ -8,7 +8,8 @@ class QLineEdit;
 
 namespace qtm {
 
-/** Project save location dialog with the same folder-first flow as the original new-project sheet. */
+/** Project save location dialog with the same folder-first flow as the original new-project sheet.
+ */
 class ProjectLocationDialog final : public AppDialog {
     Q_OBJECT
 
@@ -24,8 +25,6 @@ public:
 private:
     void chooseParentDirectory();
     void refreshPreview();
-    static QString sanitizedFileStem(const QString& value);
-
     QLineEdit* m_nameEdit{nullptr};
     QLineEdit* m_directoryEdit{nullptr};
     QLabel* m_pathPreview{nullptr};

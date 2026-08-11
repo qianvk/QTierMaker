@@ -3,6 +3,7 @@
 #include "assets/ImageLoader.h"
 
 #include <QDir>
+#include <QDirIterator>
 #include <QFile>
 #include <QFileInfo>
 #include <QImageReader>
@@ -18,7 +19,8 @@ QStringList AssetManager::supportedNameFilters() const {
     return ImageLoader::supportedNameFilters();
 }
 
-Result<QStringList> AssetManager::importImages(TierProject& project, const QStringList& sourcePaths) {
+Result<QStringList> AssetManager::importImages(TierProject& project,
+                                               const QStringList& sourcePaths) {
     QStringList ids;
     int order = static_cast<int>(project.unassignedImages().size());
     for (const QString& sourcePath : sourcePaths) {
@@ -57,17 +59,72 @@ Result<QString> AssetManager::importCanvasImage(TierProject& project, const QStr
     if (!copied) {
         return Result<QString>::failure(copied.error().message, copied.error().details);
     }
-    const QString storedPath = project.filePath.isEmpty()
-                                   ? copied.value()
-                                   : QDir(QFileInfo(project.filePath).absolutePath())
-                                         .relativeFilePath(copied.value());
+    const QString storedPath =
+        project.filePath.isEmpty()
+            ? copied.value()
+            : QDir(QFileInfo(project.filePath).absolutePath()).relativeFilePath(copied.value());
 
     project.canvas.insert(canvasKey, storedPath);
     project.touch();
     return Result<QString>::success(storedPath);
 }
 
-Result<bool> AssetManager::migrateSessionAssets(TierProject& project, const QString& targetProjectPath) {
+Result<bool> AssetManager::copyProjectAssets(const QString& sourceProjectPath,
+                                             const QString& targetProjectPath) const {
+    const QFileInfo sourceRootInfo(assetsDirectoryForProjectPath(sourceProjectPath));
+    if (!sourceRootInfo.exists()) {
+        return Result<bool>::success(false);
+    }
+    if (!sourceRootInfo.isDir()) {
+        return Result<bool>::failure(tr("The project assets path is not a folder."),
+                                     sourceRootInfo.absoluteFilePath());
+    }
+
+    const QString sourceRoot = sourceRootInfo.absoluteFilePath();
+    const QString targetRoot =
+        QFileInfo(assetsDirectoryForProjectPath(targetProjectPath)).absoluteFilePath();
+    if (QDir::cleanPath(sourceRoot).compare(QDir::cleanPath(targetRoot), Qt::CaseSensitive) == 0) {
+        return Result<bool>::success(false);
+    }
+    if (QFileInfo::exists(targetRoot)) {
+        return Result<bool>::failure(tr("The destination project assets folder already exists."),
+                                     targetRoot);
+    }
+    if (!QDir().mkpath(targetRoot)) {
+        return Result<bool>::failure(tr("Could not create the destination project assets folder."),
+                                     targetRoot);
+    }
+
+    const QDir sourceDirectory(sourceRoot);
+    QDirIterator iterator(sourceRoot,
+                          QDir::AllEntries | QDir::NoDotAndDotDot | QDir::Hidden | QDir::System,
+                          QDirIterator::Subdirectories);
+    while (iterator.hasNext()) {
+        iterator.next();
+        const QFileInfo entry = iterator.fileInfo();
+        if (entry.isSymLink()) {
+            return Result<bool>::failure(tr("Project assets cannot contain symbolic links."),
+                                         entry.absoluteFilePath());
+        }
+        const QString destination =
+            QDir(targetRoot).filePath(sourceDirectory.relativeFilePath(entry.absoluteFilePath()));
+        if (entry.isDir()) {
+            if (!QDir().mkpath(destination)) {
+                return Result<bool>::failure(tr("Could not copy a project asset folder."),
+                                             destination);
+            }
+            continue;
+        }
+        if (!QDir().mkpath(QFileInfo(destination).absolutePath()) ||
+            !QFile::copy(entry.absoluteFilePath(), destination)) {
+            return Result<bool>::failure(tr("Could not copy a project asset."), destination);
+        }
+    }
+    return Result<bool>::success(true);
+}
+
+Result<bool> AssetManager::migrateSessionAssets(TierProject& project,
+                                                const QString& targetProjectPath) {
     const QString assetDir = assetsDirectoryForProjectPath(targetProjectPath);
     if (!QDir().mkpath(assetDir)) {
         return Result<bool>::failure(tr("Could not create the project assets folder."), assetDir);
@@ -81,7 +138,8 @@ Result<bool> AssetManager::migrateSessionAssets(TierProject& project, const QStr
         }
         const QString destination = QDir(assetDir).filePath(QFileInfo(path).fileName());
         if (QFile::exists(destination) && !QFile::remove(destination)) {
-            return Result<bool>::failure(tr("Could not replace an existing project asset."), destination);
+            return Result<bool>::failure(tr("Could not replace an existing project asset."),
+                                         destination);
         }
         if (!QFile::copy(path, destination)) {
             return Result<bool>::failure(failureMessage, destination);
@@ -91,7 +149,8 @@ Result<bool> AssetManager::migrateSessionAssets(TierProject& project, const QStr
     };
 
     for (TierImage& image : project.images) {
-        auto migrated = migratePath(image.importedAssetPath, tr("Could not migrate an imported image."));
+        auto migrated =
+            migratePath(image.importedAssetPath, tr("Could not migrate an imported image."));
         if (!migrated) {
             return migrated;
         }
@@ -99,7 +158,8 @@ Result<bool> AssetManager::migrateSessionAssets(TierProject& project, const QStr
     }
 
     QString backgroundPath = project.canvas.value(QStringLiteral("backgroundImagePath")).toString();
-    auto backgroundMigrated = migratePath(backgroundPath, tr("Could not migrate the tier-list background image."));
+    auto backgroundMigrated =
+        migratePath(backgroundPath, tr("Could not migrate the tier-list background image."));
     if (!backgroundMigrated) {
         return backgroundMigrated;
     }
@@ -108,7 +168,8 @@ Result<bool> AssetManager::migrateSessionAssets(TierProject& project, const QStr
         changed = true;
     }
 
-    auto thumbnailMigrated = migratePath(project.thumbnailPath, tr("Could not migrate the project cover image."));
+    auto thumbnailMigrated =
+        migratePath(project.thumbnailPath, tr("Could not migrate the project cover image."));
     if (!thumbnailMigrated) {
         return thumbnailMigrated;
     }
@@ -148,7 +209,8 @@ QString AssetManager::resolvedImagePath(const TierProject& project, const TierIm
             return imported.absoluteFilePath();
         }
         if (!project.filePath.isEmpty()) {
-            return QDir(QFileInfo(project.filePath).absolutePath()).filePath(image.importedAssetPath);
+            return QDir(QFileInfo(project.filePath).absolutePath())
+                .filePath(image.importedAssetPath);
         }
     }
     return image.sourcePath;
@@ -209,9 +271,11 @@ QString AssetManager::uniqueAssetName(const QString& sourcePath) const {
     return QUuid::createUuid().toString(QUuid::WithoutBraces) + QStringLiteral(".") + extension;
 }
 
-Result<QString> AssetManager::copyAsset(const QString& sourcePath, const QString& destinationDir) const {
+Result<QString> AssetManager::copyAsset(const QString& sourcePath,
+                                        const QString& destinationDir) const {
     if (!QDir().mkpath(destinationDir)) {
-        return Result<QString>::failure(tr("Could not create the image asset folder."), destinationDir);
+        return Result<QString>::failure(tr("Could not create the image asset folder."),
+                                        destinationDir);
     }
     const QString destination = QDir(destinationDir).filePath(uniqueAssetName(sourcePath));
     if (!QFile::copy(sourcePath, destination)) {
@@ -221,7 +285,8 @@ Result<QString> AssetManager::copyAsset(const QString& sourcePath, const QString
 }
 
 bool AssetManager::isSessionAsset(const QString& path) const {
-    return QFileInfo(path).absoluteFilePath().startsWith(QFileInfo(m_sessionDir.path()).absoluteFilePath());
+    return QFileInfo(path).absoluteFilePath().startsWith(
+        QFileInfo(m_sessionDir.path()).absoluteFilePath());
 }
 
 } // namespace qtm

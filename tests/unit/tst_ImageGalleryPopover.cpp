@@ -16,6 +16,7 @@ class ImageGalleryPopoverTest final : public QObject {
 private slots:
     void spacePreviewSurvivesTemporaryPopoverSuspension();
     void closingWindowPreviewRestoresPopover();
+    void resetPreventsSuspendedPreviewRestore();
 };
 
 void ImageGalleryPopoverTest::spacePreviewSurvivesTemporaryPopoverSuspension() {
@@ -97,6 +98,27 @@ void ImageGalleryPopoverTest::closingWindowPreviewRestoresPopover() {
 
     QTRY_VERIFY_WITH_TIMEOUT(!preview.isOpen(), 1000);
     QTRY_VERIFY_WITH_TIMEOUT(popover.isOpen(), 1000);
+}
+
+void ImageGalleryPopoverTest::resetPreventsSuspendedPreviewRestore() {
+    QWidget host;
+    host.resize(720, 480);
+    QPushButton anchor(QStringLiteral("Gallery"), &host);
+    anchor.setGeometry(24, 24, 100, 32);
+    host.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&host));
+
+    TierProject project;
+    ImageGalleryPopover popover(&host);
+    popover.setData(&project, nullptr, nullptr, {});
+    popover.openFor(&anchor);
+    QTRY_VERIFY(popover.isOpen());
+    QVERIFY(popover.suspendForPreview());
+
+    popover.resetViewState();
+
+    QVERIFY(!popover.isOpen());
+    QVERIFY(!popover.restoreAfterPreview());
 }
 
 QTEST_MAIN(ImageGalleryPopoverTest)

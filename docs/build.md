@@ -6,7 +6,8 @@ QTierMaker uses CMake, Qt 6, C++20, and VkUI.
 
 - CMake 3.24 or newer.
 - Ninja or another CMake generator.
-- Qt 6.5 or newer with Core, Gui, Widgets, Svg, Concurrent, and Test.
+- Qt 6.10.1 with Core, Gui, Widgets, Svg, Network, Concurrent, Test, LinguistTools, and the private
+  Core/Gui/Widgets modules required by VkUI's integrated native window implementation.
 - VkUI initialized under `third_party/`. Its integrated window module provides native frameless
   behavior on macOS and Windows.
 

@@ -72,6 +72,7 @@ public:
                      const QString& projectBackgroundPath = {},
                      qreal projectBackgroundVisibility = 1.0);
     void closePreview();
+    void resetPreview();
 
 signals:
     void opened();
@@ -90,6 +91,7 @@ private:
     QRect targetRectForPixmap(const QPixmap& pixmap) const;
     void animateTo(const QRect& from, const QRect& to, qreal fromProgress, qreal toProgress,
                    bool closing);
+    void clearPreviewState(bool notifyClosed);
     QRectF glassLayerRect(const QRectF& imageRect) const;
     void rebuildMaterialCaches();
     void rebuildBackgroundCache();

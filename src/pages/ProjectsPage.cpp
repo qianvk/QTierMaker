@@ -572,7 +572,8 @@ public:
         contentLayout()->addLayout(actions);
 
         auto* buttons =
-            new QDialogButtonBox(QDialogButtonBox::Cancel | QDialogButtonBox::Save, this);
+            new QDialogButtonBox(QDialogButtonBox::Cancel | QDialogButtonBox::Ok, this);
+        buttons->button(QDialogButtonBox::Ok)->setText(tr("Confirm"));
         contentLayout()->addWidget(buttons);
         connect(m_chooseButton, &QPushButton::clicked, this, &ProjectCoverDialog::chooseImage);
         connect(m_clearButton, &QPushButton::clicked, this, &ProjectCoverDialog::stageClearCover);
@@ -773,7 +774,7 @@ void ProjectsPage::openProjectFromDialog() {
     const QString directory =
         m_settings ? m_settings->defaultProjectDirectory() : fallbackProjectDirectory();
     const QString path = QFileDialog::getOpenFileName(this, tr("Open Project"), directory,
-                                                      tr("QTierMaker Projects (*.qtmproject *.tlmproject)"));
+                                                      tr("QTierMaker Projects (*.qtm)"));
     if (!path.isEmpty()) {
         emit openProjectRequested(path);
     }
@@ -881,7 +882,8 @@ void ProjectsPage::renameSelectedProject() {
     form->addRow(tr("Project name"), nameEdit);
     dialog.contentLayout()->addLayout(form);
     auto* buttons =
-        new QDialogButtonBox(QDialogButtonBox::Cancel | QDialogButtonBox::Save, &dialog);
+        new QDialogButtonBox(QDialogButtonBox::Cancel | QDialogButtonBox::Ok, &dialog);
+    buttons->button(QDialogButtonBox::Ok)->setText(tr("Confirm"));
     dialog.contentLayout()->addWidget(buttons);
     connect(buttons, &QDialogButtonBox::rejected, &dialog, &QDialog::reject);
     connect(buttons, &QDialogButtonBox::accepted, &dialog, [&]() {

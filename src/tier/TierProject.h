@@ -43,6 +43,12 @@ public:
     int customCropCount() const;
     int clearCustomCrops();
 
+    /** Compares every user-editable field written to the project file. */
+    bool hasSamePersistentContent(const TierProject& other) const;
+
+    /** Returns a snapshot whose mutable collection storage is independent from this project. */
+    TierProject detachedCopy() const;
+
     void resetDefaultRows();
     void normalizeOrdering();
     void touch();

@@ -1,9 +1,14 @@
+#include "pages/ProjectLocationDialog.h"
 #include "preview/PreviewOverlay.h"
 #include "window/AppDialog.h"
 
 #include <QApplication>
+#include <QCheckBox>
+#include <QDialogButtonBox>
+#include <QDir>
 #include <QLabel>
 #include <QLayout>
+#include <QLineEdit>
 #include <QPointer>
 #include <QPushButton>
 #include <QtTest>
@@ -21,6 +26,7 @@ class WindowLifecycleTest final : public QObject {
 
 private slots:
     void editDialogsLeadWithTitle();
+    void projectLocationDialogFitsDynamicOption();
     void dialogClosePreservesWindowInput();
 };
 
@@ -39,6 +45,44 @@ void WindowLifecycleTest::editDialogsLeadWithTitle() {
                  dialog.titleBar()->layout()->contentsMargins().left());
     QCOMPARE(dialog.windowAgent()->systemButtonVisibility(),
              vkui::VkWindowAgent::SystemButtonVisibility::AlwaysHidden);
+}
+
+void WindowLifecycleTest::projectLocationDialogFitsDynamicOption() {
+    const QString defaultDirectory = QDir::temp().filePath(QStringLiteral("qtm-default-location"));
+    const QString alternateDirectory = QDir::temp().filePath(QStringLiteral(
+        "qtm-changed-location-with-a-deliberately-long-parent-folder-name-for-wrapping"));
+    ProjectLocationDialog dialog(QStringLiteral("Layout Test"), defaultDirectory,
+                                 defaultDirectory);
+    dialog.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&dialog));
+
+    auto* directoryEdit =
+        dialog.findChild<QLineEdit*>(QStringLiteral("ProjectLocationDirectoryEdit"));
+    auto* defaultCheck = dialog.findChild<QCheckBox*>(
+        QStringLiteral("ProjectLocationDefaultDirectoryCheck"));
+    auto* buttons = dialog.findChild<QDialogButtonBox*>();
+    QVERIFY(directoryEdit != nullptr);
+    QVERIFY(defaultCheck != nullptr);
+    QVERIFY(buttons != nullptr);
+    QVERIFY(defaultCheck->isHidden());
+    const int collapsedHeight = dialog.height();
+    const int stableWidth = dialog.width();
+
+    directoryEdit->setText(QDir::toNativeSeparators(alternateDirectory));
+    QTRY_VERIFY(defaultCheck->isVisible());
+    QTRY_VERIFY(dialog.height() > collapsedHeight);
+    QCOMPARE(dialog.width(), stableWidth);
+
+    const int checkBottom = defaultCheck->mapTo(&dialog, defaultCheck->rect().bottomLeft()).y();
+    const int buttonTop = buttons->mapTo(&dialog, buttons->rect().topLeft()).y();
+    const int buttonBottom = buttons->mapTo(&dialog, buttons->rect().bottomLeft()).y();
+    QVERIFY2(buttonTop > checkBottom, "The dynamic default-folder option overlaps the buttons.");
+    QVERIFY2(buttonBottom < dialog.height(), "The dialog clips its action buttons.");
+
+    directoryEdit->setText(QDir::toNativeSeparators(defaultDirectory));
+    QTRY_VERIFY(defaultCheck->isHidden());
+    QTRY_COMPARE(dialog.height(), collapsedHeight);
+    QCOMPARE(dialog.width(), stableWidth);
 }
 
 #if defined(Q_OS_WIN)

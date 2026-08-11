@@ -7,7 +7,7 @@
 
 namespace qtm {
 
-/** Opens and saves current `.qtmproject` and legacy `.tlmproject` files. */
+/** Opens and atomically saves `.qtm` projects and `.qtmtemplate` templates. */
 class ProjectRepository : public QObject {
     Q_OBJECT
 

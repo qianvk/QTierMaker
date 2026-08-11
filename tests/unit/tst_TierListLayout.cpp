@@ -1,11 +1,17 @@
 #include "tier/TierListLayout.h"
 #include "tier/TierListDelegate.h"
+#include "tier/TierDragController.h"
 #include "tier/TierListModel.h"
 #include "tier/TierListView.h"
+#include "tier/ProjectHistory.h"
 
 #include <QtTest>
 
+#include <QDragMoveEvent>
+#include <QDropEvent>
+
 #include <limits>
+#include <memory>
 #include <utility>
 
 using namespace qtm;
@@ -22,9 +28,31 @@ private slots:
     void missionControlBalancesCenteredFreePacking();
     void missionControlHoverKeepsNonLocalTilesFixed();
     void galleryMissionControlHoverPreservesLocalityAndGap();
+    void resettingViewStateEndsMissionControlImmediately();
+    void imageDropClearsTransientVisualsBeforeModelMutation();
+    void historyUndoRefreshesClearedRowModelData();
 };
 
 namespace {
+class DropTestView final : public TierListView {
+public:
+    using TierListView::TierListView;
+
+    bool moveImageAt(const QString& imageId, const QPoint& viewportPosition) {
+        std::unique_ptr<QMimeData> mimeData(TierDragController::createMimeData(imageId));
+        QDragMoveEvent moveEvent(viewportPosition, Qt::MoveAction, mimeData.get(), Qt::LeftButton,
+                                 Qt::NoModifier);
+        dragMoveEvent(&moveEvent);
+        if (!moveEvent.isAccepted()) {
+            return false;
+        }
+        QDropEvent dropEvent(viewportPosition, Qt::MoveAction, mimeData.get(), Qt::LeftButton,
+                             Qt::NoModifier);
+        TierListView::dropEvent(&dropEvent);
+        return dropEvent.isAccepted();
+    }
+};
+
 TierProject girlsProject() {
     TierProject project;
     const QVector<int> imageCounts{6, 6, 7, 31, 12};
@@ -263,6 +291,99 @@ void TierListLayoutTest::viewResizeRecomputesLayout() {
     QTRY_COMPARE(model.rowUnitCountAt(3), collapsed.rowUnits.at(3));
     QTRY_COMPARE(model.rowUnitCountAt(4), collapsed.rowUnits.at(4));
     QVERIFY(normal.rowUnits != collapsed.rowUnits);
+}
+
+void TierListLayoutTest::resettingViewStateEndsMissionControlImmediately() {
+    TierListView view;
+    view.setGalleryMissionControlActive(true);
+    QVERIFY(view.isMissionControlActive());
+    QVERIFY(view.isGalleryMissionLayerVisible());
+
+    view.resetViewState();
+
+    QVERIFY(!view.isMissionControlActive());
+    QVERIFY(!view.isGalleryMissionLayerVisible());
+    QCOMPARE(view.missionTransitionProgress(), 0.0);
+}
+
+void TierListLayoutTest::imageDropClearsTransientVisualsBeforeModelMutation() {
+    TierProject project = TierProject::createUntitled();
+    TierImage image;
+    image.id = QStringLiteral("drop-image");
+    image.width = 800;
+    image.height = 600;
+    project.images.append(image);
+    project.rows[0].imageIds.append(image.id);
+    project.normalizeOrdering();
+
+    TierListModel model;
+    TierListDelegate delegate;
+    DropTestView view;
+    delegate.setContext(&project, nullptr, nullptr, {});
+    view.setModel(&model);
+    view.setItemDelegate(&delegate);
+    model.setProject(&project);
+    view.setAttribute(Qt::WA_DontShowOnScreen);
+    view.resize(760, 500);
+    view.show();
+    QCoreApplication::processEvents();
+
+    bool committed = false;
+    bool transientVisualsAtCommit = true;
+    connect(&view, &TierListView::imageDropped, &view,
+            [&](const QString& imageId, const QString& rowId, int insertionIndex) {
+                committed = true;
+                transientVisualsAtCommit = view.isImageDragSource(imageId) ||
+                                           !view.visualOffsetForImage(imageId).isNull();
+                for (TierRow& row : project.rows) {
+                    row.imageIds.removeAll(imageId);
+                }
+                TierRow* target = project.rowById(rowId);
+                QVERIFY(target);
+                target->imageIds.insert(
+                    qBound(0, insertionIndex, static_cast<int>(target->imageIds.size())), imageId);
+                project.normalizeOrdering();
+                model.setProject(&project);
+            });
+
+    const QRect targetRow = view.visualRect(model.index(1, 0));
+    QVERIFY(targetRow.isValid());
+    QVERIFY(view.moveImageAt(image.id, targetRow.center()));
+    QVERIFY(committed);
+    QVERIFY(!transientVisualsAtCommit);
+    QVERIFY(!view.isImageDragSource(image.id));
+    QCOMPARE(project.rows.at(0).imageIds.count(image.id), 0);
+    QCOMPARE(project.rows.at(1).imageIds.count(image.id), 1);
+}
+
+void TierListLayoutTest::historyUndoRefreshesClearedRowModelData() {
+    ProjectHistory::State current{TierProject::createUntitled(), QStringLiteral("clear-image")};
+    TierImage image;
+    image.id = current.selectedImageId;
+    current.project.images.append(image);
+    current.project.rows[0].imageIds.append(image.id);
+    current.project.normalizeOrdering();
+
+    TierListModel model;
+    model.setProject(&current.project);
+    ProjectHistory history([&](const ProjectHistory::State& state) { current = state; });
+    connect(&history, &ProjectHistory::stateChanged, &model,
+            [&](bool, int) { model.setProject(&current.project); });
+
+    TierRow* row = current.project.rowById(current.project.rows.at(0).id);
+    QVERIFY(row);
+    const ProjectHistory::State beforeClear{current.project, current.selectedImageId};
+    row->imageIds.clear();
+    current.project.normalizeOrdering();
+    current.project.touch();
+    QVERIFY(history.push(beforeClear, current, QStringLiteral("Clear tier row")));
+    QVERIFY(model.index(0, 0).data(TierListModel::ImageIdsRole).toStringList().isEmpty());
+
+    history.undo();
+    QCOMPARE(model.index(0, 0).data(TierListModel::ImageIdsRole).toStringList(),
+             QStringList{image.id});
+    QCOMPARE(model.index(0, 0).data(TierListModel::LabelRole).toString(),
+             beforeClear.project.rows.at(0).label);
 }
 
 void TierListLayoutTest::missionControlBalancesCenteredFreePacking() {

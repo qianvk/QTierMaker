@@ -25,6 +25,7 @@ public:
                  ThumbnailCache* thumbnailCache, const QString& selectedImageId);
     void setSelectedImageId(const QString& selectedImageId);
     void refreshVisuals();
+    void resetViewState();
     QRect imageSourceRect(const QString& imageId) const;
     void toggleMissionControlMode();
     void toggleGalleryMissionControlMode();
@@ -45,6 +46,7 @@ signals:
     void imageRemoveFromTierRowRequested(const QString& imageId);
     void imageRemoveFromGalleryRequested(const QString& imageId);
     void imagePresentationModeRequested(ImagePresentationMode mode);
+    void resetRowsRequested();
     void rowEditRequested(const QString& rowId);
     void rowClearRequested(const QString& rowId);
     void rowDeleteRequested(const QString& rowId);

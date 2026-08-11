@@ -112,22 +112,7 @@ PreviewOverlay::PreviewOverlay(QWidget* parent)
         if (!m_closing) {
             return;
         }
-        m_closing = false;
-        m_open = false;
-        hide();
-        setInputBarrierActive(false);
-        m_pixmap = {};
-        m_materialSource = {};
-        m_backgroundCache = {};
-        m_glassOverlayCache = {};
-        m_projectBackgroundPath.clear();
-        m_projectBackgroundVisibility = 1.0;
-        m_backgroundContentOpacity = 1.0;
-        m_glassRefractionHeight = 0.0;
-        m_glassOutset = 0.0;
-        m_backgroundMaterialCache.clear();
-        m_glassMaterialCache.clear();
-        emit closed();
+        clearPreviewState(true);
     });
     hide();
 }
@@ -324,6 +309,13 @@ void PreviewOverlay::closePreview() {
                      .arg(m_sourceGeometry.height()));
     m_animationGroup->stop();
     animateTo(m_previewGeometry, m_sourceGeometry, m_backdropProgress, 0.0, true);
+}
+
+void PreviewOverlay::resetPreview() {
+    const bool notifyClosed = m_open || m_closing || m_inputBarrierActive;
+    m_animationGroup->stop();
+    clearPreviewState(notifyClosed);
+    Logger::debug(QStringLiteral("ui.preview.reset wasOpen=%1").arg(notifyClosed));
 }
 
 bool PreviewOverlay::eventFilter(QObject* watched, QEvent* event) {
@@ -544,6 +536,31 @@ void PreviewOverlay::animateTo(const QRect& from, const QRect& to, qreal fromPro
     m_backdropAnimation->setDuration(backdropDuration);
     m_backdropAnimation->setEasingCurve(easing);
     m_animationGroup->start();
+}
+
+void PreviewOverlay::clearPreviewState(bool notifyClosed) {
+    m_closing = false;
+    m_open = false;
+    hide();
+    setInputBarrierActive(false);
+    m_pixmap = {};
+    m_materialSource = {};
+    m_backgroundCache = {};
+    m_glassOverlayCache = {};
+    m_projectBackgroundPath.clear();
+    m_projectBackgroundVisibility = 1.0;
+    m_backgroundContentOpacity = 1.0;
+    m_glassRefractionHeight = 0.0;
+    m_glassOutset = 0.0;
+    m_sourceGeometry = {};
+    m_previewGeometry = {};
+    m_backdropProgress = 0.0;
+    m_backgroundMaterialCache.clear();
+    m_glassMaterialCache.clear();
+    m_projectBackgroundCache.clear();
+    if (notifyClosed) {
+        emit closed();
+    }
 }
 
 void PreviewOverlay::rebuildMaterialCaches() {

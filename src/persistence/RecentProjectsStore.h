@@ -30,12 +30,15 @@ public:
     explicit RecentProjectsStore(QString storePath = {}, QObject* parent = nullptr);
 
     QVector<RecentProjectEntry> entries() const;
-    Result<void> addOrUpdate(const TierProject& project);
+    Result<void> addOrUpdate(const TierProject& project,
+                             const QString& replacedFilePath = QString());
     Result<void> remove(const QString& filePath);
     Result<void> renameDisplayName(const QString& filePath, const QString& name);
     Result<void> load();
     Result<void> save() const;
-    QString storePath() const { return m_storePath; }
+    QString storePath() const {
+        return m_storePath;
+    }
 
 signals:
     void changed();

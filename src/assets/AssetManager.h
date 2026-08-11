@@ -19,6 +19,8 @@ public:
     Result<QStringList> importImages(TierProject& project, const QStringList& sourcePaths);
     Result<QString> importCanvasImage(TierProject& project, const QString& sourcePath,
                                       const QString& canvasKey);
+    Result<bool> copyProjectAssets(const QString& sourceProjectPath,
+                                   const QString& targetProjectPath) const;
     Result<bool> migrateSessionAssets(TierProject& project, const QString& targetProjectPath);
     QString resolvedImagePath(const TierProject& project, const TierImage& image) const;
     QString assetsDirectoryForProjectPath(const QString& projectPath) const;

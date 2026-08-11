@@ -6,13 +6,15 @@ create the platform-native installer:
 - macOS: a drag-to-Applications DMG (`DragNDrop`).
 - Windows: a machine-wide x64 installer with Start Menu and uninstall integration (`NSIS`).
 
+Linux packages are not currently built or published.
+
 This keeps dependency discovery in Qt/CMake instead of duplicating `macdeployqt` and `windeployqt`
 logic in shell scripts. The commands and signing details are documented in the platform folders.
 
 ## GitHub Actions
 
 The `CI` workflow builds and tests on macOS and Windows. The `Platform Installers` workflow can be
-run manually to produce workflow artifacts. Pushing a semantic version tag such as `v0.2.1` also
+run manually to produce workflow artifacts. Pushing a semantic version tag such as `v1.0.0` also
 creates or updates the matching GitHub Release with the Windows x64 packages, macOS arm64
 DMG, and `updates.json`. Artifact hashes are recorded in the update manifest instead of being
 published as separate files.

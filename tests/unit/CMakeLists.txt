@@ -6,6 +6,8 @@ function(add_qtm_unit_test target)
 endfunction()
 
 add_qtm_unit_test(tst_ProjectSerializer tst_ProjectSerializer.cpp)
+add_qtm_unit_test(tst_ProjectFileLayout tst_ProjectFileLayout.cpp)
+add_qtm_unit_test(tst_ProjectHistory tst_ProjectHistory.cpp)
 add_qtm_unit_test(tst_RecentProjectsStore tst_RecentProjectsStore.cpp)
 add_qtm_unit_test(tst_SampleProjectSeeder tst_SampleProjectSeeder.cpp)
 add_qtm_unit_test(tst_AssetManager tst_AssetManager.cpp)
@@ -40,8 +42,11 @@ add_qtm_unit_test(tst_TierListLayout
 
 qt_add_executable(tst_WindowLifecycle
     tst_WindowLifecycle.cpp
+    "${PROJECT_SOURCE_DIR}/src/pages/ProjectLocationDialog.cpp"
+    "${PROJECT_SOURCE_DIR}/src/pages/ProjectLocationDialog.h"
     "${PROJECT_SOURCE_DIR}/src/preview/PreviewOverlay.cpp"
     "${PROJECT_SOURCE_DIR}/src/preview/PreviewOverlay.h"
+    "${PROJECT_SOURCE_DIR}/src/window/AppDialog.cpp"
     "${PROJECT_SOURCE_DIR}/src/window/AppDialog.h"
 )
 target_link_libraries(tst_WindowLifecycle PRIVATE
@@ -77,6 +82,7 @@ add_test(NAME tst_ImageGalleryPopover COMMAND tst_ImageGalleryPopover)
 
 qt_add_executable(tst_WindowResizePolicy
     tst_WindowResizePolicy.cpp
+    "${PROJECT_SOURCE_DIR}/src/window/AppDialog.cpp"
     "${PROJECT_SOURCE_DIR}/src/window/AppDialog.h"
 )
 target_link_libraries(tst_WindowResizePolicy PRIVATE VkUI::Window Qt6::Test)

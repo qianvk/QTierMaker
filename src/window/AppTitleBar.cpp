@@ -104,7 +104,6 @@ AppTitleBar::AppTitleBar(QWidget* parent) : QWidget(parent) {
     m_backgroundButton =
         makeButton(tr("Background"), vkui::VkSymbol::CanvasBackground, controlsParent);
     m_galleryButton = makeButton(tr("Gallery"), vkui::VkSymbol::PhotoLibrary, controlsParent);
-    m_resetButton = makeButton(tr("Reset Rows"), vkui::VkSymbol::Reset, controlsParent);
     m_focusButton = makeButton(tr("Enter Tier Focus"), vkui::VkSymbol::FocusTarget, controlsParent);
     connect(m_templatesButton, &QToolButton::clicked, this,
             [this]() { emit templatesRequested(m_templatesButton); });
@@ -112,7 +111,6 @@ AppTitleBar::AppTitleBar(QWidget* parent) : QWidget(parent) {
             [this]() { emit backgroundRequested(m_backgroundButton); });
     connect(m_galleryButton, &QToolButton::clicked, this,
             [this]() { emit galleryRequested(m_galleryButton); });
-    connect(m_resetButton, &QToolButton::clicked, this, &AppTitleBar::resetRowsRequested);
     connect(m_focusButton, &QToolButton::clicked, this, &AppTitleBar::tierFocusModeRequested);
     connect(m_titleEdit, &CompositionAwareLineEdit::visualTextChanged, this,
             &AppTitleBar::updateTitleWidth);
@@ -140,7 +138,6 @@ AppTitleBar::~AppTitleBar() {
     delete m_templatesButton;
     delete m_backgroundButton;
     delete m_galleryButton;
-    delete m_resetButton;
     delete m_focusButton;
 }
 
@@ -156,9 +153,6 @@ void AppTitleBar::retranslateUi() {
     }
     if (m_galleryButton) {
         m_galleryButton->setToolTip(tr("Gallery"));
-    }
-    if (m_resetButton) {
-        m_resetButton->setToolTip(tr("Reset Rows"));
     }
     if (m_focusButton) {
         m_focusButton->setToolTip(m_tierFocusMode ? tr("Exit Tier Focus") : tr("Enter Tier Focus"));
@@ -206,12 +200,6 @@ void AppTitleBar::setTitleEditable(bool editable) {
 void AppTitleBar::setEditorActionsVisible(bool visible) {
     m_editorActionsVisible = visible;
     setActionButtonsVisible(visible && !m_tierFocusMode);
-}
-
-void AppTitleBar::setResetRowsActionEnabled(bool enabled) {
-    if (m_resetButton) {
-        m_resetButton->setEnabled(enabled);
-    }
 }
 
 void AppTitleBar::setTierFocusMode(bool enabled) {
@@ -315,8 +303,7 @@ QLineEdit* AppTitleBar::titleEditor() const {
 }
 
 QList<QWidget*> AppTitleBar::interactiveWidgets() const {
-    return {m_titleEdit,     m_templatesButton, m_backgroundButton,
-            m_galleryButton, m_resetButton,     m_focusButton};
+    return {m_titleEdit, m_templatesButton, m_backgroundButton, m_galleryButton, m_focusButton};
 }
 
 void AppTitleBar::raiseChrome() {
@@ -327,7 +314,7 @@ void AppTitleBar::raiseChrome() {
         m_unsavedIndicator->raise();
     }
     for (QToolButton* button :
-         {m_templatesButton, m_backgroundButton, m_galleryButton, m_resetButton, m_focusButton}) {
+         {m_templatesButton, m_backgroundButton, m_galleryButton, m_focusButton}) {
         if (button) {
             button->raise();
         }
@@ -440,7 +427,7 @@ void AppTitleBar::updateTitleGeometry() {
     int actionX = pos().x() + kTitleBarHorizontalMargin + m_leadingReservedWidth;
 #endif
     for (QToolButton* button :
-         {m_templatesButton, m_backgroundButton, m_galleryButton, m_resetButton, m_focusButton}) {
+         {m_templatesButton, m_backgroundButton, m_galleryButton, m_focusButton}) {
         if (!button || !button->isVisible()) {
             continue;
         }
@@ -452,7 +439,7 @@ void AppTitleBar::updateTitleGeometry() {
 
 void AppTitleBar::setActionButtonsVisible(bool visible) {
     for (QToolButton* button :
-         {m_templatesButton, m_backgroundButton, m_galleryButton, m_resetButton, m_focusButton}) {
+         {m_templatesButton, m_backgroundButton, m_galleryButton, m_focusButton}) {
         if (button) {
             button->setVisible(visible);
         }
@@ -464,7 +451,7 @@ int AppTitleBar::actionButtonsWidth() const {
     int width = 0;
     int visibleButtons = 0;
     for (const QToolButton* button :
-         {m_templatesButton, m_backgroundButton, m_galleryButton, m_resetButton, m_focusButton}) {
+         {m_templatesButton, m_backgroundButton, m_galleryButton, m_focusButton}) {
         if (!button || !button->isVisible()) {
             continue;
         }

@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.24)
 
 project(QTierMaker
-    VERSION 0.2.2
+    VERSION 1.0.0
     DESCRIPTION "A native Qt 6 desktop tier-list editor"
     HOMEPAGE_URL "https://github.com/qianvk/QTierMaker"
     LANGUAGES CXX
@@ -93,8 +93,12 @@ set(QTM_CORE_SOURCES
     src/logging/UiPerformanceMonitor.h
     src/persistence/AtomicFileWriter.cpp
     src/persistence/AtomicFileWriter.h
+    src/persistence/ProjectFileLayout.cpp
+    src/persistence/ProjectFileLayout.h
     src/persistence/ProjectRepository.cpp
     src/persistence/ProjectRepository.h
+    src/persistence/ProjectStorage.cpp
+    src/persistence/ProjectStorage.h
     src/persistence/ProjectSerializer.cpp
     src/persistence/ProjectSerializer.h
     src/persistence/RecentProjectsStore.cpp
@@ -116,6 +120,8 @@ set(QTM_CORE_SOURCES
     src/tier/TierImage.cpp
     src/tier/TierImage.h
     src/tier/ImagePresentationMode.h
+    src/tier/ProjectHistory.cpp
+    src/tier/ProjectHistory.h
     src/tier/TierListLayout.cpp
     src/tier/TierListLayout.h
     src/tier/TierProject.cpp
@@ -174,6 +180,7 @@ set(QTM_APP_SOURCES
     src/widgets/FlowLayout.h
     src/widgets/SectionHeader.cpp
     src/widgets/SectionHeader.h
+    src/window/AppDialog.cpp
     src/window/AppDialog.h
     src/window/AppMessageDialog.h
     src/window/AppTitleBar.cpp
@@ -251,6 +258,8 @@ qt_add_translations(QTierMaker
     TS_FILES
         resources/translations/QTierMaker_en.ts
         resources/translations/QTierMaker_zh_CN.ts
+    LUPDATE_OPTIONS
+        -no-obsolete
     RESOURCE_PREFIX "/translations"
 )
 qtm_apply_project_options(QTierMaker)

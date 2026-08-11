@@ -10,6 +10,7 @@
 #include <QPersistentModelIndex>
 #include <QPixmap>
 #include <QPointF>
+#include <QPointer>
 #include <QRectF>
 #include <QStringList>
 #include <QVector>
@@ -21,6 +22,7 @@ class QContextMenuEvent;
 class QDropEvent;
 class QEvent;
 class QKeyEvent;
+class QLabel;
 class QMimeData;
 class QMouseEvent;
 class QPainter;
@@ -70,6 +72,7 @@ public:
     void setOverviewBackdropEffect(BackdropEffect effect);
     void setLiquidGlassParameters(const LiquidGlassParameters& parameters);
     void updateImageVisual(const QString& imageId);
+    void resetViewState();
     Q_INVOKABLE QString toolTipTextAt(QPoint viewportPoint) const;
 
 signals:
@@ -81,6 +84,7 @@ signals:
     void imageRemoveFromTierRowRequested(const QString& imageId);
     void imageRemoveFromGalleryRequested(const QString& imageId);
     void imagePresentationModeRequested(ImagePresentationMode mode);
+    void resetRowsRequested();
     void rowEditRequested(const QString& rowId);
     void rowClearRequested(const QString& rowId);
     void rowDeleteRequested(const QString& rowId);
@@ -232,6 +236,8 @@ private:
     QHash<QString, QRectF> m_missionNormalRects;
     QString m_missionHoverImageId;
     QString m_missionLiftImageId;
+    QPointer<QLabel> m_missionLiftOverlay;
+    QVariantAnimation* m_missionLiftAnimation{nullptr};
     QPointF m_missionHoverPosition;
     qreal m_missionHoverProgress{0.0};
     QVariantAnimation* m_missionHoverAnimation{nullptr};

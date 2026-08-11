@@ -493,6 +493,21 @@ void ImageGalleryPopover::closeImmediately() {
     }
 }
 
+void ImageGalleryPopover::resetViewState() {
+    m_suspendedForPreview = false;
+    setOutsideDismissSuspended(false);
+    if (m_popover) {
+        m_popover->closeImmediately();
+    }
+    m_anchor = nullptr;
+    m_selectedImageId.clear();
+    m_cellRects.clear();
+    if (m_grid) {
+        m_grid->update();
+    }
+    Logger::debug(QStringLiteral("tier.gallery.view.reset suspended=0 selection=0"));
+}
+
 bool ImageGalleryPopover::suspendForPreview() {
     if (m_suspendedForPreview) {
         return true;

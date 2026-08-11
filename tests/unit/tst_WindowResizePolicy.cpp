@@ -56,6 +56,7 @@ void WindowResizePolicyTest::dialogClosePlacementTracksPolicy() {
     dialog.setCloseButtonPlacement(qtm::AppDialog::CloseButtonPlacement::Platform);
     dialog.show();
     QVERIFY(QTest::qWaitForWindowExposed(&dialog));
+    QCOMPARE(dialog.size(), QSize(520, 360));
     QCOMPARE(dialog.windowAgent()->systemButtonVisibility(),
              vkui::VkWindowAgent::SystemButtonVisibility::AlwaysVisible);
 

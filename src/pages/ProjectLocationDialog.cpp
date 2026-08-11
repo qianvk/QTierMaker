@@ -1,5 +1,6 @@
 #include "pages/ProjectLocationDialog.h"
 
+#include "persistence/ProjectFileLayout.h"
 #include "window/AppMessageDialog.h"
 
 #include <QCheckBox>
@@ -12,7 +13,6 @@
 #include <QLabel>
 #include <QLineEdit>
 #include <QPushButton>
-#include <QRegularExpression>
 #include <QStandardPaths>
 #include <QTimer>
 #include <QVBoxLayout>
@@ -34,26 +34,30 @@ ProjectLocationDialog::ProjectLocationDialog(const QString& projectName,
                                              const QString& defaultDirectory, QWidget* parent)
     : AppDialog(QObject::tr("Save Project"), parent), m_nameEdit(new QLineEdit(this)),
       m_directoryEdit(new QLineEdit(this)), m_pathPreview(new QLabel(this)),
-      m_defaultDirectoryCheck(new QCheckBox(tr("Use this folder as the default project folder"), this)) {
+      m_defaultDirectoryCheck(
+          new QCheckBox(tr("Use this folder as the default project folder"), this)) {
     setObjectName(QStringLiteral("ProjectLocationDialog"));
     setProperty("_defaultProjectDirectory", defaultDirectory);
     setMinimumWidth(520);
 
     const QString initialDirectory =
-        parentDirectory.isEmpty() ? (defaultDirectory.isEmpty() ? documentsOrHome()
-                                                                : defaultDirectory)
-                                  : parentDirectory;
+        parentDirectory.isEmpty()
+            ? (defaultDirectory.isEmpty() ? documentsOrHome() : defaultDirectory)
+            : parentDirectory;
 
     m_nameEdit->setText(projectName.trimmed().isEmpty() ? tr("Untitled Tier List") : projectName);
+    m_nameEdit->setObjectName(QStringLiteral("ProjectLocationNameEdit"));
     m_nameEdit->setClearButtonEnabled(true);
     connect(m_nameEdit, &QLineEdit::textChanged, this, &ProjectLocationDialog::refreshPreview);
 
     m_directoryEdit->setText(QDir::toNativeSeparators(initialDirectory));
+    m_directoryEdit->setObjectName(QStringLiteral("ProjectLocationDirectoryEdit"));
     m_directoryEdit->setReadOnly(true);
     connect(m_directoryEdit, &QLineEdit::textChanged, this, &ProjectLocationDialog::refreshPreview);
 
     auto* browseButton = new QPushButton(vkui::icon(vkui::VkSymbol::Folder), tr("Choose"), this);
-    connect(browseButton, &QPushButton::clicked, this, &ProjectLocationDialog::chooseParentDirectory);
+    connect(browseButton, &QPushButton::clicked, this,
+            &ProjectLocationDialog::chooseParentDirectory);
 
     auto* directoryRow = new QWidget(this);
     auto* directoryLayout = new QHBoxLayout(directoryRow);
@@ -63,8 +67,11 @@ ProjectLocationDialog::ProjectLocationDialog(const QString& projectName,
     directoryLayout->addWidget(browseButton);
 
     m_pathPreview->setWordWrap(true);
+    m_pathPreview->setObjectName(QStringLiteral("ProjectLocationPathPreview"));
     m_pathPreview->setTextInteractionFlags(Qt::TextSelectableByMouse);
 
+    m_defaultDirectoryCheck->setObjectName(
+        QStringLiteral("ProjectLocationDefaultDirectoryCheck"));
     m_defaultDirectoryCheck->setChecked(false);
 
     auto* form = new QFormLayout;
@@ -102,7 +109,8 @@ QString ProjectLocationDialog::projectName() const {
 }
 
 QString ProjectLocationDialog::parentDirectory() const {
-    const QString path = m_directoryEdit ? QDir::fromNativeSeparators(m_directoryEdit->text()) : QString();
+    const QString path =
+        m_directoryEdit ? QDir::fromNativeSeparators(m_directoryEdit->text()) : QString();
     return path.trimmed();
 }
 
@@ -111,8 +119,7 @@ QString ProjectLocationDialog::projectFilePath() const {
     if (parent.isEmpty()) {
         return {};
     }
-    const QString stem = sanitizedFileStem(projectName());
-    return QDir(QDir(parent).filePath(stem)).filePath(stem + QStringLiteral(".qtmproject"));
+    return ProjectFileLayout::projectFilePath(parent, projectName());
 }
 
 bool ProjectLocationDialog::shouldUseAsDefaultDirectory() const {
@@ -137,29 +144,19 @@ void ProjectLocationDialog::refreshPreview() {
     m_pathPreview->setText(QDir::toNativeSeparators(projectFilePath()));
     if (m_defaultDirectoryCheck) {
         const QString current = QFileInfo(parentDirectory()).absoluteFilePath();
-        const QString defaultPath = QFileInfo(property("_defaultProjectDirectory").toString())
-                                        .absoluteFilePath();
-        const bool differsFromDefault = !defaultPath.isEmpty() &&
-                                        current.compare(defaultPath, Qt::CaseInsensitive) != 0;
+        const QString defaultPath =
+            QFileInfo(property("_defaultProjectDirectory").toString()).absoluteFilePath();
+        const bool differsFromDefault =
+            !defaultPath.isEmpty() && current.compare(defaultPath, Qt::CaseInsensitive) != 0;
         const bool visible = differsFromDefault;
         m_defaultDirectoryCheck->setVisible(visible);
-        if (!visible || property("_lastParentDirectory").toString().compare(
-                            current, Qt::CaseInsensitive) != 0) {
+        if (!visible ||
+            property("_lastParentDirectory").toString().compare(current, Qt::CaseInsensitive) !=
+                0) {
             m_defaultDirectoryCheck->setChecked(false);
         }
         setProperty("_lastParentDirectory", current);
     }
-}
-
-QString ProjectLocationDialog::sanitizedFileStem(const QString& value) {
-    QString stem = value.trimmed();
-    stem.replace(QRegularExpression(QStringLiteral(R"([<>:"/\\|?*\x00-\x1f])")), QStringLiteral("_"));
-    stem.replace(QRegularExpression(QStringLiteral(R"(\s+)")), QStringLiteral(" "));
-    stem = stem.trimmed();
-    while (stem.endsWith(u'.')) {
-        stem.chop(1);
-    }
-    return stem.isEmpty() ? QObject::tr("Untitled Tier List") : stem;
 }
 
 } // namespace qtm

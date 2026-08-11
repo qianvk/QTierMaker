@@ -31,6 +31,7 @@ public:
     void openFor(QWidget* anchor);
     void closeAnimated();
     void closeImmediately();
+    void resetViewState();
     bool suspendForPreview();
     bool restoreAfterPreview();
     bool isOpen() const;
