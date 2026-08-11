@@ -151,8 +151,12 @@ elseif(WIN32)
     set(CPACK_NSIS_ENABLE_UNINSTALL_BEFORE_INSTALL ON)
     set(CPACK_NSIS_MODIFY_PATH OFF)
     set(CPACK_NSIS_MANIFEST_DPI_AWARE ON)
-    set(CPACK_NSIS_EXTRA_INSTALL_COMMANDS
-        "WriteRegStr HKLM \"Software\\qianvk\\QTierMaker\" \"RuntimeVersion\" \"${QTM_UPDATE_RUNTIME_VERSION}\"")
+    string(CONCAT _qtm_nsis_install_metadata
+        "WriteRegStr HKLM \"Software\\qianvk\\QTierMaker\" \"RuntimeVersion\" \"${QTM_UPDATE_RUNTIME_VERSION}\"\n"
+        "WriteRegStr HKLM \"Software\\qianvk\\QTierMaker\" \"InstallLocation\" \"$INSTDIR\"\n"
+        "WriteRegStr HKLM \"Software\\qianvk\\QTierMaker\" \"ExecutablePath\" \"$INSTDIR\\${_qtm_nsis_installed_executable}\"\n"
+        "WriteRegStr HKLM \"Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\QTierMaker\" \"InstallLocation\" \"$INSTDIR\"")
+    set(CPACK_NSIS_EXTRA_INSTALL_COMMANDS "${_qtm_nsis_install_metadata}")
     set(CPACK_NSIS_URL_INFO_ABOUT "https://github.com/qianvk/QTierMaker")
     set(CPACK_NSIS_HELP_LINK "https://github.com/qianvk/QTierMaker/issues")
     set(CPACK_NSIS_BRANDING_TEXT "QTierMaker")

@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.24)
 
 project(QTierMaker
-    VERSION 1.0.0
+    VERSION 1.0.1
     DESCRIPTION "A native Qt 6 desktop tier-list editor"
     HOMEPAGE_URL "https://github.com/qianvk/QTierMaker"
     LANGUAGES CXX
