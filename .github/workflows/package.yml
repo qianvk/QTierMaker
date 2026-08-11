@@ -144,7 +144,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          update_app="build/package/updates/macos-stage/QTierMaker.app"
+          update_app="${GITHUB_WORKSPACE}/build/package/updates/macos-stage/QTierMaker.app"
           cmake -DQTM_APPLICATION="${update_app}" -DQTM_AUDIT_ONLY=ON \
             -P packaging/macos/FinalizeBundle.cmake
           "${update_app}/Contents/MacOS/QTierMaker" --deployment-smoke-test
