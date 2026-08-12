@@ -421,13 +421,15 @@ void RootWidget::buildUi(ProjectRepository* repository, RecentProjectsStore* rec
             switchToPage(AppPage::Edit);
         }
     });
-    connect(m_projectsPage, &ProjectsPage::projectDeleted, this, [this](const QString& path) {
+    const auto releaseProjectStorage = [this](const QString& path) {
         if (!m_editPage || !sameProjectPath(m_editPage->currentProjectPath(), path)) {
             return;
         }
         m_editPage->clearProject();
         setActiveProjectAvailable(false);
-    });
+    };
+    connect(m_projectsPage, &ProjectsPage::projectDeleted, this, releaseProjectStorage);
+    connect(m_projectsPage, &ProjectsPage::projectAboutToBeReplaced, this, releaseProjectStorage);
 
     connect(m_editPage, &EditPage::titleChanged, this, [this](const QString& title) {
         if (m_pages && m_pages->currentWidget() == m_editPage && !m_tierFocusMode &&

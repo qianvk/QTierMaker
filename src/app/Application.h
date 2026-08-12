@@ -32,7 +32,6 @@ private:
     void configureApplication();
     void configureFont();
     void scheduleAutoUpdateCheck(bool resetCycle = false);
-    void seedBundledSampleProject();
 
     std::unique_ptr<Logger> m_logger;
     std::unique_ptr<UiPerformanceMonitor> m_performanceMonitor;

@@ -8,7 +8,8 @@ QTierMaker intentionally does not maintain a separate `CHANGELOG.md`.
 
 1. Release and tag VkUI first. The dependency release contains source only.
 2. Update the QTierMaker VkUI submodule to that exact release commit.
-3. Configure with `QTM_PACKAGE_VERSION` equal to the tag without its leading `v`.
+3. Set the process environment variable `QTM_PACKAGE_VERSION_OVERRIDE` to the tag without its
+   leading `v` for that configure invocation. It is intentionally never stored in CMake cache.
 4. Build and run the unit tests, then generate the platform installers with CPack.
 5. Push an annotated tag. The `Platform Installers` workflow publishes checksums and
    `updates.json` with the GitHub Release.
@@ -50,3 +51,19 @@ The Windows NSIS installer installs machine-wide under `Program Files` by defaul
 omits the software OpenGL renderer, legacy D3D compiler, DXC, Qt translations, and the VC
 redistributable installer. CI audits those exclusions and installs only the five MSVC runtime DLLs
 imported by the application and deployed Qt libraries.
+
+## Sample Project Asset
+
+The optional sample project is published once under the dedicated `samples-v1` prerelease as
+`QTierMaker-Sample-Anime-Girls-v5.tar`. Normal `vX.Y.Z` releases must not duplicate this asset.
+The application pins both the immutable download URL and its SHA-256 digest in
+`SampleProjectDownloader.cpp`.
+
+To revise the sample, create a new `samples-vN` prerelease instead of replacing the existing asset.
+Build the TAR from the repository's `samples` directory, compute its SHA-256 digest, then update
+the URL and digest together in the application:
+
+```sh
+cd samples
+cmake -E tar cf ../QTierMaker-Sample-Anime-Girls-v5.tar --format=gnutar -- "Anime Girls v5"
+```
