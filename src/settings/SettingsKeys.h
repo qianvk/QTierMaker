@@ -10,7 +10,6 @@ inline constexpr QStringView autosaveEnabled = u"save/autosaveEnabled";
 inline constexpr QStringView autosaveIntervalMinutes = u"save/autosaveIntervalMinutes";
 inline constexpr QStringView defaultProjectDirectory = u"save/defaultProjectDirectory";
 inline constexpr QStringView defaultTemplate = u"template/default";
-inline constexpr QStringView seededSampleProjects = u"samples/seededProjects";
 inline constexpr QStringView autoUpdateEnabled = u"update/autoUpdateEnabled";
 inline constexpr QStringView lastUpdateCheckAt = u"update/lastCheckAt";
 inline constexpr QStringView lastUpdateCheckVersion = u"update/lastCheckVersion";

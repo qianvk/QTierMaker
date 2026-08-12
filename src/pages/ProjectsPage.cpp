@@ -5,10 +5,13 @@
 #include "pages/ProjectLocationDialog.h"
 #include "persistence/ProjectRepository.h"
 #include "platform/Platform.h"
+#include "samples/SampleProjectDownloader.h"
 #include "settings/AppSettings.h"
 #include "theme/Theme.h"
 #include "tier/CropEditorWidget.h"
 #include "widgets/DestructiveActionDialog.h"
+#include "widgets/TransferProgressWidget.h"
+#include "widgets/WrappingLabel.h"
 #include "window/AppDialog.h"
 #include "window/AppMessageDialog.h"
 
@@ -39,6 +42,7 @@
 #include <QPushButton>
 #include <QSet>
 #include <QSignalBlocker>
+#include <QStackedLayout>
 #include <QStandardPaths>
 #include <QStyledItemDelegate>
 #include <QTimer>
@@ -680,6 +684,7 @@ ProjectsPage::ProjectsPage(ProjectRepository* repository, RecentProjectsStore* r
                            ThumbnailCache* thumbnailCache, AppSettings* settings, QWidget* parent)
     : QWidget(parent), m_repository(repository), m_recentProjects(recentProjects),
       m_thumbnailCache(thumbnailCache), m_settings(settings) {
+    m_sampleDownloader = new SampleProjectDownloader(this);
     auto* root = new QVBoxLayout(this);
     root->setContentsMargins(22, 18, 22, 18);
     root->setSpacing(12);
@@ -724,7 +729,58 @@ ProjectsPage::ProjectsPage(ProjectRepository* repository, RecentProjectsStore* r
     m_view->setMouseTracking(true);
     m_view->viewport()->setMouseTracking(true);
     m_view->setStyleSheet(QStringLiteral("QListView{background:transparent;outline:0;}"));
-    root->addWidget(m_view, 1);
+    auto* contentHost = new QWidget(this);
+    m_contentStack = new QStackedLayout(contentHost);
+    m_contentStack->setContentsMargins(0, 0, 0, 0);
+    m_contentStack->addWidget(m_view);
+
+    m_emptyState = new QWidget(contentHost);
+    auto* emptyLayout = new QVBoxLayout(m_emptyState);
+    emptyLayout->setContentsMargins(24, 24, 24, 24);
+    emptyLayout->addStretch(1);
+
+    auto* emptyContent = new QWidget(m_emptyState);
+    emptyContent->setMaximumWidth(520);
+    emptyContent->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Minimum);
+    auto* emptyContentLayout = new QVBoxLayout(emptyContent);
+    emptyContentLayout->setContentsMargins(4, 4, 4, 4);
+    emptyContentLayout->setSpacing(10);
+
+    m_emptyTitle = new QLabel(tr("No Projects Yet"), emptyContent);
+    QFont emptyTitleFont = m_emptyTitle->font();
+    emptyTitleFont.setPointSize(emptyTitleFont.pointSize() + 3);
+    emptyTitleFont.setBold(true);
+    m_emptyTitle->setFont(emptyTitleFont);
+    m_emptyTitle->setAlignment(Qt::AlignCenter);
+
+    m_emptyDescription = new WrappingLabel(
+        tr("Download the sample project to explore QTierMaker, or open one of your own."),
+        emptyContent);
+    m_emptyDescription->setAlignment(Qt::AlignCenter);
+    m_emptyDescription->setWordWrap(true);
+    m_emptyDescription->setTextFormat(Qt::PlainText);
+    m_emptyDescription->setContentsMargins(6, 4, 6, 4);
+    m_emptyDescription->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Minimum);
+    m_emptyDescription->setStyleSheet(QStringLiteral("color: palette(mid);"));
+
+    m_downloadSampleButton = new QPushButton(tr("Download Sample Project"), emptyContent);
+    m_downloadSampleButton->setIcon(vkui::icon(vkui::VkSymbol::Download));
+    m_downloadSampleButton->setCursor(Qt::PointingHandCursor);
+    m_downloadSampleButton->setFocusPolicy(Qt::StrongFocus);
+
+    m_sampleProgress = new TransferProgressWidget(emptyContent);
+    m_sampleProgress->hide();
+
+    emptyContentLayout->addWidget(m_emptyTitle);
+    emptyContentLayout->addWidget(m_emptyDescription);
+    emptyContentLayout->addSpacing(4);
+    emptyContentLayout->addWidget(m_downloadSampleButton, 0, Qt::AlignHCenter);
+    emptyContentLayout->addWidget(m_sampleProgress, 0, Qt::AlignHCenter);
+    emptyLayout->addWidget(emptyContent, 0, Qt::AlignCenter);
+    emptyLayout->addStretch(1);
+
+    m_contentStack->addWidget(m_emptyState);
+    root->addWidget(contentHost, 1);
 
     connect(m_recentProjects, &RecentProjectsStore::changed, this, &ProjectsPage::refresh);
     connect(m_openProjectButton, &QToolButton::clicked, this, &ProjectsPage::openProjectFromDialog);
@@ -758,11 +814,49 @@ ProjectsPage::ProjectsPage(ProjectRepository* repository, RecentProjectsStore* r
     connect(m_view, &QListView::customContextMenuRequested, this,
             &ProjectsPage::showProjectContextMenu);
 
+    connect(m_downloadSampleButton, &QPushButton::clicked, this,
+            &ProjectsPage::downloadSampleProject);
+    connect(m_sampleDownloader, &SampleProjectDownloader::progressChanged, this,
+            [this](qint64 received, qint64 total) {
+                m_sampleProgress->setProgress(received, total);
+                if (total > 0) {
+                    QString status = tr("Downloading Sample Project... %p%");
+                    status.replace(QStringLiteral("%p"),
+                                   QString::number(m_sampleProgress->percentage()));
+                    m_sampleProgress->setStatusText(status);
+                } else {
+                    m_sampleProgress->setStatusText(tr("Downloading Sample Project..."));
+                }
+            });
+    connect(m_sampleDownloader, &SampleProjectDownloader::installing, this, [this]() {
+        // Release the active document before the worker swaps its storage directory.
+        if (!m_pendingSampleReplacementPath.isEmpty()) {
+            emit projectAboutToBeReplaced(m_pendingSampleReplacementPath);
+            m_pendingSampleReplacementPath.clear();
+        }
+        m_installingSample = true;
+        m_sampleProgress->setIndeterminate();
+        m_sampleProgress->setStatusText(tr("Installing Sample Project..."));
+    });
+    connect(m_sampleDownloader, &SampleProjectDownloader::installed, this,
+            &ProjectsPage::registerDownloadedSample);
+    connect(m_sampleDownloader, &SampleProjectDownloader::failed, this,
+            [this](const QString& message, const QString& details) {
+                resetSampleDownloadUi();
+                AppMessageDialog::warning(
+                    this, tr("Download Sample Project"),
+                    details.isEmpty() ? message : QStringLiteral("%1\n\n%2").arg(message, details));
+            });
+
     refresh();
 }
 
 void ProjectsPage::refresh() {
-    m_model->setEntries(m_recentProjects->entries());
+    const QVector<RecentProjectEntry> entries = m_recentProjects->entries();
+    m_model->setEntries(entries);
+    if (m_contentStack) {
+        m_contentStack->setCurrentWidget(entries.isEmpty() ? m_emptyState : m_view);
+    }
 }
 
 void ProjectsPage::focusSearch() {
@@ -780,7 +874,139 @@ void ProjectsPage::openProjectFromDialog() {
     }
 }
 
+void ProjectsPage::downloadSampleProject() {
+    if (!m_sampleDownloader || m_sampleDownloader->isBusy()) {
+        return;
+    }
+
+    const QString destinationRoot =
+        m_settings ? m_settings->defaultProjectDirectory() : fallbackProjectDirectory();
+    SampleProjectConflictPolicy conflictPolicy = SampleProjectConflictPolicy::KeepExisting;
+    if (QFileInfo::exists(SampleProjectDownloader::projectDirectoryPath(destinationRoot))) {
+        AppMessageDialog dialog(
+            AppMessageDialog::Icon::Warning, tr("Sample Project Already Exists"),
+            tr("A project named \"%1\" already exists in the default project folder.")
+                .arg(SampleProjectDownloader::projectName()),
+            QDialogButtonBox::NoButton, this);
+        QPushButton* keepBoth = dialog.addButton(tr("Keep Both"), QDialogButtonBox::AcceptRole);
+        QPushButton* replace = dialog.addButton(tr("Replace"), QDialogButtonBox::DestructiveRole);
+        QPushButton* cancel = dialog.addButton(tr("Cancel"), QDialogButtonBox::RejectRole);
+        dialog.setDefaultButton(cancel);
+        dialog.setEscapeButton(cancel);
+        dialog.exec();
+
+        if (dialog.clickedButton() == keepBoth) {
+            conflictPolicy = SampleProjectConflictPolicy::KeepBoth;
+        } else if (dialog.clickedButton() == replace) {
+            conflictPolicy = SampleProjectConflictPolicy::Replace;
+        } else {
+            return;
+        }
+    }
+
+    m_pendingSampleReplacementPath =
+        conflictPolicy == SampleProjectConflictPolicy::Replace
+            ? QFileInfo(SampleProjectDownloader::projectFilePath(destinationRoot))
+                  .absoluteFilePath()
+            : QString();
+    m_installingSample = false;
+    m_downloadSampleButton->setEnabled(false);
+    m_sampleProgress->setIndeterminate();
+    m_sampleProgress->setStatusText(tr("Downloading Sample Project..."));
+    m_sampleProgress->show();
+    m_sampleDownloader->start(destinationRoot, conflictPolicy);
+}
+
+void ProjectsPage::registerDownloadedSample(const QString& projectPath,
+                                            SampleProjectSeedStatus status) {
+    if (status == SampleProjectSeedStatus::AlreadyExists) {
+        resetSampleDownloadUi();
+        QTimer::singleShot(0, this, &ProjectsPage::downloadSampleProject);
+        return;
+    }
+
+    auto projectResult = m_repository->openProject(projectPath);
+    if (!projectResult) {
+        resetSampleDownloadUi();
+        AppMessageDialog::warning(
+            this, tr("Download Sample Project"),
+            projectResult.error().details.isEmpty()
+                ? projectResult.error().message
+                : QStringLiteral("%1\n\n%2")
+                      .arg(projectResult.error().message, projectResult.error().details));
+        return;
+    }
+
+    TierProject project = projectResult.takeValue();
+    if (status == SampleProjectSeedStatus::KeptBoth) {
+        project.name = QFileInfo(projectPath).completeBaseName();
+        project.updatedAt = QDateTime::currentDateTimeUtc();
+        const auto saveResult = m_repository->saveProject(project, projectPath);
+        if (!saveResult) {
+            resetSampleDownloadUi();
+            AppMessageDialog::warning(
+                this, tr("Download Sample Project"),
+                saveResult.error().details.isEmpty()
+                    ? saveResult.error().message
+                    : QStringLiteral("%1\n\n%2")
+                          .arg(saveResult.error().message, saveResult.error().details));
+            return;
+        }
+    }
+
+    const auto recentResult = m_recentProjects->addOrUpdate(project);
+    if (!recentResult) {
+        resetSampleDownloadUi();
+        AppMessageDialog::warning(
+            this, tr("Download Sample Project"),
+            recentResult.error().details.isEmpty()
+                ? recentResult.error().message
+                : QStringLiteral("%1\n\n%2")
+                      .arg(recentResult.error().message, recentResult.error().details));
+        return;
+    }
+
+    Logger::info(QStringLiteral("sample.project.download.ready status=%1 path=\"%2\"")
+                     .arg(static_cast<int>(status))
+                     .arg(projectPath));
+    resetSampleDownloadUi();
+}
+
+void ProjectsPage::resetSampleDownloadUi() {
+    m_installingSample = false;
+    m_pendingSampleReplacementPath.clear();
+    if (m_downloadSampleButton) {
+        m_downloadSampleButton->setEnabled(true);
+        m_downloadSampleButton->setText(tr("Download Sample Project"));
+    }
+    if (m_sampleProgress) {
+        m_sampleProgress->hide();
+        m_sampleProgress->reset();
+    }
+}
+
 void ProjectsPage::retranslateUi() {
+    if (m_emptyTitle) {
+        m_emptyTitle->setText(tr("No Projects Yet"));
+    }
+    if (m_emptyDescription) {
+        m_emptyDescription->setText(
+            tr("Download the sample project to explore QTierMaker, or open one of your own."));
+    }
+    if (m_downloadSampleButton) {
+        m_downloadSampleButton->setText(tr("Download Sample Project"));
+    }
+    if (m_sampleProgress && m_sampleDownloader && m_sampleDownloader->isBusy()) {
+        if (m_installingSample) {
+            m_sampleProgress->setStatusText(tr("Installing Sample Project..."));
+        } else if (!m_sampleProgress->isIndeterminate()) {
+            QString status = tr("Downloading Sample Project... %p%");
+            status.replace(QStringLiteral("%p"), QString::number(m_sampleProgress->percentage()));
+            m_sampleProgress->setStatusText(status);
+        } else {
+            m_sampleProgress->setStatusText(tr("Downloading Sample Project..."));
+        }
+    }
     if (m_openProjectButton) {
         m_openProjectButton->setToolTip(tr("Open Project"));
     }
