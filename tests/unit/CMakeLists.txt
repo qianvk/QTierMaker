@@ -10,6 +10,7 @@ add_qtm_unit_test(tst_ProjectFileLayout tst_ProjectFileLayout.cpp)
 add_qtm_unit_test(tst_ProjectHistory tst_ProjectHistory.cpp)
 add_qtm_unit_test(tst_RecentProjectsStore tst_RecentProjectsStore.cpp)
 add_qtm_unit_test(tst_SampleProjectSeeder tst_SampleProjectSeeder.cpp)
+add_qtm_unit_test(tst_TarArchive tst_TarArchive.cpp)
 add_qtm_unit_test(tst_AssetManager tst_AssetManager.cpp)
 add_qtm_unit_test(tst_FocusBackdrop tst_FocusBackdrop.cpp)
 add_qtm_unit_test(tst_LiquidGlassBackdrop tst_LiquidGlassBackdrop.cpp)
@@ -22,6 +23,11 @@ add_qtm_unit_test(tst_CompositionAwareLineEdit
     "${PROJECT_SOURCE_DIR}/src/window/CompositionAwareLineEdit.h"
 )
 add_qtm_unit_test(tst_ThumbnailCache tst_ThumbnailCache.cpp)
+add_qtm_unit_test(tst_WrappingLabel
+    tst_WrappingLabel.cpp
+    "${PROJECT_SOURCE_DIR}/src/widgets/WrappingLabel.cpp"
+    "${PROJECT_SOURCE_DIR}/src/widgets/WrappingLabel.h"
+)
 add_qtm_unit_test(tst_AppUpdater
     tst_AppUpdater.cpp
     "${PROJECT_SOURCE_DIR}/src/update/AppUpdater.cpp"

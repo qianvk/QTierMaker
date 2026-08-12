@@ -235,25 +235,6 @@ void AppSettings::setDefaultTemplateId(const QString& id) {
     emit changed();
 }
 
-bool AppSettings::hasSeededSampleProject(const QString& id) const {
-    const QString clean = id.trimmed();
-    return !clean.isEmpty() &&
-           m_settings.value(settings_keys::seededSampleProjects.toString())
-               .toStringList()
-               .contains(clean);
-}
-
-void AppSettings::recordSeededSampleProject(const QString& id) {
-    const QString clean = id.trimmed();
-    QStringList seeded =
-        m_settings.value(settings_keys::seededSampleProjects.toString()).toStringList();
-    if (clean.isEmpty() || seeded.contains(clean)) {
-        return;
-    }
-    seeded.append(clean);
-    m_settings.setValue(settings_keys::seededSampleProjects.toString(), seeded);
-}
-
 bool AppSettings::autoUpdateEnabled() const {
     return m_settings.value(settings_keys::autoUpdateEnabled.toString(), false).toBool();
 }

@@ -7,17 +7,13 @@
 #include "logging/UiPerformanceMonitor.h"
 #include "persistence/ProjectRepository.h"
 #include "persistence/RecentProjectsStore.h"
-#include "persistence/SampleProjectSeeder.h"
 #include "settings/AppSettings.h"
 #include "theme/ThemeManager.h"
 #include "update/AppUpdater.h"
 #include "window/MainWindow.h"
 
-#include <QCoreApplication>
 #include <QDateTime>
-#include <QDir>
 #include <QDynamicPropertyChangeEvent>
-#include <QFileInfo>
 #include <QFont>
 #include <QGuiApplication>
 #include <QHelpEvent>
@@ -40,27 +36,6 @@
 namespace qtm {
 
 namespace {
-QString bundledSampleProjectDirectory() {
-    const QDir applicationDirectory(QCoreApplication::applicationDirPath());
-    const QString sampleName = QStringLiteral("Anime Girls v5");
-    QStringList candidates;
-#if defined(Q_OS_MACOS) || defined(Q_OS_MAC)
-    candidates.append(applicationDirectory.absoluteFilePath(
-        QStringLiteral("../Resources/samples/%1").arg(sampleName)));
-#endif
-    candidates.append(applicationDirectory.absoluteFilePath(
-        QStringLiteral("../share/QTierMaker/samples/%1").arg(sampleName)));
-    candidates.append(
-        applicationDirectory.absoluteFilePath(QStringLiteral("samples/%1").arg(sampleName)));
-
-    for (const QString& candidate : candidates) {
-        if (QFileInfo(candidate).isDir()) {
-            return QDir::cleanPath(candidate);
-        }
-    }
-    return {};
-}
-
 qreal relativeLuminance(const QColor& color) {
     const auto channel = [](qreal value) {
         value /= 255.0;
@@ -291,7 +266,6 @@ int Application::run() {
                       m_thumbnailCache.get(), m_settings.get(), m_languageManager.get(),
                       m_updater.get());
     window.show();
-    QTimer::singleShot(0, this, &Application::seedBundledSampleProject);
     scheduleAutoUpdateCheck();
     return exec();
 }
@@ -317,49 +291,6 @@ void Application::configureFont() {
     font.setStyleHint(QFont::SansSerif);
     setFont(font);
 #endif
-}
-
-void Application::seedBundledSampleProject() {
-    const QString sampleId = QStringLiteral("anime-girls-v5");
-    const QString sourceDirectory = bundledSampleProjectDirectory();
-    if (!m_settings || !m_repository || !m_recentProjects ||
-        m_settings->hasSeededSampleProject(sampleId) || sourceDirectory.isEmpty()) {
-        return;
-    }
-
-    auto seeded = SampleProjectSeeder::seed(
-        sourceDirectory, m_settings->defaultProjectDirectory(), QStringLiteral("Anime Girls v5"),
-        QStringLiteral("Anime Girls v5.qtm"));
-    if (!seeded) {
-        Logger::warn(QStringLiteral("sample.project.seed.failed message=\"%1\" details=\"%2\"")
-                         .arg(seeded.error().message, seeded.error().details));
-        return;
-    }
-
-    m_settings->recordSeededSampleProject(sampleId);
-    const SampleProjectSeedResult result = seeded.takeValue();
-    if (!QFileInfo::exists(result.projectPath)) {
-        Logger::warn(QStringLiteral("sample.project.seed.skipped existingProjectFile=0 path=\"%1\"")
-                         .arg(result.projectPath));
-        return;
-    }
-
-    auto project = m_repository->openProject(result.projectPath);
-    if (!project) {
-        Logger::warn(QStringLiteral("sample.project.open.failed path=\"%1\" message=\"%2\"")
-                         .arg(result.projectPath, project.error().message));
-        return;
-    }
-    const auto recent = m_recentProjects->addOrUpdate(project.value());
-    if (!recent) {
-        Logger::warn(QStringLiteral("sample.project.recent.failed path=\"%1\" message=\"%2\"")
-                         .arg(result.projectPath, recent.error().message));
-        return;
-    }
-
-    Logger::info(QStringLiteral("sample.project.seed.ready copied=%1 path=\"%2\"")
-                     .arg(result.status == SampleProjectSeedStatus::Copied)
-                     .arg(result.projectPath));
 }
 
 void Application::scheduleAutoUpdateCheck(bool resetCycle) {
