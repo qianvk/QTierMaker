@@ -8,11 +8,16 @@ QTierMaker intentionally does not maintain a separate `CHANGELOG.md`.
 
 1. Release and tag VkUI first. The dependency release contains source only.
 2. Update the QTierMaker VkUI submodule to that exact release commit.
-3. Set the process environment variable `QTM_PACKAGE_VERSION_OVERRIDE` to the tag without its
-   leading `v` for that configure invocation. It is intentionally never stored in CMake cache.
+3. Update `project(QTierMaker VERSION x.y.z)` in the root `CMakeLists.txt`. This is the single
+   version source for the application UI, native metadata, installers, and update packages.
 4. Build and run the unit tests, then generate the platform installers with CPack.
-5. Push an annotated tag. The `Platform Installers` workflow publishes checksums and
+5. Push an annotated tag whose version exactly matches the source version. The `Platform
+   Installers` workflow rejects mismatched tags before compiling, then publishes checksums and
    `updates.json` with the GitHub Release.
+
+Prerelease tags append only their semantic suffix through the process-local `QTM_VERSION_SUFFIX`
+environment variable. CI also passes `QTM_EXPECTED_VERSION` as an assertion; neither value is stored
+in CMake cache or allowed to replace the numeric source version.
 
 Stable releases publish only the supported native architectures:
 
