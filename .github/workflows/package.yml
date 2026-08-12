@@ -43,6 +43,34 @@ jobs:
           submodules: recursive
           token: ${{ secrets.SUBMODULE_TOKEN != '' && secrets.SUBMODULE_TOKEN || github.token }}
 
+      - name: Resolve version contract
+        shell: bash
+        run: |
+          source_version="$(sed -nE \
+            's/^[[:space:]]*VERSION[[:space:]]+([0-9]+\.[0-9]+\.[0-9]+)[[:space:]]*$/\1/p' \
+            CMakeLists.txt | head -n 1)"
+          if [[ ! "${source_version}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error title=Invalid source version::CMake project version was not found"
+            exit 1
+          fi
+
+          suffix="-dev.${GITHUB_RUN_NUMBER}"
+          expected=""
+          if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
+            expected="${GITHUB_REF_NAME#v}"
+            if [[ ! "${expected}" =~ ^[0-9]+\.[0-9]+\.[0-9]+([-+][0-9A-Za-z][0-9A-Za-z.+-]*)?$ ]]; then
+              echo "::error title=Invalid release tag::${GITHUB_REF_NAME} is not a semantic version"
+              exit 1
+            fi
+            suffix="${BASH_REMATCH[1]}"
+            if [[ "${source_version}${suffix}" != "${expected}" ]]; then
+              echo "::error title=Release version mismatch::Source declares ${source_version}; tag declares ${expected}"
+              exit 1
+            fi
+          fi
+          echo "QTM_VERSION_SUFFIX=${suffix}" >> "${GITHUB_ENV}"
+          echo "QTM_EXPECTED_VERSION=${expected}" >> "${GITHUB_ENV}"
+
       - name: Install Qt
         uses: jurplel/install-qt-action@v4
         with:
@@ -54,16 +82,6 @@ jobs:
         if: runner.os == 'Windows'
         shell: pwsh
         run: choco install nsis --no-progress -y
-
-      - name: Resolve package version
-        shell: bash
-        run: |
-          if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
-            version="${GITHUB_REF_NAME#v}"
-          else
-            version="1.0.0-dev.${GITHUB_RUN_NUMBER}"
-          fi
-          echo "QTM_PACKAGE_VERSION=${version}" >> "${GITHUB_ENV}"
 
       - name: Import Windows signing certificate
         if: runner.os == 'Windows' && env.HAS_WINDOWS_CERTIFICATE == 'true'
@@ -89,7 +107,9 @@ jobs:
           fi
           # Let CMake select the platform-native generator. In particular, forcing
           # Ninja on Windows can pair MinGW from PATH with the MSVC Qt package.
-          cmake -E env "QTM_PACKAGE_VERSION_OVERRIDE=${QTM_PACKAGE_VERSION}" \
+          cmake -E env \
+            "QTM_VERSION_SUFFIX=${QTM_VERSION_SUFFIX}" \
+            "QTM_EXPECTED_VERSION=${QTM_EXPECTED_VERSION}" \
             cmake -S . -B build/package \
             -DCMAKE_BUILD_TYPE=Release \
             -DQTM_BUILD_TESTS=ON \
@@ -324,10 +344,10 @@ jobs:
               channel: $channel,
               localizations: {
                 en: {
-                  changelog: ("QTierMaker " + $version + " adds an optional downloadable sample project, reliable conflict replacement, and a responsive empty-project view. On macOS, allow the app from System Settings > Privacy & Security on first launch.")
+                  changelog: ("QTierMaker " + $version + " fixes application version reporting and restores the sidebar update notification, shared download progress, and install action. On macOS, allow the app from System Settings > Privacy & Security on first launch.")
                 },
                 zh_CN: {
-                  changelog: ("QTierMaker " + $version + " 新增可选的示例工程下载，并改进冲突替换可靠性和空项目页面布局。macOS 首次启动时，请在系统设置 > 隐私与安全性中选择仍要打开。")
+                  changelog: ("QTierMaker " + $version + " 修复应用版本显示，并恢复侧栏更新提示、复用下载进度动画以及安装入口。macOS 首次启动时，请在系统设置 > 隐私与安全性中选择仍要打开。")
                 }
               },
               updates: {

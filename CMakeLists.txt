@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.24)
 
 project(QTierMaker
-    VERSION 1.0.0
+    VERSION 1.0.2
     DESCRIPTION "A native Qt 6 desktop tier-list editor"
     HOMEPAGE_URL "https://github.com/qianvk/QTierMaker"
     LANGUAGES CXX
@@ -13,8 +13,8 @@ endif()
 
 option(QTM_BUILD_TESTS "Build QTierMaker tests" ON)
 option(QTM_WARNINGS_AS_ERRORS "Treat compiler warnings as errors" OFF)
-# Package versions are process-local by design. Clear legacy cache entries so a tagged build can
-# never leak its version into later local builds that reuse the same directory.
+# PROJECT_VERSION is the single source of truth for application and package versions. Keep release
+# suffixes process-local so tagged or CI builds cannot poison a reused local CMake cache.
 if(DEFINED CACHE{QTM_PACKAGE_VERSION})
     unset(QTM_PACKAGE_VERSION CACHE)
 endif()
@@ -22,19 +22,26 @@ if(DEFINED CACHE{QTM_PACKAGE_VERSION_OVERRIDE})
     unset(QTM_PACKAGE_VERSION_OVERRIDE CACHE)
 endif()
 set(QTM_PACKAGE_VERSION "${PROJECT_VERSION}")
-if(DEFINED ENV{QTM_PACKAGE_VERSION_OVERRIDE} AND
-   NOT "$ENV{QTM_PACKAGE_VERSION_OVERRIDE}" STREQUAL "")
-    set(QTM_PACKAGE_VERSION "$ENV{QTM_PACKAGE_VERSION_OVERRIDE}")
+if(DEFINED ENV{QTM_VERSION_SUFFIX} AND NOT "$ENV{QTM_VERSION_SUFFIX}" STREQUAL "")
+    set(_qtm_version_suffix "$ENV{QTM_VERSION_SUFFIX}")
+    if(NOT _qtm_version_suffix MATCHES "^[-+][0-9A-Za-z][0-9A-Za-z.+-]*$")
+        message(FATAL_ERROR
+            "QTM_VERSION_SUFFIX must be an optional semantic-version prerelease or build suffix")
+    endif()
+    string(APPEND QTM_PACKAGE_VERSION "${_qtm_version_suffix}")
 endif()
-if(NOT QTM_PACKAGE_VERSION MATCHES "^([0-9]+)\\.([0-9]+)\\.([0-9]+)([-+].*)?$")
+if(DEFINED ENV{QTM_EXPECTED_VERSION} AND
+   NOT "$ENV{QTM_EXPECTED_VERSION}" STREQUAL "" AND
+   NOT QTM_PACKAGE_VERSION STREQUAL "$ENV{QTM_EXPECTED_VERSION}")
     message(FATAL_ERROR
-        "QTM_PACKAGE_VERSION_OVERRIDE must start with a semantic x.y.z version")
+        "Release version mismatch: source declares ${QTM_PACKAGE_VERSION}, "
+        "but the build expects $ENV{QTM_EXPECTED_VERSION}")
 endif()
-set(QTM_VERSION_MAJOR "${CMAKE_MATCH_1}")
-set(QTM_VERSION_MINOR "${CMAKE_MATCH_2}")
-set(QTM_VERSION_PATCH "${CMAKE_MATCH_3}")
-set(QTM_NUMERIC_VERSION
-    "${QTM_VERSION_MAJOR}.${QTM_VERSION_MINOR}.${QTM_VERSION_PATCH}")
+set(QTM_VERSION_MAJOR "${PROJECT_VERSION_MAJOR}")
+set(QTM_VERSION_MINOR "${PROJECT_VERSION_MINOR}")
+set(QTM_VERSION_PATCH "${PROJECT_VERSION_PATCH}")
+set(QTM_NUMERIC_VERSION "${PROJECT_VERSION}")
+message(STATUS "QTierMaker version: ${QTM_PACKAGE_VERSION}")
 
 set(_qtm_default_update_channel "stable")
 if(QTM_PACKAGE_VERSION MATCHES "-")
@@ -306,6 +313,12 @@ include(InstallRules)
 
 if(QTM_BUILD_TESTS)
     enable_testing()
+    add_test(NAME tst_ApplicationVersion
+        COMMAND "${CMAKE_COMMAND}"
+            "-DQTM_APPLICATION=$<TARGET_FILE:QTierMaker>"
+            "-DQTM_EXPECTED_OUTPUT=QTierMaker ${QTM_PACKAGE_VERSION}"
+            -P "${CMAKE_CURRENT_SOURCE_DIR}/tests/VerifyApplicationVersion.cmake"
+    )
     add_subdirectory(tests/unit)
     add_subdirectory(tests/integration)
 endif()

@@ -71,6 +71,14 @@ int runDeploymentSmokeTest(int argc, char* argv[]) {
     return EXIT_FAILURE;
 }
 
+int printVersion(int argc, char* argv[]) {
+    QCoreApplication app(argc, argv);
+    app.setApplicationName(QStringLiteral("QTierMaker"));
+    app.setApplicationVersion(QStringLiteral(QTM_APP_VERSION));
+    QTextStream(stdout) << app.applicationName() << ' ' << app.applicationVersion() << '\n';
+    return EXIT_SUCCESS;
+}
+
 } // namespace
 
 int main(int argc, char* argv[]) {
@@ -79,6 +87,9 @@ int main(int argc, char* argv[]) {
     QCoreApplication::setAttribute(Qt::AA_DontCreateNativeWidgetSiblings);
     if (hasArgument(argc, argv, "--deployment-smoke-test")) {
         return runDeploymentSmokeTest(argc, argv);
+    }
+    if (hasArgument(argc, argv, "--version")) {
+        return printVersion(argc, argv);
     }
     qtm::Application app(argc, argv);
     return app.run();

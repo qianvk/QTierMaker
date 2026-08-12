@@ -23,6 +23,10 @@ creates or updates the matching GitHub Release with the Windows x64 packages, ma
 macOS update ZIP, and `updates.json`. Artifact hashes are recorded in the update manifest instead of being
 published as separate files.
 
+The root CMake `project(VERSION)` is authoritative. Tagged packaging fails when the tag and source
+version differ, preventing the application UI and native package metadata from reporting different
+versions.
+
 macOS packages use ad-hoc signing and do not require certificates or private credentials. Gatekeeper
 therefore requires users to explicitly allow QTierMaker from System Settings on first launch.
 Windows Authenticode signing remains optional and uses these GitHub Actions secrets when present:
