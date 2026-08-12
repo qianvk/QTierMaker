@@ -6,7 +6,11 @@
 #include <QToolButton>
 #include <QVariantAnimation>
 
+class QResizeEvent;
+
 namespace qtm {
+
+class TransferProgressIndicator;
 
 /** Compact update action with event-driven attention and download progress states. */
 class UpdateButton final : public QToolButton {
@@ -20,9 +24,11 @@ public:
 
 protected:
     void paintEvent(QPaintEvent* event) override;
+    void resizeEvent(QResizeEvent* event) override;
 
 private:
     void refreshPresentation();
+    void refreshProgressIndicator();
     void playAttentionAnimation();
 
     QVariantAnimation m_attentionAnimation;
@@ -32,6 +38,7 @@ private:
     qreal m_attention{0.0};
     bool m_reducedMotion{false};
     QString m_installText;
+    TransferProgressIndicator* m_progressIndicator{nullptr};
 };
 
 } // namespace qtm

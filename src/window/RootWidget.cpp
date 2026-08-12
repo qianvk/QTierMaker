@@ -891,11 +891,8 @@ void RootWidget::refreshUpdateButton() {
         return;
     }
     m_updateButton->setInstallText(tr("Install"));
-    if (m_settings && !m_settings->autoUpdateEnabled()) {
-        m_updateButton->setUpdateState(UpdateState::Idle);
-        m_updateButton->setToolTip(tr("Updates"));
-        return;
-    }
+    // Automatic checks are a scheduling preference. Once an update has been discovered, its
+    // download and install state remains actionable even when automatic checking is disabled.
     const UpdateState state = m_updater->state();
     m_updateButton->setUpdateState(state);
     const QString version = m_updater->lastResult().latestVersion;

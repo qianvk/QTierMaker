@@ -34,6 +34,14 @@ add_qtm_unit_test(tst_AppUpdater
     "${PROJECT_SOURCE_DIR}/src/update/AppUpdater.h"
 )
 target_link_libraries(tst_AppUpdater PRIVATE Qt6::Network)
+add_qtm_unit_test(tst_UpdateButton
+    tst_UpdateButton.cpp
+    "${PROJECT_SOURCE_DIR}/src/update/UpdateButton.cpp"
+    "${PROJECT_SOURCE_DIR}/src/update/UpdateButton.h"
+    "${PROJECT_SOURCE_DIR}/src/widgets/TransferProgressWidget.cpp"
+    "${PROJECT_SOURCE_DIR}/src/widgets/TransferProgressWidget.h"
+)
+target_link_libraries(tst_UpdateButton PRIVATE Qt6::Network)
 add_qtm_unit_test(tst_TierListLayout
     tst_TierListLayout.cpp
     "${PROJECT_SOURCE_DIR}/src/tier/TierDragController.cpp"
