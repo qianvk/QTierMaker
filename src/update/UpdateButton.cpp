@@ -1,12 +1,15 @@
 #include "update/UpdateButton.h"
 
 #include "theme/Theme.h"
+#include "widgets/TransferProgressWidget.h"
 
 #include <QPaintEvent>
 #include <QPainter>
+#include <QResizeEvent>
 
 #include <vkui/core/VkIcon.h>
 
+#include <algorithm>
 #include <cmath>
 #include <numbers>
 
@@ -20,6 +23,10 @@ UpdateButton::UpdateButton(QWidget* parent) : QToolButton(parent), m_attentionAn
     setFixedSize(34, 34);
     setIconSize(QSize(18, 18));
     setAutoRaise(true);
+
+    m_progressIndicator = new TransferProgressIndicator(this);
+    m_progressIndicator->setObjectName(QStringLiteral("UpdateTransferProgressIndicator"));
+    m_progressIndicator->hide();
     hide();
 
     m_attentionAnimation.setDuration(720);
@@ -44,12 +51,17 @@ void UpdateButton::setUpdateState(UpdateState state) {
     }
     const UpdateState previous = m_state;
     m_state = state;
+    if (state == UpdateState::Downloading && previous != UpdateState::Downloading) {
+        m_bytesReceived = 0;
+        m_bytesTotal = -1;
+    }
     const bool actionable = state == UpdateState::Available || state == UpdateState::Ready;
     const bool visible =
         actionable || state == UpdateState::Downloading || state == UpdateState::Installing;
     setVisible(visible);
     setEnabled(actionable);
     refreshPresentation();
+    refreshProgressIndicator();
     if (state == UpdateState::Available && previous != UpdateState::Available) {
         playAttentionAnimation();
     }
@@ -71,7 +83,7 @@ void UpdateButton::setDownloadProgress(qint64 bytesReceived, qint64 bytesTotal) 
     m_bytesReceived = qMax<qint64>(0, bytesReceived);
     m_bytesTotal = bytesTotal;
     if (m_state == UpdateState::Downloading) {
-        update();
+        refreshProgressIndicator();
     }
 }
 
@@ -89,31 +101,32 @@ void UpdateButton::setReducedMotion(bool reduced) {
 
 void UpdateButton::paintEvent(QPaintEvent* event) {
     QToolButton::paintEvent(event);
-    if (m_state != UpdateState::Downloading && m_attention <= 0.0) {
+    if (m_attention <= 0.0) {
         return;
     }
 
     QPainter painter(this);
     painter.setRenderHint(QPainter::Antialiasing);
     QColor accent = activeThemeTokens().accent;
-    if (m_attention > 0.0) {
-        accent.setAlphaF(
-            static_cast<float>(0.18 + 0.48 * std::sin(m_attention * std::numbers::pi)));
-    }
+    accent.setAlphaF(
+        static_cast<float>(0.18 + 0.48 * std::sin(m_attention * std::numbers::pi)));
     QPen pen(accent, 2.0, Qt::SolidLine, Qt::RoundCap);
     painter.setPen(pen);
     const QRectF progressRect = QRectF(rect()).adjusted(3.0, 3.0, -3.0, -3.0);
 
-    if (m_state == UpdateState::Downloading) {
-        const qreal progress =
-            m_bytesTotal > 0
-                ? qBound(0.0,
-                         static_cast<qreal>(m_bytesReceived) / static_cast<qreal>(m_bytesTotal),
-                         1.0)
-                : 0.25;
-        painter.drawArc(progressRect, 90 * 16, -qRound(progress * 360.0 * 16.0));
-    } else {
-        painter.drawEllipse(progressRect);
+    painter.drawEllipse(progressRect);
+}
+
+void UpdateButton::resizeEvent(QResizeEvent* event) {
+    QToolButton::resizeEvent(event);
+    if (m_progressIndicator) {
+        constexpr int kHorizontalInset = 6;
+        constexpr int kBottomInset = 2;
+        m_progressIndicator->setGeometry(kHorizontalInset,
+                                         height() - m_progressIndicator->height() - kBottomInset,
+                                         std::max(0, width() - 2 * kHorizontalInset),
+                                         m_progressIndicator->height());
+        m_progressIndicator->raise();
     }
 }
 
@@ -122,12 +135,28 @@ void UpdateButton::refreshPresentation() {
     setToolButtonStyle(installAction ? Qt::ToolButtonTextBesideIcon : Qt::ToolButtonIconOnly);
     setText(installAction ? m_installText : QString());
     const int textWidth = installAction ? fontMetrics().horizontalAdvance(m_installText) : 0;
-    const int width = installAction ? qBound(72, textWidth + iconSize().width() + 30, 116) : 34;
+    const int width = installAction ? qBound(72, textWidth + iconSize().width() + 30, 116)
+                                    : (m_state == UpdateState::Downloading ? 72 : 34);
     setFixedSize(width, 34);
     setAccessibleName(installAction ? m_installText : toolTip());
     setIcon(vkui::icon(installAction ? vkui::VkSymbol::Install : vkui::VkSymbol::Download,
                        vkui::VkIconRole::Accent));
     updateGeometry();
+}
+
+void UpdateButton::refreshProgressIndicator() {
+    if (!m_progressIndicator) {
+        return;
+    }
+    if (m_state != UpdateState::Downloading) {
+        m_progressIndicator->hide();
+        m_progressIndicator->reset();
+        return;
+    }
+
+    m_progressIndicator->show();
+    m_progressIndicator->setProgress(m_bytesReceived, m_bytesTotal);
+    m_progressIndicator->raise();
 }
 
 void UpdateButton::playAttentionAnimation() {

@@ -380,8 +380,7 @@ void PreferencesPage::setUpdateNotificationVisible(bool visible) {
         return;
     }
     m_nav->item(kUpdatePageIndex)
-        ->setData(kUpdateBadgeRole,
-                  visible && (!m_settings || m_settings->autoUpdateEnabled()));
+        ->setData(kUpdateBadgeRole, visible);
     m_nav->viewport()->update();
 }
 
@@ -473,12 +472,15 @@ void PreferencesPage::refreshUpdateActions() {
     }
     if (m_installUpdateButton) {
         const bool ready = state == UpdateState::Ready;
+        const bool installing = state == UpdateState::Installing;
         const bool available = state == UpdateState::Available;
         m_installUpdateButton->setVisible(m_updater && m_updater->hasUpdateAvailable());
         m_installUpdateButton->setEnabled(ready || available);
-        m_installUpdateButton->setText(ready ? tr("Install Update") : tr("Download Update"));
+        m_installUpdateButton->setText(ready || installing ? tr("Install Update")
+                                                          : tr("Download Update"));
         m_installUpdateButton->setIcon(
-            vkui::icon(ready ? vkui::VkSymbol::Install : vkui::VkSymbol::Download,
+            vkui::icon(ready || installing ? vkui::VkSymbol::Install
+                                           : vkui::VkSymbol::Download,
                        vkui::VkIconRole::Accent));
     }
     if (m_openUpdateButton) {
