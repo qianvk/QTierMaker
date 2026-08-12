@@ -24,13 +24,15 @@ jobs:
             cpack_generator: DragNDrop
             artifact_name: QTierMaker-macOS
             runtime_metadata: ''
+            build_parallelism: 3
           - os: windows-latest
             cpack_generator: NSIS
             artifact_name: QTierMaker-Windows
             runtime_metadata: dist/QTierMaker-Windows-runtime-version.txt
+            build_parallelism: 4
     runs-on: ${{ matrix.os }}
     # A clean arm64 Qt build can take around 40 minutes on GitHub's macOS runners.
-    timeout-minutes: 75
+    timeout-minutes: 120
     env:
       HAS_WINDOWS_CERTIFICATE: ${{ secrets.WINDOWS_CERTIFICATE_BASE64 != '' }}
 
@@ -94,7 +96,7 @@ jobs:
             "${platform_args[@]}"
 
       - name: Build
-        run: cmake --build build/package --config Release --parallel
+        run: cmake --build build/package --config Release --parallel ${{ matrix.build_parallelism }}
 
       - name: Test
         run: ctest --test-dir build/package --output-on-failure -C Release
