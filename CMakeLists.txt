@@ -13,10 +13,22 @@ endif()
 
 option(QTM_BUILD_TESTS "Build QTierMaker tests" ON)
 option(QTM_WARNINGS_AS_ERRORS "Treat compiler warnings as errors" OFF)
-set(QTM_PACKAGE_VERSION "${PROJECT_VERSION}" CACHE STRING
-    "Version embedded in the application and platform installers")
+# Package versions are process-local by design. Clear legacy cache entries so a tagged build can
+# never leak its version into later local builds that reuse the same directory.
+if(DEFINED CACHE{QTM_PACKAGE_VERSION})
+    unset(QTM_PACKAGE_VERSION CACHE)
+endif()
+if(DEFINED CACHE{QTM_PACKAGE_VERSION_OVERRIDE})
+    unset(QTM_PACKAGE_VERSION_OVERRIDE CACHE)
+endif()
+set(QTM_PACKAGE_VERSION "${PROJECT_VERSION}")
+if(DEFINED ENV{QTM_PACKAGE_VERSION_OVERRIDE} AND
+   NOT "$ENV{QTM_PACKAGE_VERSION_OVERRIDE}" STREQUAL "")
+    set(QTM_PACKAGE_VERSION "$ENV{QTM_PACKAGE_VERSION_OVERRIDE}")
+endif()
 if(NOT QTM_PACKAGE_VERSION MATCHES "^([0-9]+)\\.([0-9]+)\\.([0-9]+)([-+].*)?$")
-    message(FATAL_ERROR "QTM_PACKAGE_VERSION must start with a semantic x.y.z version")
+    message(FATAL_ERROR
+        "QTM_PACKAGE_VERSION_OVERRIDE must start with a semantic x.y.z version")
 endif()
 set(QTM_VERSION_MAJOR "${CMAKE_MATCH_1}")
 set(QTM_VERSION_MINOR "${CMAKE_MATCH_2}")
@@ -105,6 +117,8 @@ set(QTM_CORE_SOURCES
     src/persistence/RecentProjectsStore.h
     src/persistence/SampleProjectSeeder.cpp
     src/persistence/SampleProjectSeeder.h
+    src/persistence/TarArchive.cpp
+    src/persistence/TarArchive.h
     src/persistence/Result.h
     src/platform/Platform.cpp
     src/platform/Platform.h
@@ -150,6 +164,8 @@ set(QTM_APP_SOURCES
     src/pages/ProjectsPage.h
     src/preview/PreviewOverlay.cpp
     src/preview/PreviewOverlay.h
+    src/samples/SampleProjectDownloader.cpp
+    src/samples/SampleProjectDownloader.h
     src/tier/ImageGalleryPopover.cpp
     src/tier/ImageGalleryPopover.h
     src/tier/CropEditorWidget.cpp
@@ -180,6 +196,10 @@ set(QTM_APP_SOURCES
     src/widgets/FlowLayout.h
     src/widgets/SectionHeader.cpp
     src/widgets/SectionHeader.h
+    src/widgets/TransferProgressWidget.cpp
+    src/widgets/TransferProgressWidget.h
+    src/widgets/WrappingLabel.cpp
+    src/widgets/WrappingLabel.h
     src/window/AppDialog.cpp
     src/window/AppDialog.h
     src/window/AppMessageDialog.h

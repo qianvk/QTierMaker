@@ -36,8 +36,6 @@ public:
     void setDefaultProjectDirectory(const QString& path);
     QString defaultTemplateId() const;
     void setDefaultTemplateId(const QString& id);
-    bool hasSeededSampleProject(const QString& id) const;
-    void recordSeededSampleProject(const QString& id);
 
     bool autoUpdateEnabled() const;
     void setAutoUpdateEnabled(bool enabled);
