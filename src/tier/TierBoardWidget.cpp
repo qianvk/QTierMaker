@@ -5,6 +5,8 @@
 #include "tier/TierListView.h"
 
 #include <QAbstractItemModel>
+#include <QLayout>
+#include <QPainter>
 #include <QTimer>
 #include <QVBoxLayout>
 
@@ -38,6 +40,8 @@ TierBoardWidget::TierBoardWidget(QWidget* parent) : QWidget(parent) {
     connect(m_view, &TierListView::imagePresentationModeRequested, this,
             &TierBoardWidget::imagePresentationModeRequested);
     connect(m_view, &TierListView::resetRowsRequested, this, &TierBoardWidget::resetRowsRequested);
+    connect(m_view, &TierListView::exportImageRequested, this,
+            &TierBoardWidget::exportImageRequested);
     connect(m_view, &TierListView::rowEditRequested, this, &TierBoardWidget::rowEditRequested);
     connect(m_view, &TierListView::rowClearRequested, this, &TierBoardWidget::rowClearRequested);
     connect(m_view, &TierListView::rowDeleteRequested, this, &TierBoardWidget::rowDeleteRequested);
@@ -156,6 +160,33 @@ void TierBoardWidget::setLiquidGlassParameters(const LiquidGlassParameters& para
     if (m_view) {
         m_view->setLiquidGlassParameters(parameters);
     }
+}
+
+QImage TierBoardWidget::renderToImage(int scale) {
+    if (!m_view || !m_delegate || width() <= 0 || height() <= 0) {
+        return {};
+    }
+
+    scale = qBound(1, scale, 4);
+    ensurePolished();
+    if (layout()) {
+        layout()->activate();
+    }
+    m_view->refreshLayoutMetrics();
+    m_view->setExportRendering(true, scale);
+    m_delegate->setExportRendering(true, scale);
+
+    QImage image(size() * scale, QImage::Format_ARGB32_Premultiplied);
+    image.setDevicePixelRatio(scale);
+    image.fill(Qt::transparent);
+    QPainter painter(&image);
+    render(&painter, QPoint(), QRegion(), QWidget::DrawWindowBackground | QWidget::DrawChildren);
+    painter.end();
+
+    m_delegate->setExportRendering(false);
+    m_view->setExportRendering(false);
+    refreshVisuals();
+    return image;
 }
 
 } // namespace qtm

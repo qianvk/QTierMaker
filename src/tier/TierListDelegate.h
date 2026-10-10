@@ -22,6 +22,7 @@ public:
     void setContext(const TierProject* project, const AssetManager* assetManager,
                     ThumbnailCache* thumbnailCache, QString selectedImageId);
     void setSelectedImageId(QString selectedImageId);
+    void setExportRendering(bool enabled, qreal scale = 1.0);
 
     const TierProject* project() const { return m_project; }
     int labelWidth() const;
@@ -61,6 +62,8 @@ private:
     const AssetManager* m_assetManager{nullptr};
     ThumbnailCache* m_thumbnailCache{nullptr};
     QString m_selectedImageId;
+    bool m_exportRendering{false};
+    qreal m_exportScale{1.0};
 };
 
 } // namespace qtm

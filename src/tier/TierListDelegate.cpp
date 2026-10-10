@@ -92,6 +92,11 @@ void TierListDelegate::setSelectedImageId(QString selectedImageId) {
     m_selectedImageId = std::move(selectedImageId);
 }
 
+void TierListDelegate::setExportRendering(bool enabled, qreal scale) {
+    m_exportRendering = enabled;
+    m_exportScale = enabled ? qBound<qreal>(1.0, scale, 4.0) : 1.0;
+}
+
 int TierListDelegate::labelWidth() const {
     QFont labelFont = QApplication::font();
     labelFont.setBold(true);
@@ -346,8 +351,8 @@ void TierListDelegate::paint(QPainter* painter, const QStyleOptionViewItem& opti
         const QRectF paintRect(center.x() - paintSize.width() / 2.0,
                                center.y() - paintSize.height() / 2.0, paintSize.width(),
                                paintSize.height());
-        paintTiles.append(
-            PaintTile{image, tileRect, paintRect, scale, image->id == m_selectedImageId});
+        paintTiles.append(PaintTile{image, tileRect, paintRect, scale,
+                                    !m_exportRendering && image->id == m_selectedImageId});
     }
 
     std::sort(paintTiles.begin(), paintTiles.end(),
@@ -363,8 +368,10 @@ void TierListDelegate::paint(QPainter* painter, const QStyleOptionViewItem& opti
         const QRectF imageRect = tile.paintRect;
         const bool selected = tile.selected;
 
-        const qreal deviceRatio =
-            option.widget ? option.widget->devicePixelRatioF() : qApp->devicePixelRatio();
+        const qreal deviceRatio = m_exportRendering
+                                      ? m_exportScale
+                                      : (option.widget ? option.widget->devicePixelRatioF()
+                                                       : qApp->devicePixelRatio());
         const QSize targetPixelSize(qCeil(imageRect.width() * deviceRatio),
                                     qCeil(imageRect.height() * deviceRatio));
         QPixmap pixmap = pixmapForImage(*image, targetPixelSize);
@@ -420,6 +427,27 @@ QRect TierListDelegate::sourceRectForImage(const TierImage& image, const QSize& 
 }
 
 QPixmap TierListDelegate::pixmapForImage(const TierImage& image, QSize targetPixelSize) const {
+    if (m_exportRendering && m_project && m_assetManager) {
+        QImageReader reader(m_assetManager->resolvedImagePath(*m_project, image));
+        reader.setAutoTransform(true);
+        const QSize sourceSize = reader.size();
+        if (sourceSize.isValid() && !targetPixelSize.isEmpty()) {
+            const Qt::AspectRatioMode mode =
+                m_project->imagePresentationMode() == ImagePresentationMode::NoCrop
+                    ? Qt::KeepAspectRatio
+                    : Qt::KeepAspectRatioByExpanding;
+            const QSize decodeSize = sourceSize.scaled(targetPixelSize, mode);
+            if (decodeSize.isValid() &&
+                (decodeSize.width() < sourceSize.width() ||
+                 decodeSize.height() < sourceSize.height())) {
+                reader.setScaledSize(decodeSize);
+            }
+        }
+        const QImage rendered = reader.read();
+        if (!rendered.isNull()) {
+            return QPixmap::fromImage(rendered);
+        }
+    }
     if (m_thumbnailCache) {
         if (m_project && m_assetManager) {
             if (!m_thumbnailCache->hasThumbnail(image.id, targetPixelSize)) {

@@ -10,7 +10,7 @@
 #include <QWidget>
 
 namespace vkui {
-class VkPopover;
+class VPopover;
 }
 
 namespace qtm {
@@ -72,7 +72,7 @@ private:
     ThumbnailCache* m_thumbnailCache{nullptr};
     QString m_selectedImageId;
     GalleryGridWidget* m_grid{nullptr};
-    vkui::VkPopover* m_popover{nullptr};
+    vkui::VPopover* m_popover{nullptr};
     QPointer<QWidget> m_anchor;
     QPointer<QWidget> m_hostWindow;
     QMetaObject::Connection m_thumbnailConnection;

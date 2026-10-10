@@ -17,6 +17,20 @@ add_qtm_unit_test(tst_LiquidGlassBackdrop tst_LiquidGlassBackdrop.cpp)
 add_qtm_unit_test(tst_BackdropMaterial tst_BackdropMaterial.cpp)
 add_qtm_unit_test(tst_ImageLoader tst_ImageLoader.cpp)
 add_qtm_unit_test(tst_ThemeManager tst_ThemeManager.cpp)
+add_qtm_unit_test(tst_PanelManager tst_PanelManager.cpp)
+target_link_libraries(tst_PanelManager PRIVATE VkUI::Widgets VkUI::Window)
+qt_add_executable(tst_DialogButtonOrder
+    tst_DialogButtonOrder.cpp
+    "${PROJECT_SOURCE_DIR}/src/widgets/PlatformDialogButtonBox.cpp"
+    "${PROJECT_SOURCE_DIR}/src/widgets/PlatformDialogButtonBox.h"
+)
+target_link_libraries(tst_DialogButtonOrder PRIVATE
+    qtiermaker_core
+    VkUI::Widgets
+    Qt6::Test
+)
+target_include_directories(tst_DialogButtonOrder PRIVATE "${PROJECT_SOURCE_DIR}/src")
+add_test(NAME tst_DialogButtonOrder COMMAND tst_DialogButtonOrder)
 add_qtm_unit_test(tst_CompositionAwareLineEdit
     tst_CompositionAwareLineEdit.cpp
     "${PROJECT_SOURCE_DIR}/src/window/CompositionAwareLineEdit.cpp"
@@ -44,6 +58,8 @@ add_qtm_unit_test(tst_UpdateButton
 target_link_libraries(tst_UpdateButton PRIVATE Qt6::Network)
 add_qtm_unit_test(tst_TierListLayout
     tst_TierListLayout.cpp
+    "${PROJECT_SOURCE_DIR}/src/export/TierListExporter.cpp"
+    "${PROJECT_SOURCE_DIR}/src/export/TierListExporter.h"
     "${PROJECT_SOURCE_DIR}/src/tier/TierDragController.cpp"
     "${PROJECT_SOURCE_DIR}/src/tier/TierDragController.h"
     "${PROJECT_SOURCE_DIR}/src/tier/TierListDelegate.cpp"
@@ -52,6 +68,8 @@ add_qtm_unit_test(tst_TierListLayout
     "${PROJECT_SOURCE_DIR}/src/tier/TierListModel.h"
     "${PROJECT_SOURCE_DIR}/src/tier/TierListView.cpp"
     "${PROJECT_SOURCE_DIR}/src/tier/TierListView.h"
+    "${PROJECT_SOURCE_DIR}/src/tier/TierBoardWidget.cpp"
+    "${PROJECT_SOURCE_DIR}/src/tier/TierBoardWidget.h"
 )
 
 qt_add_executable(tst_WindowLifecycle
@@ -62,6 +80,8 @@ qt_add_executable(tst_WindowLifecycle
     "${PROJECT_SOURCE_DIR}/src/preview/PreviewOverlay.h"
     "${PROJECT_SOURCE_DIR}/src/window/AppDialog.cpp"
     "${PROJECT_SOURCE_DIR}/src/window/AppDialog.h"
+    "${PROJECT_SOURCE_DIR}/src/widgets/PlatformDialogButtonBox.cpp"
+    "${PROJECT_SOURCE_DIR}/src/widgets/PlatformDialogButtonBox.h"
 )
 target_link_libraries(tst_WindowLifecycle PRIVATE
     qtiermaker_core
@@ -108,4 +128,8 @@ add_test(NAME tst_WindowResizePolicy COMMAND tst_WindowResizePolicy)
 
 qt_add_executable(tst_Resources tst_Resources.cpp "${PROJECT_SOURCE_DIR}/resources/resources.qrc")
 target_link_libraries(tst_Resources PRIVATE VkUI::Core Qt6::Core Qt6::Gui Qt6::Widgets Qt6::Test)
+target_compile_definitions(tst_Resources PRIVATE
+    QTM_TEST_TRANSLATION_FILE="${PROJECT_BINARY_DIR}/QTierMaker_zh_CN.qm"
+)
+add_dependencies(tst_Resources QTierMaker_lrelease)
 add_test(NAME tst_Resources COMMAND tst_Resources)

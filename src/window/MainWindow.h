@@ -2,9 +2,8 @@
 
 #include <QMainWindow>
 
-namespace vkui {
-class VkWindowAgent;
-}
+#include <vkui/widgets/panels/VPanelManager.h>
+#include <vkui/window/VWindowAgent.h>
 
 namespace qtm {
 
@@ -14,7 +13,6 @@ class LanguageManager;
 class ProjectRepository;
 class RecentProjectsStore;
 class RootWidget;
-class ThemeManager;
 class ThumbnailCache;
 class AppUpdater;
 
@@ -27,16 +25,17 @@ public:
                AssetManager* assetManager, ThumbnailCache* thumbnailCache, AppSettings* settings,
                LanguageManager* languageManager, AppUpdater* updater, QWidget* parent = nullptr);
 
-    vkui::VkWindowAgent* windowAgent() const {
-        return m_windowAgent;
-    }
+    vkui::VWindowAgent* windowAgent() { return &m_windowAgent; }
+    const vkui::VWindowAgent* windowAgent() const { return &m_windowAgent; }
 
 protected:
     void closeEvent(QCloseEvent* event) override;
 
 private:
-    vkui::VkWindowAgent* m_windowAgent{nullptr};
     RootWidget* m_root{nullptr};
+    vkui::VPanelManager m_panelManager;
+    // Declared last so native teardown precedes QMainWindow base destruction.
+    vkui::VWindowAgent m_windowAgent;
 };
 
 } // namespace qtm

@@ -1,14 +1,18 @@
-#include "tier/TierListLayout.h"
+#include "export/TierListExporter.h"
+#include "tier/ProjectHistory.h"
+#include "tier/TierBoardWidget.h"
 #include "tier/TierListDelegate.h"
 #include "tier/TierDragController.h"
+#include "tier/TierListLayout.h"
 #include "tier/TierListModel.h"
 #include "tier/TierListView.h"
-#include "tier/ProjectHistory.h"
 
 #include <QtTest>
 
 #include <QDragMoveEvent>
 #include <QDropEvent>
+#include <QImage>
+#include <QTemporaryDir>
 
 #include <limits>
 #include <memory>
@@ -31,6 +35,9 @@ private slots:
     void resettingViewStateEndsMissionControlImmediately();
     void imageDropClearsTransientVisualsBeforeModelMutation();
     void historyUndoRefreshesClearedRowModelData();
+    void boardExportRendersCurrentViewportAtRequestedScale();
+    void boardExporterWritesRenderedPng();
+    void boardExporterRejectsUnsupportedExtension();
 };
 
 namespace {
@@ -658,6 +665,65 @@ void TierListLayoutTest::galleryMissionControlHoverPreservesLocalityAndGap() {
              qPrintable(QStringLiteral("Radial rank correlation fell to %1 for hover %2.")
                             .arg(minimumRankCorrelation, 0, 'f', 3)
                             .arg(minimumRankCorrelationHover)));
+}
+
+void TierListLayoutTest::boardExportRendersCurrentViewportAtRequestedScale() {
+    TierProject project;
+    TierRow row;
+    row.id = QStringLiteral("row-1");
+    row.label = QStringLiteral("S");
+    project.rows.append(row);
+
+    TierBoardWidget board;
+    board.resize(640, 420);
+    board.setData(&project, nullptr, nullptr, {});
+
+    TierListExporter exporter;
+    ExportOptions options;
+    options.scale = 2;
+    const QImage image = exporter.renderBoard(&board, options);
+
+    QVERIFY(!image.isNull());
+    QCOMPARE(image.size(), QSize(1280, 840));
+    QCOMPARE(image.devicePixelRatio(), 2.0);
+}
+
+void TierListLayoutTest::boardExporterWritesRenderedPng() {
+    QTemporaryDir directory;
+    QVERIFY(directory.isValid());
+
+    TierProject project;
+    TierRow row;
+    row.id = QStringLiteral("row-1");
+    row.label = QStringLiteral("A");
+    project.rows.append(row);
+
+    TierBoardWidget board;
+    board.resize(240, 160);
+    board.setData(&project, nullptr, nullptr, {});
+
+    const QString path = directory.filePath(QStringLiteral("board.png"));
+    TierListExporter exporter;
+    ExportOptions options;
+    options.scale = 2;
+    const Result<void> result = exporter.exportBoard(&board, path, options);
+
+    QVERIFY2(result, qPrintable(result.error().message));
+    const QImage image(path);
+    QVERIFY(!image.isNull());
+    QCOMPARE(image.size(), QSize(480, 320));
+}
+
+void TierListLayoutTest::boardExporterRejectsUnsupportedExtension() {
+    TierProject project;
+    TierBoardWidget board;
+    board.resize(240, 160);
+    board.setData(&project, nullptr, nullptr, {});
+
+    TierListExporter exporter;
+    const Result<void> result =
+        exporter.exportBoard(&board, QStringLiteral("board.pdf"), ExportOptions{});
+    QVERIFY(!result);
 }
 
 QTEST_MAIN(TierListLayoutTest)

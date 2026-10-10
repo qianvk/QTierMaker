@@ -10,6 +10,7 @@
 #include "theme/Theme.h"
 #include "tier/CropEditorWidget.h"
 #include "widgets/DestructiveActionDialog.h"
+#include "widgets/PlatformDialogButtonBox.h"
 #include "widgets/TransferProgressWidget.h"
 #include "widgets/WrappingLabel.h"
 #include "window/AppDialog.h"
@@ -54,7 +55,7 @@
 #include <utility>
 
 #include <vkui/core/VkIcon.h>
-#include <vkui/widgets/VkComboBox.h>
+#include <vkui/widgets/VCombobox.h>
 
 namespace qtm {
 
@@ -575,9 +576,7 @@ public:
         actions->addStretch(1);
         contentLayout()->addLayout(actions);
 
-        auto* buttons =
-            new QDialogButtonBox(QDialogButtonBox::Cancel | QDialogButtonBox::Ok, this);
-        buttons->button(QDialogButtonBox::Ok)->setText(tr("Confirm"));
+        auto* buttons = PlatformDialogButtonBox::confirmCancel(tr("Confirm"), this);
         contentLayout()->addWidget(buttons);
         connect(m_chooseButton, &QPushButton::clicked, this, &ProjectCoverDialog::chooseImage);
         connect(m_clearButton, &QPushButton::clicked, this, &ProjectCoverDialog::stageClearCover);
@@ -705,11 +704,11 @@ ProjectsPage::ProjectsPage(ProjectRepository* repository, RecentProjectsStore* r
     m_search->setPlaceholderText(tr("Search"));
     m_search->addAction(vkui::icon(vkui::VkSymbol::Search, vkui::VkIconRole::Secondary),
                         QLineEdit::LeadingPosition);
-    m_sort = new QComboBox(this);
+    m_sort = new vkui::VCombobox(this);
     m_sort->addItems({tr("Last Edited"), tr("Name"), tr("Created"), tr("Path")});
     m_sort->setSizeAdjustPolicy(QComboBox::AdjustToContents);
     m_sort->setMaximumWidth(260);
-    vkui::setComboBoxElideMode(*m_sort, Qt::ElideRight);
+    m_sort->setElideMode(Qt::ElideRight);
     top->addWidget(m_openProjectButton);
     top->addWidget(m_search, 1);
     top->addWidget(m_sort);
@@ -890,7 +889,7 @@ void ProjectsPage::downloadSampleProject() {
             QDialogButtonBox::NoButton, this);
         QPushButton* keepBoth = dialog.addButton(tr("Keep Both"), QDialogButtonBox::AcceptRole);
         QPushButton* replace = dialog.addButton(tr("Replace"), QDialogButtonBox::DestructiveRole);
-        QPushButton* cancel = dialog.addButton(tr("Cancel"), QDialogButtonBox::RejectRole);
+        QPushButton* cancel = dialog.addButton(QDialogButtonBox::Cancel);
         dialog.setDefaultButton(cancel);
         dialog.setEscapeButton(cancel);
         dialog.exec();
@@ -1044,6 +1043,8 @@ void ProjectsPage::showProjectContextMenu(const QPoint& point) {
 
     QMenu menu(this);
     QAction* openAction = menu.addAction(vkui::icon(vkui::VkSymbol::Folder), tr("Open"));
+    QAction* exportAction =
+        menu.addAction(vkui::icon(vkui::VkSymbol::Share), tr("Export Image..."));
     QAction* saveAsAction =
         menu.addAction(vkui::icon(vkui::VkSymbol::Save), tr("Save As Project..."));
     QAction* renameAction = menu.addAction(vkui::icon(vkui::VkSymbol::Rename), tr("Rename"));
@@ -1055,8 +1056,8 @@ void ProjectsPage::showProjectContextMenu(const QPoint& point) {
     QAction* deleteAction = menu.addAction(
         vkui::icon(vkui::VkSymbol::Trash, vkui::VkIconRole::Destructive), tr("Delete Project"));
 
-    for (QAction* action :
-         {openAction, saveAsAction, renameAction, coverAction, revealAction, deleteAction}) {
+    for (QAction* action : {openAction, exportAction, saveAsAction, renameAction, coverAction,
+                            revealAction, deleteAction}) {
         action->setEnabled(exists);
     }
 
@@ -1064,6 +1065,10 @@ void ProjectsPage::showProjectContextMenu(const QPoint& point) {
     m_view->update(index);
     if (chosen == openAction) {
         openSelectedProject();
+    } else if (chosen == exportAction) {
+        Logger::info(
+            QStringLiteral("projects.context.export.requested path=\"%1\"").arg(entry.filePath));
+        emit exportProjectImageRequested(entry.filePath);
     } else if (chosen == saveAsAction) {
         saveSelectedProjectAs();
     } else if (chosen == renameAction) {
@@ -1107,9 +1112,7 @@ void ProjectsPage::renameSelectedProject() {
     form->setLabelAlignment(Qt::AlignLeft | Qt::AlignVCenter);
     form->addRow(tr("Project name"), nameEdit);
     dialog.contentLayout()->addLayout(form);
-    auto* buttons =
-        new QDialogButtonBox(QDialogButtonBox::Cancel | QDialogButtonBox::Ok, &dialog);
-    buttons->button(QDialogButtonBox::Ok)->setText(tr("Confirm"));
+    auto* buttons = PlatformDialogButtonBox::confirmCancel(tr("Confirm"), &dialog);
     dialog.contentLayout()->addWidget(buttons);
     connect(buttons, &QDialogButtonBox::rejected, &dialog, &QDialog::reject);
     connect(buttons, &QDialogButtonBox::accepted, &dialog, [&]() {

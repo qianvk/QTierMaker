@@ -2,11 +2,45 @@
   "version": 3,
   "configurePresets": [
     {
-      "name": "local-qt",
-      "inherits": "default",
-      "displayName": "Local Qt",
+      "name": "local-debug",
+      "inherits": "debug",
+      "displayName": "Local Qt Debug",
       "cacheVariables": {
-        "CMAKE_PREFIX_PATH": "/path/to/Qt/6.x.x/platform"
+        "CMAKE_PREFIX_PATH": "/absolute/path/to/Qt/6.10.1/platform"
+      }
+    },
+    {
+      "name": "local-release",
+      "inherits": "release",
+      "displayName": "Local Qt Release",
+      "cacheVariables": {
+        "CMAKE_PREFIX_PATH": "/absolute/path/to/Qt/6.10.1/platform"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "local-debug",
+      "configurePreset": "local-debug"
+    },
+    {
+      "name": "local-release",
+      "configurePreset": "local-release"
+    }
+  ],
+  "testPresets": [
+    {
+      "name": "local-debug",
+      "configurePreset": "local-debug",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "local-release",
+      "configurePreset": "local-release",
+      "output": {
+        "outputOnFailure": true
       }
     }
   ]

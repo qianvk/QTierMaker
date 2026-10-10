@@ -2,15 +2,15 @@
   "version": 3,
   "cmakeMinimumRequired": {
     "major": 3,
-    "minor": 21,
+    "minor": 24,
     "patch": 0
   },
   "configurePresets": [
     {
-      "name": "default",
-      "displayName": "Default Debug",
+      "name": "debug",
+      "displayName": "Debug",
       "generator": "Ninja",
-      "binaryDir": "${sourceDir}/build/default",
+      "binaryDir": "${sourceDir}/build/debug",
       "environment": {
         "CPATH": null,
         "C_INCLUDE_PATH": null,
@@ -18,28 +18,6 @@
       },
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
-        "CMAKE_PREFIX_PATH": "$env{HOME}/Qt/6.10.1/macos",
-        "QTM_BUILD_TESTS": "ON"
-      }
-    },
-    {
-      "name": "windows",
-      "displayName": "Windows Debug",
-      "generator": "Ninja",
-      "binaryDir": "${sourceDir}/build/windows-debug",
-      "condition": {
-        "type": "equals",
-        "lhs": "${hostSystemName}",
-        "rhs": "Windows"
-      },
-      "environment": {
-        "CPATH": null,
-        "C_INCLUDE_PATH": null,
-        "CPLUS_INCLUDE_PATH": null
-      },
-      "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Debug",
-        "CMAKE_PREFIX_PATH": "C:/Qt/6.10.1/msvc2022_64",
         "QTM_BUILD_TESTS": "ON"
       }
     },
@@ -55,36 +33,14 @@
       },
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
-        "CMAKE_PREFIX_PATH": "$env{HOME}/Qt/6.10.1/macos",
-        "QTM_BUILD_TESTS": "ON"
-      }
-    },
-    {
-      "name": "windows-release",
-      "displayName": "Windows Release",
-      "generator": "Ninja",
-      "binaryDir": "${sourceDir}/build/windows-release",
-      "condition": {
-        "type": "equals",
-        "lhs": "${hostSystemName}",
-        "rhs": "Windows"
-      },
-      "environment": {
-        "CPATH": null,
-        "C_INCLUDE_PATH": null,
-        "CPLUS_INCLUDE_PATH": null
-      },
-      "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Release",
-        "CMAKE_PREFIX_PATH": "C:/Qt/6.10.1/msvc2022_64",
         "QTM_BUILD_TESTS": "ON"
       }
     }
   ],
   "buildPresets": [
     {
-      "name": "default",
-      "configurePreset": "default",
+      "name": "debug",
+      "configurePreset": "debug",
       "environment": {
         "CPATH": null,
         "C_INCLUDE_PATH": null,
@@ -99,30 +55,12 @@
         "C_INCLUDE_PATH": null,
         "CPLUS_INCLUDE_PATH": null
       }
-    },
-    {
-      "name": "windows",
-      "configurePreset": "windows",
-      "environment": {
-        "CPATH": null,
-        "C_INCLUDE_PATH": null,
-        "CPLUS_INCLUDE_PATH": null
-      }
-    },
-    {
-      "name": "windows-release",
-      "configurePreset": "windows-release",
-      "environment": {
-        "CPATH": null,
-        "C_INCLUDE_PATH": null,
-        "CPLUS_INCLUDE_PATH": null
-      }
     }
   ],
   "testPresets": [
     {
-      "name": "default",
-      "configurePreset": "default",
+      "name": "debug",
+      "configurePreset": "debug",
       "environment": {
         "CPATH": null,
         "C_INCLUDE_PATH": null,
@@ -133,13 +71,12 @@
       }
     },
     {
-      "name": "windows",
-      "configurePreset": "windows",
+      "name": "release",
+      "configurePreset": "release",
       "environment": {
         "CPATH": null,
         "C_INCLUDE_PATH": null,
-        "CPLUS_INCLUDE_PATH": null,
-        "PATH": "C:/Qt/6.10.1/msvc2022_64/bin;$penv{PATH}"
+        "CPLUS_INCLUDE_PATH": null
       },
       "output": {
         "outputOnFailure": true

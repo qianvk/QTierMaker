@@ -1,10 +1,5 @@
-# VkUI's integrated window module deliberately uses Qt private platform APIs. Installers deploy
-# the exact Qt build used here, so suppress the generic warning after making that lock explicit.
-set(QT_NO_PRIVATE_MODULE_WARNING ON)
 find_package(Qt6 6.10.1 REQUIRED COMPONENTS
-    Core CorePrivate
-    Gui GuiPrivate
-    Widgets WidgetsPrivate
+    Core Gui Widgets
     Svg Network Concurrent Test LinguistTools
 )
 
@@ -23,7 +18,7 @@ set(VKUI_BUILD_EXAMPLES OFF CACHE BOOL "Build VkUI examples" FORCE)
 set(VKUI_BUILD_TESTS OFF CACHE BOOL "Build VkUI tests" FORCE)
 set(VKUI_BUILD_WINDOW ON CACHE BOOL "Build VkUI native window module" FORCE)
 set(VKUI_BUILD_INTERACTION OFF CACHE BOOL "Build unused VkUI interaction modules" FORCE)
-set(VKUI_BUILD_WINDOW_QUICK OFF CACHE BOOL "Build VkUI Qt Quick window module" FORCE)
+set(VKUI_BUILD_ICON_CHOSEN OFF CACHE BOOL "Build VkUI icon selection utility" FORCE)
 set(VKUI_INSTALL OFF CACHE BOOL "Install embedded VkUI" FORCE)
 set(VKUI_ENABLE_WARNINGS OFF CACHE BOOL "Use parent warning policy" FORCE)
 set(VKUI_EXPORT_COMPILE_COMMANDS ON CACHE BOOL "Export clangd database" FORCE)

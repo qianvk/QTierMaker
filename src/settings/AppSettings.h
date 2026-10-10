@@ -61,11 +61,6 @@ public:
     void previewLiquidGlassParameters(const LiquidGlassParameters& parameters);
     void setLiquidGlassParameters(const LiquidGlassParameters& parameters);
 
-    QString defaultExportFormat() const;
-    void setDefaultExportFormat(const QString& format);
-    int defaultExportScale() const;
-    void setDefaultExportScale(int scale);
-
     bool animationsEnabled() const;
     void setAnimationsEnabled(bool enabled);
     bool reducedMotion() const;

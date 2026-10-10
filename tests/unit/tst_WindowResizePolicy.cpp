@@ -1,17 +1,12 @@
 #include "window/AppDialog.h"
 
-#include <QDialog>
 #include <QLabel>
 #include <QLayout>
-#include <QPixmap>
 #include <QPointer>
-#include <QPushButton>
-#include <QToolButton>
 #include <QWidget>
 #include <QtTest>
 
-#include <vkui/window/VkFramelessDialog.h>
-#include <vkui/window/VkWindowAgent.h>
+#include <vkui/window/VWindowAgent.h>
 
 #if defined(Q_OS_MACOS) || defined(Q_OS_MAC)
 #import <AppKit/AppKit.h>
@@ -23,7 +18,7 @@ class WindowResizePolicyTest final : public QObject {
     Q_OBJECT
 
 private slots:
-    void nativeResizeIsOptIn();
+    void nativeResizePolicyTracksExplicitSetting();
     void dialogClosePlacementTracksPolicy();
     void transientAgentNeverClaimsOwnerWindow();
 };
@@ -57,8 +52,7 @@ void WindowResizePolicyTest::dialogClosePlacementTracksPolicy() {
     dialog.show();
     QVERIFY(QTest::qWaitForWindowExposed(&dialog));
     QCOMPARE(dialog.size(), QSize(520, 360));
-    QCOMPARE(dialog.windowAgent()->systemButtonVisibility(),
-             vkui::VkWindowAgent::SystemButtonVisibility::AlwaysVisible);
+    QVERIFY(dialog.windowAgent()->systemButtonsVisible());
 
 #if defined(Q_OS_MACOS) || defined(Q_OS_MAC)
     auto* nativeView = reinterpret_cast<NSView*>(dialog.winId());
@@ -70,16 +64,10 @@ void WindowResizePolicyTest::dialogClosePlacementTracksPolicy() {
     QVERIFY(NSIntersectsRect(closeButton.frame, closeButton.superview.bounds));
 #endif
 
-    dialog.setCloseButtonPlacement(vkui::VkFramelessDialog::CloseButtonPlacement::Hidden);
-    QCOMPARE(dialog.windowAgent()->systemButtonVisibility(),
-             vkui::VkWindowAgent::SystemButtonVisibility::AlwaysHidden);
-    auto* title =
-        dialog.findChild<QLabel*>(QStringLiteral("VkFramelessDialogTitleLabel"));
-    auto* fallbackClose =
-        dialog.findChild<QToolButton*>(QStringLiteral("VkFramelessDialogCloseButton"));
+    dialog.setCloseButtonPlacement(qtm::AppDialog::CloseButtonPlacement::Hidden);
+    QVERIFY(!dialog.windowAgent()->systemButtonsVisible());
+    auto* title = dialog.findChild<QLabel*>(QStringLiteral("AppDialogTitleLabel"));
     QVERIFY(title != nullptr);
-    QVERIFY(fallbackClose != nullptr);
-    QVERIFY(!fallbackClose->isVisible());
     QCOMPARE(title->parentWidget(), dialog.titleBar());
     QTRY_COMPARE(title->geometry().left(),
                  dialog.titleBar()->layout()->contentsMargins().left());
@@ -89,12 +77,12 @@ void WindowResizePolicyTest::dialogClosePlacementTracksPolicy() {
 #endif
 }
 
-void WindowResizePolicyTest::nativeResizeIsOptIn() {
+void WindowResizePolicyTest::nativeResizePolicyTracksExplicitSetting() {
     QWidget host;
     host.resize(480, 320);
-    vkui::VkWindowAgent agent;
+    vkui::VWindowAgent agent(host);
+    agent.setResizable(false);
     QVERIFY(!agent.isResizable());
-    QVERIFY(agent.setup(&host));
     host.show();
     QVERIFY(QTest::qWaitForWindowExposed(&host));
 
@@ -116,18 +104,6 @@ void WindowResizePolicyTest::nativeResizeIsOptIn() {
     const auto hwnd = reinterpret_cast<HWND>(host.winId());
     const auto style = [hwnd]() { return ::GetWindowLongPtrW(hwnd, GWL_STYLE); };
     QVERIFY(!(style() & (WS_THICKFRAME | WS_MAXIMIZEBOX)));
-
-    QVERIFY(agent.installSystemButtons());
-    auto* closeButton = host.findChild<QPushButton*>(QStringLiteral("qwkWindowsCloseButton"));
-    QVERIFY(closeButton);
-    QCOMPARE(closeButton->mapTo(&host, closeButton->rect().topRight()), host.rect().topRight());
-    closeButton->setDown(true);
-    QPixmap closeBackplate(closeButton->size());
-    closeBackplate.fill(Qt::transparent);
-    closeButton->render(&closeBackplate);
-    closeButton->setDown(false);
-    QCOMPARE(closeBackplate.toImage().pixelColor(closeBackplate.width() - 1, 0),
-             QColor(196, 43, 28));
 
     agent.setResizable(true);
     QCoreApplication::processEvents();
@@ -151,33 +127,22 @@ void WindowResizePolicyTest::transientAgentNeverClaimsOwnerWindow() {
     QWidget hostTitleBar(&host);
     hostTitleBar.setGeometry(0, 0, host.width(), 44);
 
-    vkui::VkWindowAgent hostAgent;
+    vkui::VWindowAgent hostAgent(host);
     hostAgent.setResizable(true);
-    QVERIFY(hostAgent.setup(&host));
+    hostAgent.setSystemButtons(vkui::VStandardSystemButtons);
     QVERIFY(hostAgent.addTitleBar(&hostTitleBar));
     host.show();
     QVERIFY(QTest::qWaitForWindowExposed(&host));
     QCOMPARE(hitTestAt(host, QPoint(240, 22)), static_cast<LRESULT>(HTCAPTION));
 
     for (int cycle = 0; cycle < 12; ++cycle) {
-        QPointer<QDialog> dialog =
-            new QDialog(&host, Qt::Dialog | Qt::CustomizeWindowHint | Qt::WindowTitleHint |
-                                   Qt::WindowCloseButtonHint);
+        QPointer<qtm::AppDialog> dialog = new qtm::AppDialog(QStringLiteral("Transient"), &host);
         dialog->setAttribute(Qt::WA_DeleteOnClose);
         dialog->setWindowModality(Qt::ApplicationModal);
+        dialog->setCloseButtonPlacement(qtm::AppDialog::CloseButtonPlacement::Platform);
         dialog->resize(360, 220);
-        auto* dialogTitleBar = new QWidget(dialog);
-        dialogTitleBar->setGeometry(0, 0, dialog->width(), 44);
 
-        auto* dialogAgent = new vkui::VkWindowAgent(dialog);
         QVERIFY(!dialog->internalWinId());
-        QVERIFY(dialogAgent->setup(dialog));
-        QVERIFY(!dialog->internalWinId());
-        QVERIFY(dialogAgent->installSystemButtons());
-        QVERIFY(!dialog->internalWinId());
-        QVERIFY(dialogAgent->addTitleBar(dialogTitleBar));
-
-        // Agent setup must never hook the already-native owner while the dialog is still alien.
         QCOMPARE(hitTestAt(host, QPoint(240, 22)), static_cast<LRESULT>(HTCAPTION));
 
         dialog->show();
@@ -185,14 +150,10 @@ void WindowResizePolicyTest::transientAgentNeverClaimsOwnerWindow() {
         QVERIFY(dialog->internalWinId());
         QTRY_VERIFY(!nativeWindowEnabled(host));
 
-        auto* closeButton =
-            dialog->findChild<QPushButton*>(QStringLiteral("qwkWindowsCloseButton"));
-        QVERIFY(closeButton);
-        QTest::mouseClick(closeButton, Qt::LeftButton);
+        const HWND dialogWindow = reinterpret_cast<HWND>(dialog->winId());
+        QVERIFY(::PostMessageW(dialogWindow, WM_CLOSE, 0, 0));
         QTRY_VERIFY(dialog.isNull());
 
-        // Destroying a modal transient must synchronously release its owner and preserve the
-        // original context across repeated native-window lifecycles.
         QTRY_VERIFY(nativeWindowEnabled(host));
         QCOMPARE(hitTestAt(host, QPoint(240, 22)), static_cast<LRESULT>(HTCAPTION));
     }

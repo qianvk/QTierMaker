@@ -177,8 +177,7 @@ public:
                 result = Surface::TierBoard;
                 break;
             }
-            if (current->inherits("qtm::SidebarView") || name == QStringLiteral("Sidebar") ||
-                name == QStringLiteral("SidebarShell")) {
+            if (current->inherits("qtm::SidebarView") || name == QStringLiteral("Sidebar")) {
                 result = Surface::Sidebar;
                 break;
             }

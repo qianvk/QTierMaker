@@ -5,6 +5,7 @@
 #include "settings/AppSettings.h"
 #include "tier/TierProject.h"
 
+#include <QImage>
 #include <QMetaObject>
 #include <QWidget>
 
@@ -36,6 +37,7 @@ public:
     void setToolTipsEnabled(bool enabled);
     void setOverviewBackdropEffect(BackdropEffect effect);
     void setLiquidGlassParameters(const LiquidGlassParameters& parameters);
+    QImage renderToImage(int scale = 1);
 
 signals:
     void imageDropped(const QString& imageId, const QString& rowId, int index);
@@ -47,6 +49,7 @@ signals:
     void imageRemoveFromGalleryRequested(const QString& imageId);
     void imagePresentationModeRequested(ImagePresentationMode mode);
     void resetRowsRequested();
+    void exportImageRequested();
     void rowEditRequested(const QString& rowId);
     void rowClearRequested(const QString& rowId);
     void rowDeleteRequested(const QString& rowId);

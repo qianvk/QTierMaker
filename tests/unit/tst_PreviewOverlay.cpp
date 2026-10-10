@@ -7,7 +7,7 @@
 #include <QWindow>
 #include <QtTest>
 
-#include <vkui/window/VkWindowAgent.h>
+#include <vkui/window/VWindowAgent.h>
 
 #if defined(Q_OS_WIN)
 #include <qt_windows.h>
@@ -116,14 +116,13 @@ void PreviewOverlayTest::windowChromeDoesNotStealPreviewInput() {
     QWidget titleBar(&host);
     titleBar.setGeometry(0, 0, host.width(), 44);
 
-    vkui::VkWindowAgent agent;
+    vkui::VWindowAgent agent(host);
     agent.setResizable(true);
-    QVERIFY(agent.setup(&host));
     QVERIFY(agent.addTitleBar(&titleBar));
 
     PreviewOverlay overlay(&host);
     overlay.setGeometry(host.rect());
-    QVERIFY(agent.setHitTestVisible(&titleBar, &overlay, true));
+    QVERIFY(agent.setHitTestVisible(&overlay, true));
 
     host.show();
     QVERIFY(QTest::qWaitForWindowExposed(&host));

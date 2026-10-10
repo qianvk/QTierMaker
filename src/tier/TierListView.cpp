@@ -41,6 +41,8 @@
 #include <utility>
 
 #include <vkui/core/VkIcon.h>
+#include <vkui/core/VkThemeChange.h>
+#include <vkui/core/VkThemeManager.h>
 
 namespace qtm {
 
@@ -436,6 +438,32 @@ TierListView::TierListView(QWidget* parent) : QListView(parent) {
     setAcceptDrops(true);
     viewport()->setAcceptDrops(true);
     setStyleSheet(QStringLiteral("QListView{background:transparent;outline:0;}"));
+
+    connect(vkui::VkThemeManager::instance(), &vkui::VkThemeManager::themeChanged, this,
+            [this](quint64 generation, vkui::VkThemeChanges changes) {
+                const bool colorsChanged = changes.testFlag(vkui::VkThemeChange::Colors);
+                const bool layoutChanged =
+                    changes.testFlag(vkui::VkThemeChange::Metrics) ||
+                    changes.testFlag(vkui::VkThemeChange::Typography);
+
+                if (colorsChanged) {
+                    // The mission backdrop owns theme-colored raster data and must not survive
+                    // an appearance switch. Normal rows read current VkUI tokens when repainted.
+                    m_missionBackdropCache.clear();
+                }
+                if (layoutChanged) {
+                    invalidateMissionControlLayout();
+                    QTimer::singleShot(0, this, [this]() { refreshLayoutMetrics(); });
+                }
+                if (viewport()) {
+                    viewport()->update();
+                }
+                Logger::debug(
+                    QStringLiteral("tier.list.theme.refresh generation=%1 colors=%2 layout=%3")
+                        .arg(generation)
+                        .arg(colorsChanged)
+                        .arg(layoutChanged));
+            });
 }
 
 void TierListView::setBlankAreaActions(BlankAreaAction doubleClickAction,
@@ -485,6 +513,11 @@ void TierListView::setLiquidGlassParameters(const LiquidGlassParameters& paramet
     if (viewport() && (m_missionControlActive || m_missionTransitionProgress > 0.001)) {
         viewport()->update();
     }
+}
+
+void TierListView::setExportRendering(bool enabled, qreal scale) {
+    m_exportRendering = enabled;
+    m_exportScale = enabled ? qBound<qreal>(1.0, scale, 4.0) : 1.0;
 }
 
 void TierListView::setMissionControlActive(bool active) {
@@ -1109,6 +1142,8 @@ void TierListView::contextMenuEvent(QContextMenuEvent* event) {
             std::any_of(project->rows.cbegin(), project->rows.cend(),
                         [](const TierRow& row) { return !row.imageIds.isEmpty(); });
         resetRowsAction->setEnabled(canResetRows);
+        QAction* exportAction =
+            menu.addAction(vkui::icon(vkui::VkSymbol::Share), tr("Export Image..."));
 
         QAction* chosen = menu.exec(event->globalPos());
         if (chosen == squareAction && currentMode != ImagePresentationMode::Square) {
@@ -1118,6 +1153,9 @@ void TierListView::contextMenuEvent(QContextMenuEvent* event) {
         } else if (chosen == resetRowsAction) {
             Logger::info(QStringLiteral("tier.list.context.rows.reset.requested"));
             emit resetRowsRequested();
+        } else if (chosen == exportAction) {
+            Logger::info(QStringLiteral("tier.list.context.export.requested"));
+            emit exportImageRequested();
         }
         event->accept();
         return;
@@ -1257,7 +1295,7 @@ void TierListView::paintEvent(QPaintEvent* event) {
         fill.setAlpha(34);
         painter.fillRect(placeholder, fill);
         if (TierListDelegate* delegate = tierDelegate()) {
-            const qreal dpr = viewport() ? viewport()->devicePixelRatioF() : devicePixelRatioF();
+            const qreal dpr = renderingDevicePixelRatio();
             const QSize targetPixels(qCeil(placeholder.width() * dpr),
                                      qCeil(placeholder.height() * dpr));
             const QPixmap pixmap = delegate->pixmapForImageId(m_imageDragId, targetPixels);
@@ -2651,7 +2689,7 @@ void TierListView::startMissionImageLiftDrag(const QString& imageId, const QPoin
     const QSize targetSize = targetViewportRect.isValid()
                                  ? targetViewportRect.size()
                                  : QSize(kInitialLayoutLineHeight, kInitialLayoutLineHeight);
-    const qreal dpr = viewport() ? viewport()->devicePixelRatioF() : devicePixelRatioF();
+    const qreal dpr = renderingDevicePixelRatio();
     QPixmap imagePixmap = delegate->fullPixmapForImageId(imageId);
     if (imagePixmap.isNull()) {
         imagePixmap = delegate->pixmapForImageId(imageId, targetSize * dpr);
@@ -3175,8 +3213,7 @@ void TierListView::paintMissionControl(QPainter* painter) {
             continue;
         }
 
-        const qreal deviceRatio =
-            viewport() ? viewport()->devicePixelRatioF() : devicePixelRatioF();
+        const qreal deviceRatio = renderingDevicePixelRatio();
         const QSizeF decodeSize = decodeSizes.value(tile.imageId, rect.size());
         const QSize targetPixelSize(qCeil(decodeSize.width() * deviceRatio),
                                     qCeil(decodeSize.height() * deviceRatio));
@@ -3195,8 +3232,9 @@ void TierListView::paintMissionControl(QPainter* painter) {
         }
         painter->restore();
 
-        const QColor stroke = tile.imageId == m_activeImageId ? colors.accent : colors.imageBorder;
-        painter->setPen(QPen(stroke, tile.imageId == m_activeImageId ? 2.0 : 1.0));
+        const bool selected = !m_exportRendering && tile.imageId == m_activeImageId;
+        const QColor stroke = selected ? colors.accent : colors.imageBorder;
+        painter->setPen(QPen(stroke, selected ? 2.0 : 1.0));
         painter->setBrush(Qt::NoBrush);
         painter->drawRoundedRect(rect.adjusted(0.5, 0.5, -0.5, -0.5), radius, radius);
     }
@@ -3356,8 +3394,7 @@ void TierListView::paintCanvasBackground(QPainter* painter) {
         painter->drawPixmap(iconTarget, m_defaultBackgroundIcon,
                             QRectF(m_defaultBackgroundIcon.rect()));
     } else {
-        const qreal deviceRatio =
-            viewport() ? viewport()->devicePixelRatioF() : devicePixelRatioF();
+        const qreal deviceRatio = renderingDevicePixelRatio();
         const QSize logicalSize(qMax(1, qCeil(contentBounds.width())),
                                 qMax(1, qCeil(contentBounds.height())));
         const QPixmap& cover =
@@ -3400,7 +3437,7 @@ void TierListView::paintMissionBackdrop(QPainter* painter) {
     }
 
     const QImage& source = m_canvasBackgroundCache.sourceImage(backgroundPath);
-    const qreal deviceRatio = viewport() ? viewport()->devicePixelRatioF() : devicePixelRatioF();
+    const qreal deviceRatio = renderingDevicePixelRatio();
     const QSize logicalSize(qMax(1, qCeil(bounds.width())),
                             qMax(1, qCeil(bounds.height())));
     const qreal sourceVisibility = canvasBackgroundVisibility(project);
@@ -3441,6 +3478,13 @@ QString TierListView::resolvedCanvasBackgroundPath() const {
         return QDir(QFileInfo(project->filePath).absolutePath()).filePath(storedPath);
     }
     return storedPath;
+}
+
+qreal TierListView::renderingDevicePixelRatio() const {
+    if (m_exportRendering) {
+        return m_exportScale;
+    }
+    return viewport() ? viewport()->devicePixelRatioF() : devicePixelRatioF();
 }
 
 bool TierListView::acceptsTierDrag(const QMimeData* mimeData) const {

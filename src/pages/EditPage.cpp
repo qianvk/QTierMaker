@@ -3,6 +3,7 @@
 #include "assets/CoverImageCache.h"
 #include "assets/ImageLoader.h"
 #include "widgets/DestructiveActionDialog.h"
+#include "widgets/PlatformDialogButtonBox.h"
 
 #include "logging/Logger.h"
 #include "pages/ProjectLocationDialog.h"
@@ -61,7 +62,7 @@
 #include <utility>
 
 #include <vkui/core/VkIcon.h>
-#include <vkui/widgets/overlays/VkPopover.h>
+#include <vkui/widgets/overlays/VPopover.h>
 
 namespace qtm {
 
@@ -259,12 +260,12 @@ public:
     enum Result { Rejected, Accepted };
 
     explicit BackgroundPopover(QWidget* parent = nullptr)
-        : QObject(parent), m_popover(std::make_unique<vkui::VkPopover>(parent)),
+        : QObject(parent), m_popover(std::make_unique<vkui::VPopover>(parent)),
           m_content(new QWidget) {
         m_content->setObjectName(QStringLiteral("BackgroundPopoverContent"));
-        m_popover->setPreferredPlacement(vkui::VkPopoverPlacement::Below);
+        m_popover->setPreferredPlacement(vkui::VPopoverPlacement::Below);
         m_popover->setContentWidget(m_content);
-        connect(m_popover.get(), &vkui::VkPopover::closed, this, [this]() {
+        connect(m_popover.get(), &vkui::VPopover::closed, this, [this]() {
             if (m_loop) {
                 m_loop->quit();
             }
@@ -283,11 +284,11 @@ public:
             return;
         }
         m_outsideDismissSuspended = suspended;
-        const auto normalPolicy = vkui::VkPopoverClosePolicyFlag::OutsideClick |
-                                  vkui::VkPopoverClosePolicyFlag::EscapeKey |
-                                  vkui::VkPopoverClosePolicyFlag::AnchorDestroyed |
-                                  vkui::VkPopoverClosePolicyFlag::WindowDeactivated;
-        m_popover->setClosePolicy(suspended ? vkui::VkPopoverClosePolicyFlag::AnchorDestroyed
+        const auto normalPolicy = vkui::VPopoverClosePolicyFlag::OutsideClick |
+                                  vkui::VPopoverClosePolicyFlag::EscapeKey |
+                                  vkui::VPopoverClosePolicyFlag::AnchorDestroyed |
+                                  vkui::VPopoverClosePolicyFlag::WindowDeactivated;
+        m_popover->setClosePolicy(suspended ? vkui::VPopoverClosePolicyFlag::AnchorDestroyed
                                             : normalPolicy);
         Logger::debug(QStringLiteral("tier.edit.background.popover.dismiss.suspended value=%1")
                           .arg(suspended));
@@ -348,7 +349,7 @@ protected:
     }
 
 private:
-    std::unique_ptr<vkui::VkPopover> m_popover;
+    std::unique_ptr<vkui::VPopover> m_popover;
     QWidget* m_content{nullptr};
     QPointer<QWidget> m_anchor;
     QEventLoop* m_loop{nullptr};
@@ -478,6 +479,19 @@ qreal canvasBackgroundVisibility(const QJsonObject& canvas) {
         1.0);
 }
 
+bool sameProjectFile(const QString& left, const QString& right) {
+    if (left.isEmpty() || right.isEmpty()) {
+        return false;
+    }
+#if defined(Q_OS_WIN)
+    constexpr Qt::CaseSensitivity sensitivity = Qt::CaseInsensitive;
+#else
+    constexpr Qt::CaseSensitivity sensitivity = Qt::CaseSensitive;
+#endif
+    return QDir::cleanPath(QFileInfo(left).absoluteFilePath())
+               .compare(QDir::cleanPath(QFileInfo(right).absoluteFilePath()), sensitivity) == 0;
+}
+
 } // namespace
 
 EditPage::EditPage(ProjectRepository* repository, RecentProjectsStore* recentProjects,
@@ -485,7 +499,7 @@ EditPage::EditPage(ProjectRepository* repository, RecentProjectsStore* recentPro
                    AppSettings* settings, QWidget* parent)
     : QWidget(parent), m_repository(repository), m_recentProjects(recentProjects),
       m_assetManager(assetManager), m_thumbnailCache(thumbnailCache), m_settings(settings),
-      m_exporter(new TierListExporter(assetManager, this)),
+      m_exporter(new TierListExporter(this)),
       m_project(TierProject::createUntitled()) {
     m_project = createProjectFromDefaultTemplate();
     m_project.dirty = false;
@@ -629,13 +643,13 @@ void EditPage::showTemplateMenu(QWidget* anchor) {
     title->setFont(titleFont);
     layout->addWidget(title);
 
-    auto* popover = new vkui::VkPopover(this);
+    auto* popover = new vkui::VPopover(this);
     m_templatePopover = popover;
-    popover->setPreferredPlacement(vkui::VkPopoverPlacement::Below);
+    popover->setPreferredPlacement(vkui::VPopoverPlacement::Below);
     popover->setContentWidget(content);
-    QPointer<vkui::VkPopover> popoverGuard(popover);
+    QPointer<vkui::VPopover> popoverGuard(popover);
     QPointer<QWidget> anchorGuard(anchor);
-    connect(popover, &vkui::VkPopover::closed, this, [this, popover]() {
+    connect(popover, &vkui::VPopover::closed, this, [this, popover]() {
         if (m_templatePopover == popover) {
             m_templatePopover = nullptr;
             m_templatePopoverAnchor = nullptr;
@@ -895,18 +909,53 @@ void EditPage::importImages(const QStringList& filePaths) {
 }
 
 void EditPage::exportProjectFromDialog() {
+    exportBoardFromDialog(m_board, m_project.name);
+}
+
+void EditPage::exportProjectFromPath(const QString& filePath) {
+    if (filePath.isEmpty() || !m_repository) {
+        return;
+    }
+    if (sameProjectFile(filePath, m_project.filePath)) {
+        exportProjectFromDialog();
+        return;
+    }
+
+    auto result = m_repository->openProject(filePath);
+    if (!result) {
+        showError(tr("Export Failed"), result.error());
+        return;
+    }
+
+    TierProject project = result.takeValue();
+    TierBoardWidget exportBoard;
+    exportBoard.setAttribute(Qt::WA_DontShowOnScreen);
+    exportBoard.resize(m_board && !m_board->size().isEmpty() ? m_board->size()
+                                                             : QSize(1200, 760));
+    exportBoard.setData(&project, m_assetManager, m_thumbnailCache, {});
+    exportBoardFromDialog(&exportBoard, project.name);
+}
+
+void EditPage::exportBoardFromDialog(TierBoardWidget* board, const QString& suggestedName) {
+    if (!board) {
+        return;
+    }
     ExportOptions options;
-    options.scale = m_settings ? m_settings->defaultExportScale() : 2;
-    const QString format = m_settings ? m_settings->defaultExportFormat() : QStringLiteral("png");
-    options.format = ExportOptions::formatFromSuffix(format);
-    const QString suggested = QFileInfo(m_project.suggestedFileName()).completeBaseName() +
+    options.scale = 2;
+    const QString suggested = ProjectFileLayout::sanitizedStem(suggestedName) +
                               QStringLiteral(".") + ExportOptions::suffixForFormat(options.format);
-    const QString path = QFileDialog::getSaveFileName(this, tr("Export Tier List"), suggested,
-                                                      tr("PNG (*.png);;JPEG (*.jpg);;PDF (*.pdf)"));
+    QString selectedFilter;
+    QString path = QFileDialog::getSaveFileName(this, tr("Export Image"), suggested,
+                                                tr("PNG (*.png);;JPEG (*.jpg *.jpeg)"),
+                                                &selectedFilter);
     if (path.isEmpty()) {
         return;
     }
-    auto result = m_exporter->exportProject(m_project, path, options);
+    if (QFileInfo(path).suffix().isEmpty()) {
+        path += selectedFilter.startsWith(QStringLiteral("JPEG")) ? QStringLiteral(".jpg")
+                                                                  : QStringLiteral(".png");
+    }
+    auto result = m_exporter->exportBoard(board, path, options);
     if (!result) {
         showError(tr("Export Failed"), result.error());
     }
@@ -1037,9 +1086,7 @@ void EditPage::configureBackground(QWidget* anchor) {
     layout->addWidget(opacityLabel);
     layout->addWidget(opacitySlider);
 
-    auto* buttons =
-        new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, popoverContent);
-    buttons->button(QDialogButtonBox::Ok)->setText(tr("Confirm"));
+    auto* buttons = PlatformDialogButtonBox::confirmCancel(tr("Confirm"), popoverContent);
     layout->addWidget(buttons);
 
     connect(choose, &QPushButton::clicked, &dialog, [&]() {
@@ -1472,6 +1519,8 @@ void EditPage::buildUi() {
     connect(m_board, &TierBoardWidget::imagePresentationModeRequested, this,
             &EditPage::setImagePresentationMode);
     connect(m_board, &TierBoardWidget::resetRowsRequested, this, &EditPage::resetRows);
+    connect(m_board, &TierBoardWidget::exportImageRequested, this,
+            &EditPage::exportProjectFromDialog);
     connect(m_board, &TierBoardWidget::imageSelected, this, &EditPage::setSelectedImageId);
     connect(m_board, &TierBoardWidget::imagePreviewRequested, this,
             [this](const QString& imageId, const QRect& source) {
@@ -1836,8 +1885,8 @@ bool EditPage::saveManagedTemplateFromPrompt(QWidget* reopenAnchor) {
     form->addRow(tr("Template name"), nameEdit);
     dialog.contentLayout()->addLayout(form);
 
-    auto* buttons =
-        new QDialogButtonBox(QDialogButtonBox::Cancel | QDialogButtonBox::Save, &dialog);
+    auto* buttons = new PlatformDialogButtonBox(
+        QDialogButtonBox::Save | QDialogButtonBox::Cancel, &dialog);
     dialog.contentLayout()->addWidget(buttons);
     connect(buttons, &QDialogButtonBox::rejected, &dialog, &QDialog::reject);
     connect(buttons, &QDialogButtonBox::accepted, &dialog, [&]() {

@@ -6,17 +6,20 @@
 #include <QPointer>
 #include <QWidget>
 
-#include <vkui/window/VkWindowAgent.h>
+#include <vkui/window/VWindowAgent.h>
 
 class QFrame;
 class QDialog;
 class QResizeEvent;
 class QShowEvent;
-class QSplitter;
 class QStackedWidget;
 class QToolButton;
 class QVBoxLayout;
-class QVariantAnimation;
+
+namespace vkui {
+class VPanelManager;
+class VSplitter;
+}
 
 namespace qtm {
 
@@ -29,9 +32,7 @@ class PreviewOverlay;
 class ProjectRepository;
 class ProjectsPage;
 class RecentProjectsStore;
-class SidebarToggleButton;
 class SidebarView;
-class ThemeManager;
 class ThumbnailCache;
 class AppUpdater;
 class UpdateButton;
@@ -43,13 +44,14 @@ class RootWidget : public QWidget {
 public:
     RootWidget(ProjectRepository* repository, RecentProjectsStore* recentProjects,
                AssetManager* assetManager, ThumbnailCache* thumbnailCache, AppSettings* settings,
-               LanguageManager* languageManager, AppUpdater* updater, QWidget* parent = nullptr);
+               LanguageManager* languageManager, AppUpdater* updater,
+               vkui::VPanelManager& panelManager, QWidget* parent = nullptr);
 
     AppTitleBar* titleBar() const {
         return m_titleBar;
     }
     bool confirmClose();
-    void installWindowAgent(vkui::VkWindowAgent* agent);
+    void installWindowAgent(vkui::VWindowAgent* agent);
 
 public slots:
     void switchToPage(AppPage page);
@@ -73,16 +75,17 @@ private:
     QFrame* createContent(ProjectRepository* repository, RecentProjectsStore* recentProjects,
                           AssetManager* assetManager, ThumbnailCache* thumbnailCache,
                           AppSettings* settings);
-    void setSidebarCollapsed(bool collapsed);
-    void setSidebarWidth(int width);
+    void resizeExpandedSidebar(int width);
     void synchronizeInitialLayout();
+    [[nodiscard]] int sidebarPanelExtent() const;
+    void synchronizeSidebarGeometry(bool force = false);
     void syncSidebarPresentation(int sidebarWidth);
-    void layoutSidebarSurface();
     void layoutTitleBars();
-    void layoutSidebarToggleButton();
+    void layoutSidebarTitleButton();
     void updateTitleBarLeadingReservation();
     void refreshUpdateButton();
-    int minimumSidebarToggleX() const;
+    int minimumSidebarButtonX() const;
+    void setPanelControlsVisible(bool visible);
     void setTierFocusMode(bool enabled);
     void showPreferencesDialog();
     int stackIndexForPage(AppPage page) const;
@@ -90,10 +93,11 @@ private:
     void setActiveProjectAvailable(bool available);
     void updateUnsavedIndicators();
 
+    vkui::VPanelManager& m_panelManager;
     AppTitleBar* m_titleBar{nullptr};
-    vkui::VkWindowAgent* m_windowAgent{nullptr};
-    QSplitter* m_splitter{nullptr};
-    QFrame* m_sidebarShell{nullptr};
+    QPointer<vkui::VWindowAgent> m_windowAgent;
+    vkui::VSplitter* m_splitter{nullptr};
+    QPointer<QWidget> m_sidebarSlot;
     QFrame* m_sidebar{nullptr};
     QFrame* m_content{nullptr};
     QWidget* m_sidebarTitleBar{nullptr};
@@ -101,10 +105,8 @@ private:
     SidebarModel* m_sidebarModel{nullptr};
     SidebarView* m_sidebarView{nullptr};
     QToolButton* m_newProjectButton{nullptr};
-    SidebarToggleButton* m_sidebarToggleButton{nullptr};
     QToolButton* m_preferencesButton{nullptr};
     UpdateButton* m_updateButton{nullptr};
-    QVariantAnimation* m_sidebarAnimation{nullptr};
     QStackedWidget* m_pages{nullptr};
     EditPage* m_editPage{nullptr};
     ProjectsPage* m_projectsPage{nullptr};
@@ -115,17 +117,13 @@ private:
     AppUpdater* m_updater{nullptr};
     AppPage m_currentPage{AppPage::Projects};
     bool m_hasActiveProject{false};
-    bool m_sidebarCollapsed{false};
     bool m_tierFocusMode{false};
-    vkui::VkWindowAgent::SystemButtonVisibility m_savedSystemButtonVisibility{
-        vkui::VkWindowAgent::SystemButtonVisibility::AlwaysVisible};
-    vkui::VkWindowAgent::SystemButtonVisibility m_previewSavedSystemButtonVisibility{
-        vkui::VkWindowAgent::SystemButtonVisibility::AlwaysVisible};
+    bool m_savedSystemButtonsVisible{true};
+    bool m_previewSavedSystemButtonsVisible{true};
     bool m_previewSystemButtonStateCaptured{false};
     int m_currentSidebarWidth{0};
-    int m_lastExpandedSidebarWidth{240};
-    int m_focusSavedSidebarWidth{240};
-    bool m_focusSavedSidebarCollapsed{false};
+    bool m_focusSavedNavigationExpanded{true};
+    bool m_focusSavedContentExpanded{true};
     bool m_initialLayoutSynced{false};
     QPointer<QWidget> m_focusMoveWindow;
     QPoint m_focusMoveOffset;

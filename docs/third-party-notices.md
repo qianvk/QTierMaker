@@ -6,10 +6,11 @@ QTierMaker uses Qt 6 modules including Core, Gui, Widgets, Svg, Concurrent, and 
 
 ## VkUI
 
-QTierMaker uses VkUI for semantic icons, standard Qt Widgets styling, switches, motion, and
-native window management. VkUI is licensed under MIT and its integrated window module contains
-modified QWindowKit-derived code under Apache-2.0. See https://github.com/qianvk/vkui for the
-complete license and third-party notices.
+QTierMaker uses VkUI for semantic icons, standard Qt Widgets styling, controls, motion, and
+native window management. VkUI is licensed under MIT. Its active window module uses VkUI-owned
+AppKit and Win32 backends; the repository retains older Apache-2.0 QWindowKit source only as
+uncompiled reference material. See https://github.com/qianvk/vkui for the complete license and
+third-party notices.
 
 ## AndroidLiquidGlass
 

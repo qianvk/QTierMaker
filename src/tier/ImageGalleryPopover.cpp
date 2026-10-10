@@ -27,7 +27,7 @@
 #include <vkui/core/VkIcon.h>
 #include <vkui/core/VkTheme.h>
 #include <vkui/core/VkThemeManager.h>
-#include <vkui/widgets/overlays/VkPopover.h>
+#include <vkui/widgets/overlays/VPopover.h>
 
 namespace qtm {
 
@@ -374,12 +374,12 @@ private:
 };
 
 ImageGalleryPopover::ImageGalleryPopover(QWidget* parent)
-    : QWidget(nullptr), m_grid(new GalleryGridWidget(this)), m_popover(new vkui::VkPopover(parent)),
+    : QWidget(nullptr), m_grid(new GalleryGridWidget(this)), m_popover(new vkui::VPopover(parent)),
       m_hostWindow(parent ? parent->window() : nullptr) {
     setObjectName(QStringLiteral("ImageGalleryPopover"));
-    m_popover->setPreferredPlacement(vkui::VkPopoverPlacement::Below);
+    m_popover->setPreferredPlacement(vkui::VPopoverPlacement::Below);
     m_popover->setContentWidget(this);
-    connect(m_popover, &vkui::VkPopover::closed, this, [this]() {
+    connect(m_popover, &vkui::VPopover::closed, this, [this]() {
         if (!m_suspendedForPreview) {
             emit closed();
         } else {
@@ -439,11 +439,11 @@ void ImageGalleryPopover::setOutsideDismissSuspended(bool suspended) {
     }
     m_outsideDismissSuspended = suspended;
     if (m_popover) {
-        const auto normalPolicy = vkui::VkPopoverClosePolicyFlag::OutsideClick |
-                                  vkui::VkPopoverClosePolicyFlag::EscapeKey |
-                                  vkui::VkPopoverClosePolicyFlag::AnchorDestroyed |
-                                  vkui::VkPopoverClosePolicyFlag::WindowDeactivated;
-        m_popover->setClosePolicy(suspended ? vkui::VkPopoverClosePolicyFlag::AnchorDestroyed
+        const auto normalPolicy = vkui::VPopoverClosePolicyFlag::OutsideClick |
+                                  vkui::VPopoverClosePolicyFlag::EscapeKey |
+                                  vkui::VPopoverClosePolicyFlag::AnchorDestroyed |
+                                  vkui::VPopoverClosePolicyFlag::WindowDeactivated;
+        m_popover->setClosePolicy(suspended ? vkui::VPopoverClosePolicyFlag::AnchorDestroyed
                                             : normalPolicy);
     }
     Logger::debug(QStringLiteral("tier.gallery.popover.dismiss.suspended value=%1").arg(suspended));

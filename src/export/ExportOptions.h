@@ -1,24 +1,20 @@
 #pragma once
 
-#include <QColor>
 #include <QString>
 
 namespace qtm {
 
-enum class ExportFormat { Png, Jpeg, Pdf };
+enum class ExportFormat { Png, Jpeg };
 
-/** User-selected export options for image/PDF rendering. */
+/** Options for exporting the board exactly as it is currently laid out. */
 class ExportOptions {
 public:
     ExportFormat format{ExportFormat::Png};
     int scale{2};
-    bool transparentBackground{false};
-    bool includeTitle{true};
-    QColor backgroundColor{QColor(QStringLiteral("#ffffff"))};
+    int jpegQuality{94};
 
     static ExportFormat formatFromSuffix(const QString& suffix);
     static QString suffixForFormat(ExportFormat format);
 };
 
 } // namespace qtm
-

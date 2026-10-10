@@ -15,6 +15,7 @@
 #include <QFrame>
 #include <QGraphicsOpacityEffect>
 #include <QHBoxLayout>
+#include <QKeySequence>
 #include <QLabel>
 #include <QListWidget>
 #include <QPainter>
@@ -33,9 +34,9 @@
 #include <functional>
 
 #include <vkui/core/VkIcon.h>
-#include <vkui/widgets/VkComboBox.h>
-#include <vkui/widgets/controls/VkSlider.h>
-#include <vkui/widgets/controls/VkSwitch.h>
+#include <vkui/widgets/VCombobox.h>
+#include <vkui/widgets/controls/VSlider.h>
+#include <vkui/widgets/controls/VSwitch.h>
 
 #ifndef QTM_APP_VERSION
 #define QTM_APP_VERSION "0.2.0"
@@ -50,13 +51,14 @@ namespace qtm {
 namespace {
 constexpr int kUpdateBadgeRole = Qt::UserRole + 41;
 constexpr int kGeneralPageIndex = 0;
-constexpr int kLiquidGlassPageIndex = 1;
-constexpr int kUpdatePageIndex = 2;
-constexpr int kAboutPageIndex = 3;
+constexpr int kShortcutsPageIndex = 1;
+constexpr int kLiquidGlassPageIndex = 2;
+constexpr int kUpdatePageIndex = 3;
+constexpr int kAboutPageIndex = 4;
 
 struct ParameterSlider final {
     QWidget* widget{nullptr};
-    vkui::VkSlider* slider{nullptr};
+    vkui::VSlider* slider{nullptr};
     QLabel* valueLabel{nullptr};
     qreal maximum{1.0};
     int steps{1000};
@@ -120,13 +122,13 @@ void configureAdaptiveField(QWidget* widget) {
     if (!widget) {
         return;
     }
-    if (qobject_cast<vkui::VkSwitch*>(widget)) {
+    if (qobject_cast<vkui::VSwitch*>(widget)) {
         widget->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
         return;
     }
-    if (auto* comboBox = qobject_cast<QComboBox*>(widget)) {
+    if (auto* comboBox = qobject_cast<vkui::VCombobox*>(widget)) {
         comboBox->setSizeAdjustPolicy(QComboBox::AdjustToContents);
-        vkui::setComboBoxElideMode(*comboBox, Qt::ElideRight);
+        comboBox->setElideMode(Qt::ElideRight);
     }
     widget->setMinimumWidth(164);
     widget->setMaximumWidth(260);
@@ -195,6 +197,43 @@ QWidget* createSettingRow(const QString& title, QWidget* control, QWidget* paren
     return row;
 }
 
+Qt::KeyboardModifier physicalControlModifier() {
+#if defined(Q_OS_MACOS) || defined(Q_OS_MAC)
+    return Qt::MetaModifier;
+#else
+    return Qt::ControlModifier;
+#endif
+}
+
+QString nativeShortcut(const QKeySequence& sequence) {
+    return sequence.toString(QKeySequence::NativeText);
+}
+
+QWidget* createShortcutRow(const QString& action, const QKeySequence& sequence, QWidget* parent) {
+    auto* row = new QWidget(parent);
+    row->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Minimum);
+    auto* layout = new QHBoxLayout(row);
+    layout->setContentsMargins(0, 2, 0, 2);
+    layout->setSpacing(18);
+
+    auto* actionLabel = new QLabel(action, row);
+    actionLabel->setWordWrap(true);
+    actionLabel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+
+    auto* shortcutLabel = new QLabel(nativeShortcut(sequence), row);
+    shortcutLabel->setObjectName(QStringLiteral("ShortcutSequenceLabel"));
+    shortcutLabel->setAlignment(Qt::AlignCenter);
+    shortcutLabel->setTextFormat(Qt::PlainText);
+    shortcutLabel->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed);
+    shortcutLabel->setStyleSheet(QStringLiteral(
+        "QLabel#ShortcutSequenceLabel{background:palette(alternate-base);"
+        "border:1px solid palette(midlight);border-radius:5px;padding:4px 8px;}"));
+
+    layout->addWidget(actionLabel, 1);
+    layout->addWidget(shortcutLabel, 0, Qt::AlignRight | Qt::AlignVCenter);
+    return row;
+}
+
 ParameterSlider createParameterSlider(qreal value, qreal maximum, int steps,
                                       const std::function<QString(qreal)>& formatter,
                                       QWidget* parent) {
@@ -203,7 +242,7 @@ ParameterSlider createParameterSlider(qreal value, qreal maximum, int steps,
     layout->setContentsMargins(0, 0, 0, 0);
     layout->setSpacing(10);
 
-    auto* slider = new vkui::VkSlider(Qt::Horizontal, field);
+    auto* slider = new vkui::VSlider(Qt::Horizontal, field);
     slider->setRange(0, steps);
     // Keep the public value synchronized with the handle while it is dragged so live
     // Liquid Glass consumers never restart from the last released position.
@@ -249,7 +288,8 @@ PreferencesPage::PreferencesPage(AppSettings* settings, LanguageManager* languag
     body->setSpacing(18);
 
     m_nav = new QListWidget(this);
-    m_nav->addItems({tr("General"), tr("Liquid Glass"), tr("Updates"), tr("About")});
+    m_nav->addItems(
+        {tr("General"), tr("Keyboard Shortcuts"), tr("Liquid Glass"), tr("Updates"), tr("About")});
     m_nav->setMinimumWidth(150);
     m_nav->setMaximumWidth(300);
     m_nav->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
@@ -265,6 +305,7 @@ PreferencesPage::PreferencesPage(AppSettings* settings, LanguageManager* languag
     m_stack = new QStackedWidget(this);
     m_stack->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     m_stack->addWidget(createScrollablePage(createGeneralPage()));
+    m_stack->addWidget(createScrollablePage(createShortcutsPage()));
     m_stack->addWidget(createScrollablePage(createLiquidGlassPage()));
     m_stack->addWidget(createScrollablePage(createUpdatePage()));
     m_stack->addWidget(createScrollablePage(createAboutPage()));
@@ -362,6 +403,7 @@ void PreferencesPage::retranslateUi() {
     }
     int row = qBound(0, m_nav->currentRow(), kAboutPageIndex);
     m_nav->item(kGeneralPageIndex)->setText(tr("General"));
+    m_nav->item(kShortcutsPageIndex)->setText(tr("Keyboard Shortcuts"));
     m_nav->item(kLiquidGlassPageIndex)->setText(tr("Liquid Glass"));
     m_nav->item(kUpdatePageIndex)->setText(tr("Updates"));
     m_nav->item(kAboutPageIndex)->setText(tr("About"));
@@ -398,6 +440,7 @@ void PreferencesPage::rebuildPreferencePages() {
     m_installUpdateButton = nullptr;
     m_openUpdateButton = nullptr;
     m_stack->addWidget(createScrollablePage(createGeneralPage()));
+    m_stack->addWidget(createScrollablePage(createShortcutsPage()));
     m_stack->addWidget(createScrollablePage(createLiquidGlassPage()));
     m_stack->addWidget(createScrollablePage(createUpdatePage()));
     m_stack->addWidget(createScrollablePage(createAboutPage()));
@@ -537,7 +580,7 @@ QWidget* PreferencesPage::createGeneralPage() {
     settingsLayout->setContentsMargins(0, 0, 0, 0);
     settingsLayout->setSpacing(12);
 
-    auto* language = new QComboBox(page);
+    auto* language = new vkui::VCombobox(page);
     language->addItem(tr("System"), QStringLiteral("system"));
     language->addItem(QStringLiteral("English"), QStringLiteral("en"));
     language->addItem(QStringLiteral("简体中文"), QStringLiteral("zh_CN"));
@@ -552,7 +595,7 @@ QWidget* PreferencesPage::createGeneralPage() {
             });
     settingsLayout->addWidget(createSettingRow(tr("Language"), language, page));
 
-    auto* appearance = new QComboBox(page);
+    auto* appearance = new vkui::VCombobox(page);
     appearance->addItems({tr("System"), tr("Light"), tr("Dark")});
     appearance->setCurrentIndex(enumIndex(m_settings->appearance()));
     connect(appearance, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
@@ -560,7 +603,7 @@ QWidget* PreferencesPage::createGeneralPage() {
     settingsLayout->addWidget(createSettingRow(tr("Appearance"), appearance, page));
 
     const auto createBackdropEffectCombo = [this, page](BackdropEffect effect) {
-        auto* combo = new QComboBox(page);
+        auto* combo = new vkui::VCombobox(page);
         combo->addItem(tr("Depth Soft Focus"),
                        static_cast<int>(BackdropEffect::DepthSoftFocus));
         combo->addItem(tr("Liquid Glass"), static_cast<int>(BackdropEffect::LiquidGlass));
@@ -571,7 +614,7 @@ QWidget* PreferencesPage::createGeneralPage() {
     auto* previewEffect = createBackdropEffectCombo(m_settings->previewEffect());
     settingsLayout->addWidget(createSettingRow(tr("Preview effect"), previewEffect, page));
 
-    auto* previewBackground = new QComboBox(page);
+    auto* previewBackground = new vkui::VCombobox(page);
     previewBackground->addItem(tr("None"), static_cast<int>(PreviewBackgroundMode::None));
     previewBackground->addItem(tr("Image"), static_cast<int>(PreviewBackgroundMode::SelfImage));
     previewBackground->setCurrentIndex(qMax(
@@ -616,7 +659,7 @@ QWidget* PreferencesPage::createGeneralPage() {
         combo->setCurrentIndex(qMax(0, index));
     };
 
-    auto* blankDoubleClick = new QComboBox(page);
+    auto* blankDoubleClick = new vkui::VCombobox(page);
     addBlankAreaActionItems(blankDoubleClick);
     setBlankAreaActionIndex(blankDoubleClick, m_settings->blankDoubleClickAction());
     connect(blankDoubleClick, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
@@ -627,7 +670,7 @@ QWidget* PreferencesPage::createGeneralPage() {
     settingsLayout->addWidget(
         createSettingRow(tr("Empty tier area double-click"), blankDoubleClick, page));
 
-    auto* blankLongPress = new QComboBox(page);
+    auto* blankLongPress = new vkui::VCombobox(page);
     addBlankAreaActionItems(blankLongPress);
     setBlankAreaActionIndex(blankLongPress, m_settings->blankLongPressAction());
     connect(blankLongPress, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
@@ -638,14 +681,14 @@ QWidget* PreferencesPage::createGeneralPage() {
     settingsLayout->addWidget(
         createSettingRow(tr("Empty tier area long press"), blankLongPress, page));
 
-    auto* tierListToolTips = new vkui::VkSwitch(page);
+    auto* tierListToolTips = new vkui::VSwitch(page);
     tierListToolTips->setAccessibleName(tr("Show tier list tooltips"));
     tierListToolTips->setChecked(m_settings->tierListToolTipsEnabled());
     connect(tierListToolTips, &QAbstractButton::toggled, m_settings,
             &AppSettings::setTierListToolTipsEnabled);
     settingsLayout->addWidget(createSettingRow(tr("Tier list tooltips"), tierListToolTips, page));
 
-    auto* autosave = new vkui::VkSwitch(page);
+    auto* autosave = new vkui::VSwitch(page);
     autosave->setAccessibleName(tr("Enable autosave"));
     autosave->setChecked(m_settings->autosaveEnabled());
     settingsLayout->addWidget(createSettingRow(tr("Save behavior"), autosave, page));
@@ -711,7 +754,7 @@ QWidget* PreferencesPage::createGeneralPage() {
     });
     settingsLayout->addWidget(projectFolderRow);
 
-    auto* autoUpdate = new vkui::VkSwitch(page);
+    auto* autoUpdate = new vkui::VSwitch(page);
     autoUpdate->setAccessibleName(tr("Enable automatic update checks"));
     autoUpdate->setChecked(m_settings->autoUpdateEnabled());
     connect(autoUpdate, &QAbstractButton::toggled, this,
@@ -720,6 +763,45 @@ QWidget* PreferencesPage::createGeneralPage() {
 
     layout->addWidget(new SectionHeader(tr("General"), page));
     layout->addLayout(settingsLayout);
+    layout->addStretch();
+    return page;
+}
+
+QWidget* PreferencesPage::createShortcutsPage() {
+    auto* page = new QWidget(this);
+    page->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+    auto* layout = new QVBoxLayout(page);
+    layout->setContentsMargins(16, 0, 0, 0);
+    layout->setSpacing(10);
+    layout->addWidget(new SectionHeader(tr("Keyboard Shortcuts"), page));
+
+    const auto addShortcut = [layout, page](const QString& action,
+                                             const QKeySequence& sequence) {
+        layout->addWidget(createShortcutRow(action, sequence, page));
+    };
+    addShortcut(tr("New project"), QKeySequence::New);
+    addShortcut(tr("Open project"), QKeySequence::Open);
+    addShortcut(tr("Save project"), QKeySequence::Save);
+    addShortcut(tr("Undo"), QKeySequence::Undo);
+    addShortcut(tr("Redo"), QKeySequence::Redo);
+    addShortcut(tr("Tier image overview"),
+                QKeySequence(QKeyCombination(physicalControlModifier(), Qt::Key_I)));
+    addShortcut(tr("Gallery overview"),
+                QKeySequence(QKeyCombination(physicalControlModifier(), Qt::Key_P)));
+    addShortcut(tr("Export image"), QKeySequence(Qt::CTRL | Qt::Key_E));
+    addShortcut(tr("Open preferences"), QKeySequence(Qt::CTRL | Qt::Key_Comma));
+    addShortcut(tr("Preview selected or hovered image"), QKeySequence(Qt::Key_Space));
+    addShortcut(tr("Remove selected image"), QKeySequence::Delete);
+    addShortcut(tr("Close preview or transient interface"), QKeySequence(Qt::Key_Escape));
+
+    auto* controlNote = new QLabel(
+        tr("Tier and gallery overview shortcuts use the physical Control key on macOS."), page);
+    controlNote->setWordWrap(true);
+    controlNote->setTextFormat(Qt::PlainText);
+    controlNote->setStyleSheet(QStringLiteral("color:palette(mid);"));
+    controlNote->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+    layout->addSpacing(4);
+    layout->addWidget(controlNote);
     layout->addStretch();
     return page;
 }

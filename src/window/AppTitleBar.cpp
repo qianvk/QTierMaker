@@ -20,9 +20,6 @@
 #include <algorithm>
 
 #include <vkui/core/VkIcon.h>
-#if !defined(Q_OS_MACOS) && !defined(Q_OS_MAC)
-#include <vkui/window/VkWindowAgent.h>
-#endif
 
 namespace qtm {
 
@@ -43,25 +40,12 @@ QToolButton* makeButton(const QString& text, vkui::VkSymbol symbol, QWidget* par
     return button;
 }
 
-[[maybe_unused]] int nativeSystemButtonWidth(const QWidget* widget) {
-#if defined(Q_OS_MACOS) || defined(Q_OS_MAC)
-    Q_UNUSED(widget);
-    return 0;
-#else
-    const auto* mainWindow = widget ? qobject_cast<const MainWindow*>(widget->window()) : nullptr;
-    const auto* agent = mainWindow ? mainWindow->windowAgent() : nullptr;
-    return agent ? agent->systemButtonAreaGeometry().width() : 0;
-#endif
+#if !defined(Q_OS_MACOS) && !defined(Q_OS_MAC)
+int systemButtonReservedWidth() {
+    // DWM owns the three standard caption buttons. Reserve their documented title-bar extent.
+    return 144 + 18;
 }
-
-[[maybe_unused]] int systemButtonReservedWidth(const QWidget* widget) {
-#if defined(Q_OS_MACOS) || defined(Q_OS_MAC)
-    Q_UNUSED(widget);
-    return 18;
-#else
-    return nativeSystemButtonWidth(widget) + 18;
 #endif
-}
 
 } // namespace
 
@@ -283,7 +267,7 @@ void AppTitleBar::updateTitleWidth() {
     const int reservedRight = actionWidth;
 #else
     const int reservedLeft = m_leadingReservedWidth + actionWidth;
-    const int reservedRight = systemButtonReservedWidth(this);
+    const int reservedRight = systemButtonReservedWidth();
 #endif
     constexpr int kMinimumReadableTitleWidth = 56;
     constexpr int kTitleHorizontalPadding = 34;

@@ -3,9 +3,9 @@
 From an MSVC developer shell with NSIS 3.03 or newer installed:
 
 ```powershell
-cmake --preset windows-release
-cmake --build --preset windows-release
-cpack --config build/windows-release/CPackConfig.cmake -G NSIS
+cmake --preset release -DQTM_BUILD_TESTS=OFF
+cmake --build --preset release --parallel
+cpack --config build/release/CPackConfig.cmake -G NSIS
 ```
 
 The install step runs Qt's deployment API before CPack creates a DPI-aware machine-wide
@@ -18,8 +18,8 @@ a timestamp server so the signatures remain valid after certificate rotation:
 
 ```powershell
 signtool sign /fd SHA256 /td SHA256 /tr https://timestamp.digicert.com /a \
-  .\build\windows-release\QTierMaker.exe
-cpack --config build/windows-release/CPackConfig.cmake -G NSIS
+  .\build\release\QTierMaker.exe
+cpack --config build/release/CPackConfig.cmake -G NSIS
 signtool sign /fd SHA256 /td SHA256 /tr https://timestamp.digicert.com /a \
   .\QTierMaker-*.exe
 ```

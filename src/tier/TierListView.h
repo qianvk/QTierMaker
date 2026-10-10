@@ -71,6 +71,7 @@ public:
     void setToolTipsEnabled(bool enabled);
     void setOverviewBackdropEffect(BackdropEffect effect);
     void setLiquidGlassParameters(const LiquidGlassParameters& parameters);
+    void setExportRendering(bool enabled, qreal scale = 1.0);
     void updateImageVisual(const QString& imageId);
     void resetViewState();
     Q_INVOKABLE QString toolTipTextAt(QPoint viewportPoint) const;
@@ -85,6 +86,7 @@ signals:
     void imageRemoveFromGalleryRequested(const QString& imageId);
     void imagePresentationModeRequested(ImagePresentationMode mode);
     void resetRowsRequested();
+    void exportImageRequested();
     void rowEditRequested(const QString& rowId);
     void rowClearRequested(const QString& rowId);
     void rowDeleteRequested(const QString& rowId);
@@ -192,6 +194,7 @@ private:
     void paintCanvasBackground(QPainter* painter);
     void paintMissionBackdrop(QPainter* painter);
     QString resolvedCanvasBackgroundPath() const;
+    qreal renderingDevicePixelRatio() const;
 
     PressKind m_pressKind{PressKind::None};
     QPoint m_pressPosition;
@@ -250,6 +253,8 @@ private:
     LiquidGlassParameters m_liquidGlassParameters;
     bool m_tierFocusMode{false};
     bool m_toolTipsEnabled{true};
+    bool m_exportRendering{false};
+    qreal m_exportScale{1.0};
     mutable bool m_missionLayoutDirty{true};
     mutable QSize m_missionLayoutViewportSize;
     mutable QStringList m_missionLayoutImageIds;

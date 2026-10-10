@@ -413,25 +413,6 @@ void AppSettings::setLiquidGlassParameters(const LiquidGlassParameters& paramete
     }
 }
 
-QString AppSettings::defaultExportFormat() const {
-    return m_settings.value(settings_keys::exportFormat.toString(), QStringLiteral("png"))
-        .toString();
-}
-
-void AppSettings::setDefaultExportFormat(const QString& format) {
-    m_settings.setValue(settings_keys::exportFormat.toString(), format);
-    emit changed();
-}
-
-int AppSettings::defaultExportScale() const {
-    return m_settings.value(settings_keys::exportScale.toString(), 2).toInt();
-}
-
-void AppSettings::setDefaultExportScale(int scale) {
-    m_settings.setValue(settings_keys::exportScale.toString(), qBound(1, scale, 4));
-    emit changed();
-}
-
 bool AppSettings::animationsEnabled() const {
     return m_settings.value(settings_keys::animationsEnabled.toString(), true).toBool();
 }

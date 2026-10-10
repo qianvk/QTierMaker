@@ -18,7 +18,7 @@ class QTimer;
 class QVBoxLayout;
 
 namespace vkui {
-class VkPopover;
+class VPopover;
 }
 
 namespace qtm {
@@ -57,6 +57,7 @@ public slots:
     void importImagesFromDialog();
     void importImages(const QStringList& filePaths);
     void exportProjectFromDialog();
+    void exportProjectFromPath(const QString& filePath);
     void showTemplateMenu(QWidget* anchor = nullptr);
     void configureBackground(QWidget* anchor = nullptr);
     void deleteSelectedImage();
@@ -116,6 +117,7 @@ private:
     TierProject templateSnapshot() const;
     bool confirmTemplateApplication();
     bool applyTemplateProject(const TierProject& templateProject);
+    void exportBoardFromDialog(TierBoardWidget* board, const QString& suggestedName);
     void moveImageToRow(const QString& imageId, const QString& rowId, int index);
     void moveRowToIndex(const QString& rowId, int destinationIndex);
     void editImage(const QString& imageId);
@@ -150,7 +152,7 @@ private:
     TierBoardWidget* m_board{nullptr};
     QPointer<ImageGalleryPopover> m_galleryPopover;
     QPointer<QWidget> m_galleryPopoverAnchor;
-    QPointer<vkui::VkPopover> m_templatePopover;
+    QPointer<vkui::VPopover> m_templatePopover;
     QPointer<QWidget> m_templatePopoverAnchor;
     std::function<void(bool)> m_closeBackgroundPopover;
     TransientPopover m_activePopover{TransientPopover::None};

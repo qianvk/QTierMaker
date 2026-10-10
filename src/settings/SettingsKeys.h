@@ -26,8 +26,6 @@ inline constexpr QStringView liquidGlassRefractionHeight = u"liquidGlass/refract
 inline constexpr QStringView liquidGlassRefractionAmount = u"liquidGlass/refractionAmount";
 inline constexpr QStringView liquidGlassChromaticAberration =
     u"liquidGlass/chromaticAberration";
-inline constexpr QStringView exportFormat = u"export/format";
-inline constexpr QStringView exportScale = u"export/scale";
 inline constexpr QStringView animationsEnabled = u"animation/enabled";
 inline constexpr QStringView reducedMotion = u"animation/reducedMotion";
 inline constexpr QStringView localOnlyMode = u"privacy/localOnlyMode";

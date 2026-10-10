@@ -15,7 +15,7 @@ class QStackedWidget;
 
 namespace qtm {
 
-/** Non-modal preferences page with General, Updates, and About sections. */
+/** Non-modal preferences page with adaptive navigation and scrollable content sections. */
 class PreferencesPage : public QWidget {
     Q_OBJECT
 
@@ -39,6 +39,7 @@ private:
     void applyUpdateResult(const UpdateCheckResult& result);
     void applyUpdateFailure(const QString& reason);
     QWidget* createGeneralPage();
+    QWidget* createShortcutsPage();
     QWidget* createLiquidGlassPage();
     QWidget* createUpdatePage();
     QWidget* createAboutPage();

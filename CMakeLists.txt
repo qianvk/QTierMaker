@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.24)
 
 project(QTierMaker
-    VERSION 1.0.2
+    VERSION 1.0.3
     DESCRIPTION "A native Qt 6 desktop tier-list editor"
     HOMEPAGE_URL "https://github.com/qianvk/QTierMaker"
     LANGUAGES CXX
@@ -102,8 +102,6 @@ set(QTM_CORE_SOURCES
     src/assets/ThumbnailCache.h
     src/export/ExportOptions.cpp
     src/export/ExportOptions.h
-    src/export/TierListExporter.cpp
-    src/export/TierListExporter.h
     src/i18n/LanguageManager.cpp
     src/i18n/LanguageManager.h
     src/logging/Logger.cpp
@@ -152,6 +150,8 @@ set(QTM_CORE_SOURCES
 )
 
 set(QTM_APP_SOURCES
+    src/export/TierListExporter.cpp
+    src/export/TierListExporter.h
     src/app/Application.cpp
     src/app/Application.h
     src/app/main.cpp
@@ -201,6 +201,8 @@ set(QTM_APP_SOURCES
     src/widgets/EmptyStateWidget.h
     src/widgets/FlowLayout.cpp
     src/widgets/FlowLayout.h
+    src/widgets/PlatformDialogButtonBox.cpp
+    src/widgets/PlatformDialogButtonBox.h
     src/widgets/SectionHeader.cpp
     src/widgets/SectionHeader.h
     src/widgets/TransferProgressWidget.cpp
@@ -218,8 +220,6 @@ set(QTM_APP_SOURCES
     src/window/MainWindow.h
     src/window/RootWidget.cpp
     src/window/RootWidget.h
-    src/window/SidebarToggleButton.cpp
-    src/window/SidebarToggleButton.h
     resources/resources.qrc
 )
 

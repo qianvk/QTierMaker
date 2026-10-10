@@ -10,6 +10,22 @@
     </message>
 </context>
 <context>
+    <name>QCocoaTheme</name>
+    <message>
+        <location filename="../../src/i18n/LanguageManager.cpp" line="23"/>
+        <source>Don&apos;t Save</source>
+        <translation>Don&apos;t Save</translation>
+    </message>
+</context>
+<context>
+    <name>QDialogButtonBox</name>
+    <message>
+        <location filename="../../src/i18n/LanguageManager.cpp" line="22"/>
+        <source>Don&apos;t Save</source>
+        <translation>Don&apos;t Save</translation>
+    </message>
+</context>
+<context>
     <name>QObject</name>
     <message>
         <location filename="../../src/assets/ImageLoader.cpp" line="18"/>
@@ -317,80 +333,126 @@ Backup: %3</translation>
     </message>
 </context>
 <context>
+    <name>QPlatformTheme</name>
+    <message>
+        <location filename="../../src/i18n/LanguageManager.cpp" line="15"/>
+        <source>OK</source>
+        <translation>OK</translation>
+    </message>
+    <message>
+        <location filename="../../src/i18n/LanguageManager.cpp" line="16"/>
+        <source>Open</source>
+        <translation>Open</translation>
+    </message>
+    <message>
+        <location filename="../../src/i18n/LanguageManager.cpp" line="20"/>
+        <source>Don&apos;t Save</source>
+        <translation>Don&apos;t Save</translation>
+    </message>
+    <message>
+        <location filename="../../src/i18n/LanguageManager.cpp" line="17"/>
+        <source>Save</source>
+        <translation>Save</translation>
+    </message>
+    <message>
+        <location filename="../../src/i18n/LanguageManager.cpp" line="18"/>
+        <source>Cancel</source>
+        <translation>Cancel</translation>
+    </message>
+    <message>
+        <location filename="../../src/i18n/LanguageManager.cpp" line="19"/>
+        <source>Discard</source>
+        <translation>Discard</translation>
+    </message>
+    <message>
+        <location filename="../../src/i18n/LanguageManager.cpp" line="21"/>
+        <source>Close</source>
+        <translation>Close</translation>
+    </message>
+</context>
+<context>
     <name>QWK::WindowsCaptionButton</name>
     <message>
-        <location filename="../../third_party/vkui/src/window/qwindowkit/widgets/widgetwindowagent_win.cpp" line="74"/>
+        <location filename="../../src/i18n/LanguageManager.cpp" line="24"/>
         <source>Minimize</source>
         <translation>Minimize</translation>
     </message>
     <message>
-        <location filename="../../third_party/vkui/src/window/qwindowkit/widgets/widgetwindowagent_win.cpp" line="82"/>
-        <location filename="../../third_party/vkui/src/window/qwindowkit/widgets/widgetwindowagent_win.cpp" line="102"/>
+        <location filename="../../src/i18n/LanguageManager.cpp" line="25"/>
         <source>Maximize</source>
         <translation>Maximize</translation>
     </message>
     <message>
-        <location filename="../../third_party/vkui/src/window/qwindowkit/widgets/widgetwindowagent_win.cpp" line="89"/>
+        <location filename="../../src/i18n/LanguageManager.cpp" line="26"/>
         <source>Close</source>
         <translation>Close</translation>
     </message>
     <message>
-        <location filename="../../third_party/vkui/src/window/qwindowkit/widgets/widgetwindowagent_win.cpp" line="101"/>
+        <location filename="../../src/i18n/LanguageManager.cpp" line="27"/>
         <source>Restore Down</source>
         <translation>Restore Down</translation>
     </message>
 </context>
 <context>
-    <name>VkMessageDialog</name>
+    <name>VMessageDialog</name>
     <message>
-        <location filename="../../third_party/vkui/src/window/VkMessageDialog.cpp" line="172"/>
+        <location filename="../../third_party/vkui/src/window/VMessageDialog.cpp" line="264"/>
         <source>Delete</source>
         <translation>Delete</translation>
     </message>
 </context>
 <context>
+    <name>VPanelManager</name>
+    <message>
+        <location filename="../../third_party/vkui/src/widgets/panels/private/VPanelEdgeHandleController.cpp" line="38"/>
+        <location filename="../../third_party/vkui/src/widgets/panels/private/VPanelEdgeHandleController.cpp" line="139"/>
+        <source>Panel edge handle</source>
+        <translation>Panel edge handle</translation>
+    </message>
+</context>
+<context>
     <name>qtm::AppTitleBar</name>
     <message>
-        <location filename="../../src/window/AppTitleBar.cpp" line="81"/>
-        <location filename="../../src/window/AppTitleBar.cpp" line="146"/>
-        <location filename="../../src/window/AppTitleBar.cpp" line="174"/>
+        <location filename="../../src/window/AppTitleBar.cpp" line="65"/>
+        <location filename="../../src/window/AppTitleBar.cpp" line="130"/>
+        <location filename="../../src/window/AppTitleBar.cpp" line="158"/>
         <source>Untitled Tier List</source>
         <translation>Untitled Tier List</translation>
     </message>
     <message>
-        <location filename="../../src/window/AppTitleBar.cpp" line="100"/>
-        <location filename="../../src/window/AppTitleBar.cpp" line="161"/>
+        <location filename="../../src/window/AppTitleBar.cpp" line="84"/>
+        <location filename="../../src/window/AppTitleBar.cpp" line="145"/>
         <source>Unsaved changes</source>
         <translation>Unsaved changes</translation>
     </message>
     <message>
-        <location filename="../../src/window/AppTitleBar.cpp" line="103"/>
-        <location filename="../../src/window/AppTitleBar.cpp" line="149"/>
+        <location filename="../../src/window/AppTitleBar.cpp" line="87"/>
+        <location filename="../../src/window/AppTitleBar.cpp" line="133"/>
         <source>Templates</source>
         <translation>Templates</translation>
     </message>
     <message>
-        <location filename="../../src/window/AppTitleBar.cpp" line="105"/>
-        <location filename="../../src/window/AppTitleBar.cpp" line="152"/>
+        <location filename="../../src/window/AppTitleBar.cpp" line="89"/>
+        <location filename="../../src/window/AppTitleBar.cpp" line="136"/>
         <source>Background</source>
         <translation>Background</translation>
     </message>
     <message>
-        <location filename="../../src/window/AppTitleBar.cpp" line="106"/>
-        <location filename="../../src/window/AppTitleBar.cpp" line="155"/>
+        <location filename="../../src/window/AppTitleBar.cpp" line="90"/>
+        <location filename="../../src/window/AppTitleBar.cpp" line="139"/>
         <source>Gallery</source>
         <translation>Gallery</translation>
     </message>
     <message>
-        <location filename="../../src/window/AppTitleBar.cpp" line="107"/>
-        <location filename="../../src/window/AppTitleBar.cpp" line="158"/>
-        <location filename="../../src/window/AppTitleBar.cpp" line="215"/>
+        <location filename="../../src/window/AppTitleBar.cpp" line="91"/>
+        <location filename="../../src/window/AppTitleBar.cpp" line="142"/>
+        <location filename="../../src/window/AppTitleBar.cpp" line="199"/>
         <source>Enter Tier Focus</source>
         <translation>Enter Tier Focus</translation>
     </message>
     <message>
-        <location filename="../../src/window/AppTitleBar.cpp" line="158"/>
-        <location filename="../../src/window/AppTitleBar.cpp" line="215"/>
+        <location filename="../../src/window/AppTitleBar.cpp" line="142"/>
+        <location filename="../../src/window/AppTitleBar.cpp" line="199"/>
         <source>Exit Tier Focus</source>
         <translation>Exit Tier Focus</translation>
     </message>
@@ -558,267 +620,268 @@ Backup: %3</translation>
 <context>
     <name>qtm::EditPage</name>
     <message>
-        <location filename="../../src/pages/EditPage.cpp" line="548"/>
+        <location filename="../../src/pages/EditPage.cpp" line="561"/>
         <source>Open Project</source>
         <translation>Open Project</translation>
     </message>
     <message>
-        <location filename="../../src/pages/EditPage.cpp" line="562"/>
+        <location filename="../../src/pages/EditPage.cpp" line="575"/>
         <source>Open Failed</source>
         <translation>Open Failed</translation>
     </message>
     <message>
-        <location filename="../../src/pages/EditPage.cpp" line="626"/>
+        <location filename="../../src/pages/EditPage.cpp" line="639"/>
         <source>Templates</source>
         <translation>Templates</translation>
     </message>
     <message>
-        <location filename="../../src/pages/EditPage.cpp" line="683"/>
+        <location filename="../../src/pages/EditPage.cpp" line="696"/>
         <source>Default template</source>
         <translation>Default template</translation>
     </message>
     <message>
-        <location filename="../../src/pages/EditPage.cpp" line="683"/>
+        <location filename="../../src/pages/EditPage.cpp" line="696"/>
         <source>Set as default template</source>
         <translation>Set as default template</translation>
     </message>
     <message>
-        <location filename="../../src/pages/EditPage.cpp" line="702"/>
+        <location filename="../../src/pages/EditPage.cpp" line="715"/>
         <source>Apply template</source>
         <translation>Apply template</translation>
     </message>
     <message>
-        <location filename="../../src/pages/EditPage.cpp" line="731"/>
+        <location filename="../../src/pages/EditPage.cpp" line="744"/>
         <source>Delete template</source>
         <translation>Delete template</translation>
     </message>
     <message>
-        <location filename="../../src/pages/EditPage.cpp" line="750"/>
+        <location filename="../../src/pages/EditPage.cpp" line="763"/>
         <source>Built-in</source>
         <translation>Built-in</translation>
     </message>
     <message>
-        <location filename="../../src/pages/EditPage.cpp" line="764"/>
+        <location filename="../../src/pages/EditPage.cpp" line="777"/>
         <source>Custom</source>
         <translation>Custom</translation>
     </message>
     <message>
-        <location filename="../../src/pages/EditPage.cpp" line="769"/>
+        <location filename="../../src/pages/EditPage.cpp" line="782"/>
         <source>No custom templates saved.</source>
         <translation>No custom templates saved.</translation>
     </message>
     <message>
-        <location filename="../../src/pages/EditPage.cpp" line="786"/>
-        <location filename="../../src/pages/EditPage.cpp" line="1640"/>
-        <location filename="../../src/pages/EditPage.cpp" line="1905"/>
-        <location filename="../../src/pages/EditPage.cpp" line="1923"/>
-        <location filename="../../src/pages/EditPage.cpp" line="1928"/>
-        <location filename="../../src/pages/EditPage.cpp" line="1969"/>
+        <location filename="../../src/pages/EditPage.cpp" line="799"/>
+        <location filename="../../src/pages/EditPage.cpp" line="1690"/>
+        <location filename="../../src/pages/EditPage.cpp" line="1955"/>
+        <location filename="../../src/pages/EditPage.cpp" line="1973"/>
+        <location filename="../../src/pages/EditPage.cpp" line="1978"/>
+        <location filename="../../src/pages/EditPage.cpp" line="2019"/>
         <source>Apply Template</source>
         <translation>Apply Template</translation>
     </message>
     <message>
-        <location filename="../../src/pages/EditPage.cpp" line="796"/>
-        <location filename="../../src/pages/EditPage.cpp" line="801"/>
+        <location filename="../../src/pages/EditPage.cpp" line="809"/>
+        <location filename="../../src/pages/EditPage.cpp" line="814"/>
         <source>Delete Template</source>
         <translation>Delete Template</translation>
     </message>
     <message>
-        <location filename="../../src/pages/EditPage.cpp" line="797"/>
+        <location filename="../../src/pages/EditPage.cpp" line="810"/>
         <source>Delete the custom template &quot;%1&quot;?</source>
         <translation>Delete the custom template &quot;%1&quot;?</translation>
     </message>
     <message>
-        <location filename="../../src/pages/EditPage.cpp" line="802"/>
+        <location filename="../../src/pages/EditPage.cpp" line="815"/>
         <source>Could not delete the template file.</source>
         <translation>Could not delete the template file.</translation>
     </message>
     <message>
-        <location filename="../../src/pages/EditPage.cpp" line="817"/>
+        <location filename="../../src/pages/EditPage.cpp" line="830"/>
         <source>Save Current Template...</source>
         <translation>Save Current Template...</translation>
     </message>
     <message>
-        <location filename="../../src/pages/EditPage.cpp" line="819"/>
+        <location filename="../../src/pages/EditPage.cpp" line="832"/>
         <source>Import Template File...</source>
         <translation>Import Template File...</translation>
     </message>
     <message>
-        <location filename="../../src/pages/EditPage.cpp" line="821"/>
+        <location filename="../../src/pages/EditPage.cpp" line="834"/>
         <source>Export Template File...</source>
         <translation>Export Template File...</translation>
     </message>
     <message>
-        <location filename="../../src/pages/EditPage.cpp" line="863"/>
+        <location filename="../../src/pages/EditPage.cpp" line="876"/>
         <source>Reset Rows</source>
         <translation>Reset Rows</translation>
     </message>
     <message>
-        <location filename="../../src/pages/EditPage.cpp" line="864"/>
+        <location filename="../../src/pages/EditPage.cpp" line="877"/>
         <source>Reset rows to S/A/B/C/D and remove row assignments from images?</source>
         <translation>Reset rows to S/A/B/C/D and remove row assignments from images?</translation>
     </message>
     <message>
-        <location filename="../../src/pages/EditPage.cpp" line="1639"/>
-        <location filename="../../src/pages/EditPage.cpp" line="1808"/>
-        <location filename="../../src/pages/EditPage.cpp" line="1816"/>
-        <location filename="../../src/pages/EditPage.cpp" line="1845"/>
-        <location filename="../../src/pages/EditPage.cpp" line="1861"/>
+        <location filename="../../src/pages/EditPage.cpp" line="1689"/>
+        <location filename="../../src/pages/EditPage.cpp" line="1858"/>
+        <location filename="../../src/pages/EditPage.cpp" line="1866"/>
+        <location filename="../../src/pages/EditPage.cpp" line="1895"/>
+        <location filename="../../src/pages/EditPage.cpp" line="1911"/>
         <source>Save Template</source>
         <translation>Save Template</translation>
     </message>
     <message>
-        <location filename="../../src/pages/EditPage.cpp" line="1656"/>
+        <location filename="../../src/pages/EditPage.cpp" line="1706"/>
         <source>Import Images</source>
         <translation>Import Images</translation>
     </message>
     <message>
-        <location filename="../../src/pages/EditPage.cpp" line="1924"/>
+        <location filename="../../src/pages/EditPage.cpp" line="1974"/>
         <source>Applying a template replaces the current tiers and background. %1 image(s) placed in tiers will be moved back to the gallery. No images will be deleted from the project.</source>
         <translation>Applying a template replaces the current tiers and background. %1 image(s) placed in tiers will be moved back to the gallery. No images will be deleted from the project.</translation>
     </message>
     <message>
-        <location filename="../../src/pages/EditPage.cpp" line="2364"/>
+        <location filename="../../src/pages/EditPage.cpp" line="2414"/>
         <source>A project with this name already exists.</source>
         <translation>A project with this name already exists.</translation>
     </message>
     <message>
-        <location filename="../../src/pages/EditPage.cpp" line="888"/>
+        <location filename="../../src/pages/EditPage.cpp" line="901"/>
         <source>Import Failed</source>
         <translation>Import Failed</translation>
     </message>
     <message>
-        <location filename="../../src/pages/EditPage.cpp" line="549"/>
+        <location filename="../../src/pages/EditPage.cpp" line="562"/>
         <source>QTierMaker Projects (*.qtm)</source>
         <translation>QTierMaker Projects (*.qtm)</translation>
     </message>
     <message>
-        <location filename="../../src/pages/EditPage.cpp" line="904"/>
-        <source>Export Tier List</source>
-        <translation>Export Tier List</translation>
-    </message>
-    <message>
-        <location filename="../../src/pages/EditPage.cpp" line="905"/>
-        <source>PNG (*.png);;JPEG (*.jpg);;PDF (*.pdf)</source>
-        <translation>PNG (*.png);;JPEG (*.jpg);;PDF (*.pdf)</translation>
-    </message>
-    <message>
-        <location filename="../../src/pages/EditPage.cpp" line="911"/>
+        <location filename="../../src/pages/EditPage.cpp" line="925"/>
+        <location filename="../../src/pages/EditPage.cpp" line="959"/>
         <source>Export Failed</source>
         <translation>Export Failed</translation>
     </message>
     <message>
-        <location filename="../../src/pages/EditPage.cpp" line="1003"/>
-        <location filename="../../src/pages/EditPage.cpp" line="1008"/>
-        <location filename="../../src/pages/EditPage.cpp" line="1009"/>
+        <location filename="../../src/pages/EditPage.cpp" line="1051"/>
+        <location filename="../../src/pages/EditPage.cpp" line="1056"/>
+        <location filename="../../src/pages/EditPage.cpp" line="1057"/>
         <source>Default Background</source>
         <translation>Default Background</translation>
     </message>
     <message>
-        <location filename="../../src/pages/EditPage.cpp" line="1345"/>
-        <location filename="../../src/pages/EditPage.cpp" line="1722"/>
-        <location filename="../../src/pages/EditPage.cpp" line="1736"/>
+        <location filename="../../src/pages/EditPage.cpp" line="1393"/>
+        <location filename="../../src/pages/EditPage.cpp" line="1772"/>
+        <location filename="../../src/pages/EditPage.cpp" line="1786"/>
         <source>Untitled Tier List</source>
         <translation>Untitled Tier List</translation>
     </message>
     <message>
-        <location filename="../../src/pages/EditPage.cpp" line="1015"/>
+        <location filename="../../src/pages/EditPage.cpp" line="1063"/>
         <source>Choose Image</source>
         <translation>Choose Image</translation>
     </message>
     <message>
-        <location filename="../../src/pages/EditPage.cpp" line="1016"/>
+        <location filename="../../src/pages/EditPage.cpp" line="947"/>
+        <source>Export Image</source>
+        <translation>Export Image</translation>
+    </message>
+    <message>
+        <location filename="../../src/pages/EditPage.cpp" line="948"/>
+        <source>PNG (*.png);;JPEG (*.jpg *.jpeg)</source>
+        <translation>PNG (*.png);;JPEG (*.jpg *.jpeg)</translation>
+    </message>
+    <message>
+        <location filename="../../src/pages/EditPage.cpp" line="1064"/>
         <source>Use Default</source>
         <translation>Use Default</translation>
     </message>
     <message>
-        <location filename="../../src/pages/EditPage.cpp" line="1030"/>
+        <location filename="../../src/pages/EditPage.cpp" line="1078"/>
         <source>Background visibility: %1%</source>
         <translation>Background visibility: %1%</translation>
     </message>
     <message>
-        <location filename="../../src/pages/EditPage.cpp" line="1042"/>
+        <location filename="../../src/pages/EditPage.cpp" line="1090"/>
         <source>Confirm</source>
         <translation>Confirm</translation>
     </message>
     <message>
-        <location filename="../../src/pages/EditPage.cpp" line="1048"/>
+        <location filename="../../src/pages/EditPage.cpp" line="1096"/>
         <source>Images (*.png *.jpg *.jpeg *.webp *.bmp *.gif)</source>
         <translation>Images (*.png *.jpg *.jpeg *.webp *.bmp *.gif)</translation>
     </message>
     <message>
-        <location filename="../../src/pages/EditPage.cpp" line="1051"/>
+        <location filename="../../src/pages/EditPage.cpp" line="1099"/>
         <source>Choose Background Image</source>
         <translation>Choose Background Image</translation>
     </message>
     <message>
-        <location filename="../../src/pages/EditPage.cpp" line="1158"/>
+        <location filename="../../src/pages/EditPage.cpp" line="1206"/>
         <source>Background Image</source>
         <translation>Background Image</translation>
     </message>
     <message>
-        <location filename="../../src/pages/EditPage.cpp" line="1193"/>
+        <location filename="../../src/pages/EditPage.cpp" line="1241"/>
         <source>Remove Image</source>
         <translation>Remove Image</translation>
     </message>
     <message>
-        <location filename="../../src/pages/EditPage.cpp" line="1194"/>
+        <location filename="../../src/pages/EditPage.cpp" line="1242"/>
         <source>Remove the selected image from this project?</source>
         <translation>Remove the selected image from this project?</translation>
     </message>
     <message>
-        <location filename="../../src/pages/EditPage.cpp" line="1222"/>
+        <location filename="../../src/pages/EditPage.cpp" line="1270"/>
         <source>Unsaved Changes</source>
         <translation>Unsaved Changes</translation>
     </message>
     <message>
-        <location filename="../../src/pages/EditPage.cpp" line="1222"/>
+        <location filename="../../src/pages/EditPage.cpp" line="1270"/>
         <source>Save changes to &quot;%1&quot;?</source>
         <translation>Save changes to &quot;%1&quot;?</translation>
     </message>
     <message>
-        <location filename="../../src/pages/EditPage.cpp" line="1636"/>
+        <location filename="../../src/pages/EditPage.cpp" line="1686"/>
         <source>QTierMaker Templates (*.qtmtemplate)</source>
         <translation>QTierMaker Templates (*.qtmtemplate)</translation>
     </message>
     <message>
-        <location filename="../../src/pages/EditPage.cpp" line="1830"/>
+        <location filename="../../src/pages/EditPage.cpp" line="1880"/>
         <source>Save Current Template</source>
         <translation>Save Current Template</translation>
     </message>
     <message>
-        <location filename="../../src/pages/EditPage.cpp" line="1836"/>
+        <location filename="../../src/pages/EditPage.cpp" line="1886"/>
         <source>Template name</source>
         <translation>Template name</translation>
     </message>
     <message>
-        <location filename="../../src/pages/EditPage.cpp" line="1845"/>
+        <location filename="../../src/pages/EditPage.cpp" line="1895"/>
         <source>Enter a template name.</source>
         <translation>Enter a template name.</translation>
     </message>
     <message>
-        <location filename="../../src/pages/EditPage.cpp" line="1862"/>
+        <location filename="../../src/pages/EditPage.cpp" line="1912"/>
         <source>Could not create the template folder.</source>
         <translation>Could not create the template folder.</translation>
     </message>
     <message>
-        <location filename="../../src/pages/EditPage.cpp" line="1868"/>
+        <location filename="../../src/pages/EditPage.cpp" line="1918"/>
         <source>Replace Template</source>
         <translation>Replace Template</translation>
     </message>
     <message>
-        <location filename="../../src/pages/EditPage.cpp" line="1869"/>
+        <location filename="../../src/pages/EditPage.cpp" line="1919"/>
         <source>Replace the existing template &quot;%1&quot;?</source>
         <translation>Replace the existing template &quot;%1&quot;?</translation>
     </message>
     <message>
-        <location filename="../../src/pages/EditPage.cpp" line="2151"/>
-        <location filename="../../src/pages/EditPage.cpp" line="2157"/>
+        <location filename="../../src/pages/EditPage.cpp" line="2201"/>
+        <location filename="../../src/pages/EditPage.cpp" line="2207"/>
         <source>Use No Crop</source>
         <translation>Use No Crop</translation>
     </message>
     <message numerus="yes">
-        <location filename="../../src/pages/EditPage.cpp" line="2152"/>
+        <location filename="../../src/pages/EditPage.cpp" line="2202"/>
         <source>%n image(s) have a custom square crop. Switching to No Crop will remove those crop settings.</source>
         <translation>
             <numerusform>%n image has a custom square crop. Switching to No Crop will remove that crop setting.</numerusform>
@@ -826,54 +889,54 @@ Backup: %3</translation>
         </translation>
     </message>
     <message>
-        <location filename="../../src/pages/EditPage.cpp" line="2228"/>
+        <location filename="../../src/pages/EditPage.cpp" line="2278"/>
         <source>Tier name</source>
         <translation>Tier name</translation>
     </message>
     <message>
-        <location filename="../../src/pages/EditPage.cpp" line="2260"/>
+        <location filename="../../src/pages/EditPage.cpp" line="2310"/>
         <source>Clear Tier Images</source>
         <translation>Clear Tier Images</translation>
     </message>
     <message>
-        <location filename="../../src/pages/EditPage.cpp" line="2261"/>
+        <location filename="../../src/pages/EditPage.cpp" line="2311"/>
         <source>Remove all images from &quot;%1&quot;?</source>
         <translation>Remove all images from &quot;%1&quot;?</translation>
     </message>
     <message>
-        <location filename="../../src/pages/EditPage.cpp" line="2297"/>
+        <location filename="../../src/pages/EditPage.cpp" line="2347"/>
         <source>Delete &quot;%1&quot; and remove its image assignments?</source>
         <translation>Delete &quot;%1&quot; and remove its image assignments?</translation>
     </message>
     <message>
-        <location filename="../../src/pages/EditPage.cpp" line="2335"/>
+        <location filename="../../src/pages/EditPage.cpp" line="2385"/>
         <source>Insert Row Below</source>
         <translation>Insert Row Below</translation>
     </message>
     <message>
-        <location filename="../../src/pages/EditPage.cpp" line="2335"/>
+        <location filename="../../src/pages/EditPage.cpp" line="2385"/>
         <source>Insert Row Above</source>
         <translation>Insert Row Above</translation>
     </message>
     <message>
-        <location filename="../../src/pages/EditPage.cpp" line="2336"/>
-        <location filename="../../src/pages/EditPage.cpp" line="2341"/>
+        <location filename="../../src/pages/EditPage.cpp" line="2386"/>
+        <location filename="../../src/pages/EditPage.cpp" line="2391"/>
         <source>New Tier</source>
         <translation>New Tier</translation>
     </message>
     <message>
-        <location filename="../../src/pages/EditPage.cpp" line="2363"/>
-        <location filename="../../src/pages/EditPage.cpp" line="2375"/>
+        <location filename="../../src/pages/EditPage.cpp" line="2413"/>
+        <location filename="../../src/pages/EditPage.cpp" line="2425"/>
         <source>Save Project</source>
         <translation>Save Project</translation>
     </message>
     <message>
-        <location filename="../../src/pages/EditPage.cpp" line="2442"/>
+        <location filename="../../src/pages/EditPage.cpp" line="2492"/>
         <source>Project Moved</source>
         <translation>Project Moved</translation>
     </message>
     <message>
-        <location filename="../../src/pages/EditPage.cpp" line="2443"/>
+        <location filename="../../src/pages/EditPage.cpp" line="2493"/>
         <source>The project was saved at its new location, but the previous project storage could not be removed.
 
 %1</source>
@@ -882,45 +945,45 @@ Backup: %3</translation>
 %1</translation>
     </message>
     <message>
-        <location filename="../../src/pages/EditPage.cpp" line="1654"/>
+        <location filename="../../src/pages/EditPage.cpp" line="1704"/>
         <source>Images (*.png *.jpg *.jpeg *.bmp *.gif *.webp)</source>
         <translation>Images (*.png *.jpg *.jpeg *.bmp *.gif *.webp)</translation>
     </message>
     <message>
-        <location filename="../../src/pages/EditPage.cpp" line="1637"/>
+        <location filename="../../src/pages/EditPage.cpp" line="1687"/>
         <source>QTierMaker Templates (*.qtmtemplate);;QTierMaker Projects (*.qtm)</source>
         <translation>QTierMaker Templates (*.qtmtemplate);;QTierMaker Projects (*.qtm)</translation>
     </message>
     <message>
-        <location filename="../../src/pages/EditPage.cpp" line="2228"/>
+        <location filename="../../src/pages/EditPage.cpp" line="2278"/>
         <source>Edit Tier</source>
         <translation>Edit Tier</translation>
     </message>
     <message>
-        <location filename="../../src/pages/EditPage.cpp" line="2288"/>
-        <location filename="../../src/pages/EditPage.cpp" line="2296"/>
+        <location filename="../../src/pages/EditPage.cpp" line="2338"/>
+        <location filename="../../src/pages/EditPage.cpp" line="2346"/>
         <source>Delete Row</source>
         <translation>Delete Row</translation>
     </message>
     <message>
-        <location filename="../../src/pages/EditPage.cpp" line="2288"/>
+        <location filename="../../src/pages/EditPage.cpp" line="2338"/>
         <source>At least one row is required.</source>
         <translation>At least one row is required.</translation>
     </message>
     <message>
-        <location filename="../../src/pages/EditPage.cpp" line="2376"/>
+        <location filename="../../src/pages/EditPage.cpp" line="2426"/>
         <source>A project folder with this name already exists.</source>
         <translation>A project folder with this name already exists.</translation>
     </message>
     <message>
-        <location filename="../../src/pages/EditPage.cpp" line="2402"/>
-        <location filename="../../src/pages/EditPage.cpp" line="2414"/>
-        <location filename="../../src/pages/EditPage.cpp" line="2422"/>
+        <location filename="../../src/pages/EditPage.cpp" line="2452"/>
+        <location filename="../../src/pages/EditPage.cpp" line="2464"/>
+        <location filename="../../src/pages/EditPage.cpp" line="2472"/>
         <source>Save Failed</source>
         <translation>Save Failed</translation>
     </message>
     <message>
-        <location filename="../../src/pages/EditPage.cpp" line="2431"/>
+        <location filename="../../src/pages/EditPage.cpp" line="2481"/>
         <source>Recent Projects</source>
         <translation>Recent Projects</translation>
     </message>
@@ -974,246 +1037,318 @@ Backup: %3</translation>
 <context>
     <name>qtm::PreferencesPage</name>
     <message>
-        <location filename="../../src/pages/PreferencesPage.cpp" line="252"/>
-        <location filename="../../src/pages/PreferencesPage.cpp" line="364"/>
-        <location filename="../../src/pages/PreferencesPage.cpp" line="719"/>
+        <location filename="../../src/pages/PreferencesPage.cpp" line="292"/>
+        <location filename="../../src/pages/PreferencesPage.cpp" line="405"/>
+        <location filename="../../src/pages/PreferencesPage.cpp" line="764"/>
         <source>General</source>
         <translation>General</translation>
     </message>
     <message>
-        <location filename="../../src/pages/PreferencesPage.cpp" line="252"/>
-        <location filename="../../src/pages/PreferencesPage.cpp" line="367"/>
-        <location filename="../../src/pages/PreferencesPage.cpp" line="894"/>
+        <location filename="../../src/pages/PreferencesPage.cpp" line="292"/>
+        <location filename="../../src/pages/PreferencesPage.cpp" line="409"/>
+        <location filename="../../src/pages/PreferencesPage.cpp" line="978"/>
         <source>About</source>
         <translation>About</translation>
     </message>
     <message>
-        <location filename="../../src/pages/PreferencesPage.cpp" line="252"/>
-        <location filename="../../src/pages/PreferencesPage.cpp" line="366"/>
-        <location filename="../../src/pages/PreferencesPage.cpp" line="717"/>
-        <location filename="../../src/pages/PreferencesPage.cpp" line="835"/>
+        <location filename="../../src/pages/PreferencesPage.cpp" line="292"/>
+        <location filename="../../src/pages/PreferencesPage.cpp" line="408"/>
+        <location filename="../../src/pages/PreferencesPage.cpp" line="762"/>
+        <location filename="../../src/pages/PreferencesPage.cpp" line="919"/>
         <source>Updates</source>
         <translation>Updates</translation>
     </message>
     <message>
-        <location filename="../../src/pages/PreferencesPage.cpp" line="286"/>
+        <location filename="../../src/pages/PreferencesPage.cpp" line="292"/>
+        <location filename="../../src/pages/PreferencesPage.cpp" line="406"/>
+        <location filename="../../src/pages/PreferencesPage.cpp" line="776"/>
+        <source>Keyboard Shortcuts</source>
+        <translation>Keyboard Shortcuts</translation>
+    </message>
+    <message>
+        <location filename="../../src/pages/PreferencesPage.cpp" line="327"/>
         <source>Checking updates from:
 %1</source>
         <translation>Checking updates from:
 %1</translation>
     </message>
     <message>
-        <location filename="../../src/pages/PreferencesPage.cpp" line="313"/>
+        <location filename="../../src/pages/PreferencesPage.cpp" line="354"/>
         <source>Downloading update %1: %2%</source>
         <translation>Downloading update %1: %2%</translation>
     </message>
     <message>
-        <location filename="../../src/pages/PreferencesPage.cpp" line="320"/>
+        <location filename="../../src/pages/PreferencesPage.cpp" line="361"/>
         <source>Update %1 is ready to install.</source>
         <translation>Update %1 is ready to install.</translation>
     </message>
     <message>
-        <location filename="../../src/pages/PreferencesPage.cpp" line="479"/>
+        <location filename="../../src/pages/PreferencesPage.cpp" line="522"/>
         <source>Install Update</source>
         <translation>Install Update</translation>
     </message>
     <message>
-        <location filename="../../src/pages/PreferencesPage.cpp" line="479"/>
-        <location filename="../../src/pages/PreferencesPage.cpp" line="854"/>
+        <location filename="../../src/pages/PreferencesPage.cpp" line="523"/>
+        <location filename="../../src/pages/PreferencesPage.cpp" line="938"/>
         <source>Download Update</source>
         <translation>Download Update</translation>
     </message>
     <message>
-        <location filename="../../src/pages/PreferencesPage.cpp" line="507"/>
+        <location filename="../../src/pages/PreferencesPage.cpp" line="552"/>
         <source>Version %1 is available. Current version: %2%3</source>
         <translation>Version %1 is available. Current version: %2%3</translation>
     </message>
     <message>
-        <location filename="../../src/pages/PreferencesPage.cpp" line="514"/>
+        <location filename="../../src/pages/PreferencesPage.cpp" line="559"/>
         <source>QTierMaker is up to date. Current version: %1</source>
         <translation>QTierMaker is up to date. Current version: %1</translation>
     </message>
     <message>
-        <location filename="../../src/pages/PreferencesPage.cpp" line="522"/>
+        <location filename="../../src/pages/PreferencesPage.cpp" line="567"/>
         <source>Update check failed: %1</source>
         <translation>Update check failed: %1</translation>
     </message>
     <message>
-        <location filename="../../src/pages/PreferencesPage.cpp" line="539"/>
-        <location filename="../../src/pages/PreferencesPage.cpp" line="554"/>
+        <location filename="../../src/pages/PreferencesPage.cpp" line="584"/>
+        <location filename="../../src/pages/PreferencesPage.cpp" line="599"/>
         <source>System</source>
         <translation>System</translation>
     </message>
     <message>
-        <location filename="../../src/pages/PreferencesPage.cpp" line="551"/>
+        <location filename="../../src/pages/PreferencesPage.cpp" line="596"/>
         <source>Language</source>
         <translation>Language</translation>
     </message>
     <message>
-        <location filename="../../src/pages/PreferencesPage.cpp" line="554"/>
+        <location filename="../../src/pages/PreferencesPage.cpp" line="599"/>
         <source>Light</source>
         <translation>Light</translation>
     </message>
     <message>
-        <location filename="../../src/pages/PreferencesPage.cpp" line="554"/>
+        <location filename="../../src/pages/PreferencesPage.cpp" line="599"/>
         <source>Dark</source>
         <translation>Dark</translation>
     </message>
     <message>
-        <location filename="../../src/pages/PreferencesPage.cpp" line="558"/>
+        <location filename="../../src/pages/PreferencesPage.cpp" line="603"/>
         <source>Appearance</source>
         <translation>Appearance</translation>
     </message>
     <message>
-        <location filename="../../src/pages/PreferencesPage.cpp" line="573"/>
+        <location filename="../../src/pages/PreferencesPage.cpp" line="618"/>
         <source>None</source>
         <translation>None</translation>
     </message>
     <message>
-        <location filename="../../src/pages/PreferencesPage.cpp" line="574"/>
+        <location filename="../../src/pages/PreferencesPage.cpp" line="619"/>
         <source>Image</source>
         <translation>Image</translation>
     </message>
     <message>
-        <location filename="../../src/pages/PreferencesPage.cpp" line="578"/>
+        <location filename="../../src/pages/PreferencesPage.cpp" line="623"/>
         <source>Preview background</source>
         <translation>Preview background</translation>
     </message>
     <message>
-        <location filename="../../src/pages/PreferencesPage.cpp" line="570"/>
+        <location filename="../../src/pages/PreferencesPage.cpp" line="615"/>
         <source>Preview effect</source>
         <translation>Preview effect</translation>
     </message>
     <message>
-        <location filename="../../src/pages/PreferencesPage.cpp" line="562"/>
+        <location filename="../../src/pages/PreferencesPage.cpp" line="607"/>
         <source>Depth Soft Focus</source>
         <translation>Depth Soft Focus</translation>
     </message>
     <message>
-        <location filename="../../src/pages/PreferencesPage.cpp" line="252"/>
-        <location filename="../../src/pages/PreferencesPage.cpp" line="365"/>
-        <location filename="../../src/pages/PreferencesPage.cpp" line="564"/>
-        <location filename="../../src/pages/PreferencesPage.cpp" line="822"/>
+        <location filename="../../src/pages/PreferencesPage.cpp" line="292"/>
+        <location filename="../../src/pages/PreferencesPage.cpp" line="407"/>
+        <location filename="../../src/pages/PreferencesPage.cpp" line="609"/>
+        <location filename="../../src/pages/PreferencesPage.cpp" line="906"/>
         <source>Liquid Glass</source>
         <translation>Liquid Glass</translation>
     </message>
     <message>
-        <location filename="../../src/pages/PreferencesPage.cpp" line="742"/>
+        <location filename="../../src/pages/PreferencesPage.cpp" line="826"/>
         <source>%1 px</source>
         <translation>%1 px</translation>
     </message>
     <message>
-        <location filename="../../src/pages/PreferencesPage.cpp" line="756"/>
+        <location filename="../../src/pages/PreferencesPage.cpp" line="840"/>
         <source>Corner radius</source>
         <translation>Corner radius</translation>
     </message>
     <message>
-        <location filename="../../src/pages/PreferencesPage.cpp" line="757"/>
+        <location filename="../../src/pages/PreferencesPage.cpp" line="841"/>
         <source>Blur radius</source>
         <translation>Blur radius</translation>
     </message>
     <message>
-        <location filename="../../src/pages/PreferencesPage.cpp" line="759"/>
+        <location filename="../../src/pages/PreferencesPage.cpp" line="843"/>
         <source>Refraction height</source>
         <translation>Refraction height</translation>
     </message>
     <message>
-        <location filename="../../src/pages/PreferencesPage.cpp" line="761"/>
+        <location filename="../../src/pages/PreferencesPage.cpp" line="845"/>
         <source>Refraction amount</source>
         <translation>Refraction amount</translation>
     </message>
     <message>
-        <location filename="../../src/pages/PreferencesPage.cpp" line="763"/>
+        <location filename="../../src/pages/PreferencesPage.cpp" line="847"/>
         <source>Chromatic aberration</source>
         <translation>Chromatic aberration</translation>
     </message>
     <message>
-        <location filename="../../src/pages/PreferencesPage.cpp" line="808"/>
+        <location filename="../../src/pages/PreferencesPage.cpp" line="892"/>
         <source>Reset</source>
         <translation>Reset</translation>
     </message>
     <message>
-        <location filename="../../src/pages/PreferencesPage.cpp" line="603"/>
+        <location filename="../../src/pages/PreferencesPage.cpp" line="648"/>
         <source>Overview background material</source>
         <translation>Overview background material</translation>
     </message>
     <message>
-        <location filename="../../src/pages/PreferencesPage.cpp" line="606"/>
+        <location filename="../../src/pages/PreferencesPage.cpp" line="651"/>
         <source>Open Gallery Overview</source>
         <translation>Open Gallery Overview</translation>
     </message>
     <message>
-        <location filename="../../src/pages/PreferencesPage.cpp" line="608"/>
+        <location filename="../../src/pages/PreferencesPage.cpp" line="653"/>
         <source>Open Tier Overview</source>
         <translation>Open Tier Overview</translation>
     </message>
     <message>
-        <location filename="../../src/pages/PreferencesPage.cpp" line="610"/>
+        <location filename="../../src/pages/PreferencesPage.cpp" line="655"/>
         <source>Do Nothing</source>
         <translation>Do Nothing</translation>
     </message>
     <message>
-        <location filename="../../src/pages/PreferencesPage.cpp" line="626"/>
+        <location filename="../../src/pages/PreferencesPage.cpp" line="671"/>
         <source>Empty tier area double-click</source>
         <translation>Empty tier area double-click</translation>
     </message>
     <message>
-        <location filename="../../src/pages/PreferencesPage.cpp" line="637"/>
+        <location filename="../../src/pages/PreferencesPage.cpp" line="682"/>
         <source>Empty tier area long press</source>
         <translation>Empty tier area long press</translation>
     </message>
     <message>
-        <location filename="../../src/pages/PreferencesPage.cpp" line="640"/>
+        <location filename="../../src/pages/PreferencesPage.cpp" line="685"/>
         <source>Show tier list tooltips</source>
         <translation>Show tier list tooltips</translation>
     </message>
     <message>
-        <location filename="../../src/pages/PreferencesPage.cpp" line="644"/>
+        <location filename="../../src/pages/PreferencesPage.cpp" line="689"/>
         <source>Tier list tooltips</source>
         <translation>Tier list tooltips</translation>
     </message>
     <message>
-        <location filename="../../src/pages/PreferencesPage.cpp" line="647"/>
+        <location filename="../../src/pages/PreferencesPage.cpp" line="692"/>
         <source>Enable autosave</source>
         <translation>Enable autosave</translation>
     </message>
     <message>
-        <location filename="../../src/pages/PreferencesPage.cpp" line="649"/>
+        <location filename="../../src/pages/PreferencesPage.cpp" line="694"/>
         <source>Save behavior</source>
         <translation>Save behavior</translation>
     </message>
     <message>
-        <location filename="../../src/pages/PreferencesPage.cpp" line="653"/>
+        <location filename="../../src/pages/PreferencesPage.cpp" line="698"/>
         <source> min</source>
         <translation> min</translation>
     </message>
     <message>
-        <location filename="../../src/pages/PreferencesPage.cpp" line="658"/>
+        <location filename="../../src/pages/PreferencesPage.cpp" line="703"/>
         <source>Autosave interval</source>
         <translation>Autosave interval</translation>
     </message>
     <message>
-        <location filename="../../src/pages/PreferencesPage.cpp" line="673"/>
+        <location filename="../../src/pages/PreferencesPage.cpp" line="718"/>
         <source>Default project folder</source>
         <translation>Default project folder</translation>
     </message>
     <message>
-        <location filename="../../src/pages/PreferencesPage.cpp" line="676"/>
+        <location filename="../../src/pages/PreferencesPage.cpp" line="721"/>
         <source>Choose</source>
         <translation>Choose</translation>
     </message>
     <message>
-        <location filename="../../src/pages/PreferencesPage.cpp" line="703"/>
+        <location filename="../../src/pages/PreferencesPage.cpp" line="748"/>
         <source>Default Project Folder</source>
         <translation>Default Project Folder</translation>
     </message>
     <message>
-        <location filename="../../src/pages/PreferencesPage.cpp" line="713"/>
+        <location filename="../../src/pages/PreferencesPage.cpp" line="758"/>
         <source>Enable automatic update checks</source>
         <translation>Enable automatic update checks</translation>
     </message>
     <message>
-        <location filename="../../src/pages/PreferencesPage.cpp" line="896"/>
+        <location filename="../../src/pages/PreferencesPage.cpp" line="782"/>
+        <source>New project</source>
+        <translation>New project</translation>
+    </message>
+    <message>
+        <location filename="../../src/pages/PreferencesPage.cpp" line="783"/>
+        <source>Open project</source>
+        <translation>Open project</translation>
+    </message>
+    <message>
+        <location filename="../../src/pages/PreferencesPage.cpp" line="784"/>
+        <source>Save project</source>
+        <translation>Save project</translation>
+    </message>
+    <message>
+        <location filename="../../src/pages/PreferencesPage.cpp" line="785"/>
+        <source>Undo</source>
+        <translation>Undo</translation>
+    </message>
+    <message>
+        <location filename="../../src/pages/PreferencesPage.cpp" line="786"/>
+        <source>Redo</source>
+        <translation>Redo</translation>
+    </message>
+    <message>
+        <location filename="../../src/pages/PreferencesPage.cpp" line="787"/>
+        <source>Tier image overview</source>
+        <translation>Tier image overview</translation>
+    </message>
+    <message>
+        <location filename="../../src/pages/PreferencesPage.cpp" line="789"/>
+        <source>Gallery overview</source>
+        <translation>Gallery overview</translation>
+    </message>
+    <message>
+        <location filename="../../src/pages/PreferencesPage.cpp" line="791"/>
+        <source>Export image</source>
+        <translation>Export image</translation>
+    </message>
+    <message>
+        <location filename="../../src/pages/PreferencesPage.cpp" line="792"/>
+        <source>Open preferences</source>
+        <translation>Open preferences</translation>
+    </message>
+    <message>
+        <location filename="../../src/pages/PreferencesPage.cpp" line="793"/>
+        <source>Preview selected or hovered image</source>
+        <translation>Preview selected or hovered image</translation>
+    </message>
+    <message>
+        <location filename="../../src/pages/PreferencesPage.cpp" line="794"/>
+        <source>Remove selected image</source>
+        <translation>Remove selected image</translation>
+    </message>
+    <message>
+        <location filename="../../src/pages/PreferencesPage.cpp" line="795"/>
+        <source>Close preview or transient interface</source>
+        <translation>Close preview or transient interface</translation>
+    </message>
+    <message>
+        <location filename="../../src/pages/PreferencesPage.cpp" line="798"/>
+        <source>Tier and gallery overview shortcuts use the physical Control key on macOS.</source>
+        <translation>Tier and gallery overview shortcuts use the physical Control key on macOS.</translation>
+    </message>
+    <message>
+        <location filename="../../src/pages/PreferencesPage.cpp" line="980"/>
         <source>QTierMaker
 Version: %1
 License: MIT
@@ -1240,29 +1375,29 @@ Links:
 https://github.com/qianvk/QTierMaker</translation>
     </message>
     <message>
-        <location filename="../../src/pages/PreferencesPage.cpp" line="851"/>
+        <location filename="../../src/pages/PreferencesPage.cpp" line="935"/>
         <source>Check Now</source>
         <translation>Check Now</translation>
     </message>
     <message>
-        <location filename="../../src/pages/PreferencesPage.cpp" line="837"/>
+        <location filename="../../src/pages/PreferencesPage.cpp" line="921"/>
         <source>Update definition:
 %1</source>
         <translation>Update definition:
 %1</translation>
     </message>
     <message>
-        <location filename="../../src/pages/PreferencesPage.cpp" line="495"/>
+        <location filename="../../src/pages/PreferencesPage.cpp" line="540"/>
         <source>Automatic update checks are off. You can still check manually; no update is downloaded or installed without your action.</source>
         <translation>Automatic update checks are off. You can still check manually; no update is downloaded or installed without your action.</translation>
     </message>
     <message>
-        <location filename="../../src/pages/PreferencesPage.cpp" line="497"/>
+        <location filename="../../src/pages/PreferencesPage.cpp" line="542"/>
         <source>Automatic checks run at most once per day. No update is downloaded or installed without your action.</source>
         <translation>Automatic checks run at most once per day. No update is downloaded or installed without your action.</translation>
     </message>
     <message>
-        <location filename="../../src/pages/PreferencesPage.cpp" line="856"/>
+        <location filename="../../src/pages/PreferencesPage.cpp" line="940"/>
         <source>Open Release Page</source>
         <translation>Open Release Page</translation>
     </message>
@@ -1558,151 +1693,156 @@ https://github.com/qianvk/QTierMaker</translation>
     </message>
     <message>
         <location filename="../../src/pages/ProjectsPage.cpp" line="1048"/>
+        <source>Export Image...</source>
+        <translation>Export Image...</translation>
+    </message>
+    <message>
+        <location filename="../../src/pages/ProjectsPage.cpp" line="1050"/>
         <source>Save As Project...</source>
         <translation>Save As Project...</translation>
     </message>
     <message>
-        <location filename="../../src/pages/ProjectsPage.cpp" line="1049"/>
+        <location filename="../../src/pages/ProjectsPage.cpp" line="1051"/>
         <source>Rename</source>
         <translation>Rename</translation>
     </message>
     <message>
-        <location filename="../../src/pages/ProjectsPage.cpp" line="1050"/>
+        <location filename="../../src/pages/ProjectsPage.cpp" line="1052"/>
         <source>Choose Cover</source>
         <translation>Choose Cover</translation>
     </message>
     <message>
-        <location filename="../../src/pages/ProjectsPage.cpp" line="1051"/>
+        <location filename="../../src/pages/ProjectsPage.cpp" line="1053"/>
         <source>Reveal</source>
         <translation>Reveal</translation>
     </message>
     <message>
-        <location filename="../../src/pages/ProjectsPage.cpp" line="1053"/>
+        <location filename="../../src/pages/ProjectsPage.cpp" line="1055"/>
         <source>Remove from Recent Projects</source>
         <translation>Remove from Recent Projects</translation>
     </message>
     <message>
-        <location filename="../../src/pages/ProjectsPage.cpp" line="1056"/>
-        <location filename="../../src/pages/ProjectsPage.cpp" line="1430"/>
+        <location filename="../../src/pages/ProjectsPage.cpp" line="1058"/>
         <location filename="../../src/pages/ProjectsPage.cpp" line="1436"/>
+        <location filename="../../src/pages/ProjectsPage.cpp" line="1442"/>
         <source>Delete Project</source>
         <translation>Delete Project</translation>
     </message>
     <message>
-        <location filename="../../src/pages/ProjectsPage.cpp" line="1097"/>
-        <location filename="../../src/pages/ProjectsPage.cpp" line="1102"/>
-        <location filename="../../src/pages/ProjectsPage.cpp" line="1117"/>
-        <location filename="../../src/pages/ProjectsPage.cpp" line="1142"/>
-        <location filename="../../src/pages/ProjectsPage.cpp" line="1153"/>
+        <location filename="../../src/pages/ProjectsPage.cpp" line="1103"/>
+        <location filename="../../src/pages/ProjectsPage.cpp" line="1108"/>
+        <location filename="../../src/pages/ProjectsPage.cpp" line="1123"/>
+        <location filename="../../src/pages/ProjectsPage.cpp" line="1148"/>
         <location filename="../../src/pages/ProjectsPage.cpp" line="1159"/>
-        <location filename="../../src/pages/ProjectsPage.cpp" line="1167"/>
-        <location filename="../../src/pages/ProjectsPage.cpp" line="1175"/>
-        <location filename="../../src/pages/ProjectsPage.cpp" line="1186"/>
-        <location filename="../../src/pages/ProjectsPage.cpp" line="1193"/>
+        <location filename="../../src/pages/ProjectsPage.cpp" line="1165"/>
+        <location filename="../../src/pages/ProjectsPage.cpp" line="1173"/>
+        <location filename="../../src/pages/ProjectsPage.cpp" line="1181"/>
+        <location filename="../../src/pages/ProjectsPage.cpp" line="1192"/>
+        <location filename="../../src/pages/ProjectsPage.cpp" line="1199"/>
         <source>Rename Project</source>
         <translation>Rename Project</translation>
     </message>
     <message>
-        <location filename="../../src/pages/ProjectsPage.cpp" line="1108"/>
+        <location filename="../../src/pages/ProjectsPage.cpp" line="1114"/>
         <source>Project name</source>
         <translation>Project name</translation>
     </message>
     <message>
-        <location filename="../../src/pages/ProjectsPage.cpp" line="1112"/>
+        <location filename="../../src/pages/ProjectsPage.cpp" line="1118"/>
         <source>Confirm</source>
         <translation>Confirm</translation>
     </message>
     <message>
-        <location filename="../../src/pages/ProjectsPage.cpp" line="1117"/>
+        <location filename="../../src/pages/ProjectsPage.cpp" line="1123"/>
         <source>Enter a project name.</source>
         <translation>Enter a project name.</translation>
     </message>
     <message>
-        <location filename="../../src/pages/ProjectsPage.cpp" line="1143"/>
-        <location filename="../../src/pages/ProjectsPage.cpp" line="1373"/>
+        <location filename="../../src/pages/ProjectsPage.cpp" line="1149"/>
+        <location filename="../../src/pages/ProjectsPage.cpp" line="1379"/>
         <source>A project with this name already exists.</source>
         <translation>A project with this name already exists.</translation>
     </message>
     <message>
-        <location filename="../../src/pages/ProjectsPage.cpp" line="1154"/>
+        <location filename="../../src/pages/ProjectsPage.cpp" line="1160"/>
         <source>A project folder with this name already exists.</source>
         <translation>A project folder with this name already exists.</translation>
     </message>
     <message>
-        <location filename="../../src/pages/ProjectsPage.cpp" line="1160"/>
+        <location filename="../../src/pages/ProjectsPage.cpp" line="1166"/>
         <source>Could not rename the project folder.</source>
         <translation>Could not rename the project folder.</translation>
     </message>
     <message>
-        <location filename="../../src/pages/ProjectsPage.cpp" line="1168"/>
-        <location filename="../../src/pages/ProjectsPage.cpp" line="1388"/>
+        <location filename="../../src/pages/ProjectsPage.cpp" line="1174"/>
+        <location filename="../../src/pages/ProjectsPage.cpp" line="1394"/>
         <source>Could not create the project folder.</source>
         <translation>Could not create the project folder.</translation>
     </message>
     <message>
-        <location filename="../../src/pages/ProjectsPage.cpp" line="1176"/>
-        <location filename="../../src/pages/ProjectsPage.cpp" line="1396"/>
+        <location filename="../../src/pages/ProjectsPage.cpp" line="1182"/>
+        <location filename="../../src/pages/ProjectsPage.cpp" line="1402"/>
         <source>Could not copy the project assets.</source>
         <translation>Could not copy the project assets.</translation>
     </message>
     <message>
-        <location filename="../../src/pages/ProjectsPage.cpp" line="1194"/>
+        <location filename="../../src/pages/ProjectsPage.cpp" line="1200"/>
         <source>The project was renamed, but the old project file could not be removed.</source>
         <translation>The project was renamed, but the old project file could not be removed.</translation>
     </message>
     <message>
-        <location filename="../../src/pages/ProjectsPage.cpp" line="1238"/>
+        <location filename="../../src/pages/ProjectsPage.cpp" line="1244"/>
         <source>Could not create the project assets folder.</source>
         <translation>Could not create the project assets folder.</translation>
     </message>
     <message>
-        <location filename="../../src/pages/ProjectsPage.cpp" line="1276"/>
+        <location filename="../../src/pages/ProjectsPage.cpp" line="1282"/>
         <source>Could not save the cover source image.</source>
         <translation>Could not save the cover source image.</translation>
     </message>
     <message>
-        <location filename="../../src/pages/ProjectsPage.cpp" line="1290"/>
+        <location filename="../../src/pages/ProjectsPage.cpp" line="1296"/>
         <source>Could not save the cover image.</source>
         <translation>Could not save the cover image.</translation>
     </message>
     <message>
-        <location filename="../../src/pages/ProjectsPage.cpp" line="1353"/>
-        <location filename="../../src/pages/ProjectsPage.cpp" line="1372"/>
-        <location filename="../../src/pages/ProjectsPage.cpp" line="1380"/>
-        <location filename="../../src/pages/ProjectsPage.cpp" line="1387"/>
-        <location filename="../../src/pages/ProjectsPage.cpp" line="1396"/>
-        <location filename="../../src/pages/ProjectsPage.cpp" line="1405"/>
+        <location filename="../../src/pages/ProjectsPage.cpp" line="1359"/>
+        <location filename="../../src/pages/ProjectsPage.cpp" line="1378"/>
+        <location filename="../../src/pages/ProjectsPage.cpp" line="1386"/>
+        <location filename="../../src/pages/ProjectsPage.cpp" line="1393"/>
+        <location filename="../../src/pages/ProjectsPage.cpp" line="1402"/>
         <location filename="../../src/pages/ProjectsPage.cpp" line="1411"/>
+        <location filename="../../src/pages/ProjectsPage.cpp" line="1417"/>
         <source>Save As Project</source>
         <translation>Save As Project</translation>
     </message>
     <message>
-        <location filename="../../src/pages/ProjectsPage.cpp" line="1381"/>
+        <location filename="../../src/pages/ProjectsPage.cpp" line="1387"/>
         <source>Choose a location outside the current project folder.</source>
         <translation>Choose a location outside the current project folder.</translation>
     </message>
     <message>
-        <location filename="../../src/pages/ProjectsPage.cpp" line="1412"/>
+        <location filename="../../src/pages/ProjectsPage.cpp" line="1418"/>
         <source>The project was saved, but the old project could not be removed.</source>
         <translation>The project was saved, but the old project could not be removed.</translation>
     </message>
     <message>
-        <location filename="../../src/pages/ProjectsPage.cpp" line="1431"/>
+        <location filename="../../src/pages/ProjectsPage.cpp" line="1437"/>
         <source>Delete &quot;%1&quot; and its project files? This cannot be undone.</source>
         <translation>Delete &quot;%1&quot; and its project files? This cannot be undone.</translation>
     </message>
     <message>
-        <location filename="../../src/pages/ProjectsPage.cpp" line="1437"/>
+        <location filename="../../src/pages/ProjectsPage.cpp" line="1443"/>
         <source>Could not delete the project from disk.</source>
         <translation>Could not delete the project from disk.</translation>
     </message>
     <message>
-        <location filename="../../src/pages/ProjectsPage.cpp" line="1212"/>
-        <location filename="../../src/pages/ProjectsPage.cpp" line="1237"/>
-        <location filename="../../src/pages/ProjectsPage.cpp" line="1249"/>
-        <location filename="../../src/pages/ProjectsPage.cpp" line="1275"/>
-        <location filename="../../src/pages/ProjectsPage.cpp" line="1290"/>
-        <location filename="../../src/pages/ProjectsPage.cpp" line="1309"/>
+        <location filename="../../src/pages/ProjectsPage.cpp" line="1218"/>
+        <location filename="../../src/pages/ProjectsPage.cpp" line="1243"/>
+        <location filename="../../src/pages/ProjectsPage.cpp" line="1255"/>
+        <location filename="../../src/pages/ProjectsPage.cpp" line="1281"/>
+        <location filename="../../src/pages/ProjectsPage.cpp" line="1296"/>
+        <location filename="../../src/pages/ProjectsPage.cpp" line="1315"/>
         <source>Cover Image</source>
         <translation>Cover Image</translation>
     </message>
@@ -1733,86 +1873,80 @@ https://github.com/qianvk/QTierMaker</translation>
 <context>
     <name>qtm::RootWidget</name>
     <message>
-        <location filename="../../src/window/RootWidget.cpp" line="355"/>
-        <location filename="../../src/window/RootWidget.cpp" line="384"/>
-        <location filename="../../src/window/RootWidget.cpp" line="480"/>
-        <location filename="../../src/window/RootWidget.cpp" line="608"/>
-        <location filename="../../src/window/RootWidget.cpp" line="745"/>
-        <source>Collapse sidebar</source>
-        <translation>Collapse sidebar</translation>
+        <location filename="../../src/window/RootWidget.cpp" line="303"/>
+        <location filename="../../src/window/RootWidget.cpp" line="434"/>
+        <source>Navigation</source>
+        <translation>Navigation</translation>
     </message>
     <message>
-        <location filename="../../src/window/RootWidget.cpp" line="360"/>
-        <location filename="../../src/window/RootWidget.cpp" line="479"/>
-        <location filename="../../src/window/RootWidget.cpp" line="608"/>
-        <location filename="../../src/window/RootWidget.cpp" line="744"/>
-        <source>Show sidebar</source>
-        <translation>Show sidebar</translation>
+        <location filename="../../src/window/RootWidget.cpp" line="305"/>
+        <location filename="../../src/window/RootWidget.cpp" line="436"/>
+        <source>Content</source>
+        <translation>Content</translation>
     </message>
     <message>
-        <location filename="../../src/window/RootWidget.cpp" line="373"/>
-        <location filename="../../src/window/RootWidget.cpp" line="483"/>
+        <location filename="../../src/window/RootWidget.cpp" line="349"/>
+        <location filename="../../src/window/RootWidget.cpp" line="451"/>
         <source>New</source>
         <translation>New</translation>
     </message>
     <message>
-        <location filename="../../src/window/RootWidget.cpp" line="401"/>
+        <location filename="../../src/window/RootWidget.cpp" line="371"/>
         <source>Downloading update: %1%</source>
         <translation>Downloading update: %1%</translation>
     </message>
     <message>
-        <location filename="../../src/window/RootWidget.cpp" line="476"/>
-        <location filename="../../src/window/RootWidget.cpp" line="486"/>
-        <location filename="../../src/window/RootWidget.cpp" line="530"/>
-        <location filename="../../src/window/RootWidget.cpp" line="931"/>
-        <location filename="../../src/window/RootWidget.cpp" line="1106"/>
+        <location filename="../../src/window/RootWidget.cpp" line="448"/>
+        <location filename="../../src/window/RootWidget.cpp" line="454"/>
+        <location filename="../../src/window/RootWidget.cpp" line="497"/>
+        <location filename="../../src/window/RootWidget.cpp" line="853"/>
+        <location filename="../../src/window/RootWidget.cpp" line="1021"/>
         <source>Preferences</source>
         <translation>Preferences</translation>
     </message>
     <message>
-        <location filename="../../src/window/RootWidget.cpp" line="539"/>
-        <location filename="../../src/window/RootWidget.cpp" line="893"/>
+        <location filename="../../src/window/RootWidget.cpp" line="506"/>
+        <location filename="../../src/window/RootWidget.cpp" line="818"/>
         <source>Install</source>
         <translation>Install</translation>
     </message>
     <message>
-        <location filename="../../src/window/RootWidget.cpp" line="904"/>
+        <location filename="../../src/window/RootWidget.cpp" line="826"/>
         <source>Download update</source>
         <translation>Download update</translation>
     </message>
     <message>
-        <location filename="../../src/window/RootWidget.cpp" line="905"/>
+        <location filename="../../src/window/RootWidget.cpp" line="827"/>
         <source>Download update %1</source>
         <translation>Download update %1</translation>
     </message>
     <message>
-        <location filename="../../src/window/RootWidget.cpp" line="908"/>
+        <location filename="../../src/window/RootWidget.cpp" line="830"/>
         <source>Downloading update</source>
         <translation>Downloading update</translation>
     </message>
     <message>
-        <location filename="../../src/window/RootWidget.cpp" line="911"/>
+        <location filename="../../src/window/RootWidget.cpp" line="833"/>
         <source>Install update</source>
         <translation>Install update</translation>
     </message>
     <message>
-        <location filename="../../src/window/RootWidget.cpp" line="912"/>
+        <location filename="../../src/window/RootWidget.cpp" line="834"/>
         <source>Install update %1</source>
         <translation>Install update %1</translation>
     </message>
     <message>
-        <location filename="../../src/window/RootWidget.cpp" line="915"/>
+        <location filename="../../src/window/RootWidget.cpp" line="837"/>
         <source>Opening update installer</source>
         <translation>Opening update installer</translation>
     </message>
     <message>
-        <location filename="../../src/window/RootWidget.cpp" line="896"/>
-        <location filename="../../src/window/RootWidget.cpp" line="918"/>
+        <location filename="../../src/window/RootWidget.cpp" line="840"/>
         <source>Updates</source>
         <translation>Updates</translation>
     </message>
     <message>
-        <location filename="../../src/window/RootWidget.cpp" line="1100"/>
+        <location filename="../../src/window/RootWidget.cpp" line="1015"/>
         <source>Projects</source>
         <translation>Projects</translation>
     </message>
@@ -1867,14 +2001,6 @@ https://github.com/qianvk/QTierMaker</translation>
     </message>
 </context>
 <context>
-    <name>qtm::SidebarToggleButton</name>
-    <message>
-        <location filename="../../src/window/SidebarToggleButton.cpp" line="8"/>
-        <source>Toggle sidebar</source>
-        <translation>Toggle sidebar</translation>
-    </message>
-</context>
-<context>
     <name>qtm::ThumbnailCache</name>
     <message>
         <location filename="../../src/assets/ThumbnailCache.cpp" line="142"/>
@@ -1885,17 +2011,22 @@ https://github.com/qianvk/QTierMaker</translation>
 <context>
     <name>qtm::TierListExporter</name>
     <message>
-        <location filename="../../src/export/TierListExporter.cpp" line="139"/>
+        <location filename="../../src/export/TierListExporter.cpp" line="28"/>
         <source>The export path needs a file extension.</source>
         <translation>The export path needs a file extension.</translation>
     </message>
     <message>
-        <location filename="../../src/export/TierListExporter.cpp" line="145"/>
-        <source>Could not render the project for export.</source>
-        <translation>Could not render the project for export.</translation>
+        <location filename="../../src/export/TierListExporter.cpp" line="32"/>
+        <source>The export format is not supported.</source>
+        <translation>The export format is not supported.</translation>
     </message>
     <message>
-        <location filename="../../src/export/TierListExporter.cpp" line="160"/>
+        <location filename="../../src/export/TierListExporter.cpp" line="39"/>
+        <source>Could not render the tier board for export.</source>
+        <translation>Could not render the tier board for export.</translation>
+    </message>
+    <message>
+        <location filename="../../src/export/TierListExporter.cpp" line="54"/>
         <source>Could not write the export file.</source>
         <translation>Could not write the export file.</translation>
     </message>
@@ -1903,125 +2034,130 @@ https://github.com/qianvk/QTierMaker</translation>
 <context>
     <name>qtm::TierListView</name>
     <message>
-        <location filename="../../src/tier/TierListView.cpp" line="3147"/>
+        <location filename="../../src/tier/TierListView.cpp" line="3185"/>
         <source>No images in tier list</source>
         <translation>No images in tier list</translation>
     </message>
     <message>
-        <location filename="../../src/tier/TierListView.cpp" line="2599"/>
+        <location filename="../../src/tier/TierListView.cpp" line="2637"/>
         <source>Open Tier Overview</source>
         <translation>Open Tier Overview</translation>
     </message>
     <message>
-        <location filename="../../src/tier/TierListView.cpp" line="2586"/>
+        <location filename="../../src/tier/TierListView.cpp" line="2624"/>
         <source>Click to exit display</source>
         <translation>Click to exit display</translation>
     </message>
     <message>
-        <location filename="../../src/tier/TierListView.cpp" line="2584"/>
+        <location filename="../../src/tier/TierListView.cpp" line="2622"/>
         <source>Double-click to preview. Drag to move.</source>
         <translation>Double-click to preview. Drag to move.</translation>
     </message>
     <message>
-        <location filename="../../src/tier/TierListView.cpp" line="1048"/>
-        <location filename="../../src/tier/TierListView.cpp" line="1137"/>
+        <location filename="../../src/tier/TierListView.cpp" line="1081"/>
+        <location filename="../../src/tier/TierListView.cpp" line="1175"/>
         <source>Edit</source>
         <translation>Edit</translation>
     </message>
     <message>
-        <location filename="../../src/tier/TierListView.cpp" line="1050"/>
+        <location filename="../../src/tier/TierListView.cpp" line="1083"/>
         <source>Clear Images</source>
         <translation>Clear Images</translation>
     </message>
     <message>
-        <location filename="../../src/tier/TierListView.cpp" line="1052"/>
+        <location filename="../../src/tier/TierListView.cpp" line="1085"/>
         <source>Delete</source>
         <translation>Delete</translation>
     </message>
     <message>
-        <location filename="../../src/tier/TierListView.cpp" line="1056"/>
+        <location filename="../../src/tier/TierListView.cpp" line="1089"/>
         <source>Insert Row Above</source>
         <translation>Insert Row Above</translation>
     </message>
     <message>
-        <location filename="../../src/tier/TierListView.cpp" line="1059"/>
+        <location filename="../../src/tier/TierListView.cpp" line="1092"/>
         <source>Insert Row Below</source>
         <translation>Insert Row Below</translation>
     </message>
     <message>
-        <location filename="../../src/tier/TierListView.cpp" line="1093"/>
+        <location filename="../../src/tier/TierListView.cpp" line="1126"/>
         <source>Image Appearance</source>
         <translation>Image Appearance</translation>
     </message>
     <message>
-        <location filename="../../src/tier/TierListView.cpp" line="1096"/>
+        <location filename="../../src/tier/TierListView.cpp" line="1129"/>
         <source>Square</source>
         <translation>Square</translation>
     </message>
     <message>
-        <location filename="../../src/tier/TierListView.cpp" line="1099"/>
+        <location filename="../../src/tier/TierListView.cpp" line="1132"/>
         <source>No Crop</source>
         <translation>No Crop</translation>
     </message>
     <message>
-        <location filename="../../src/tier/TierListView.cpp" line="1107"/>
+        <location filename="../../src/tier/TierListView.cpp" line="1140"/>
         <source>Reset Rows</source>
         <translation>Reset Rows</translation>
     </message>
     <message>
-        <location filename="../../src/tier/TierListView.cpp" line="1143"/>
+        <location filename="../../src/tier/TierListView.cpp" line="1146"/>
+        <source>Export Image...</source>
+        <translation>Export Image...</translation>
+    </message>
+    <message>
+        <location filename="../../src/tier/TierListView.cpp" line="1181"/>
         <source>Remove from Tier Row</source>
         <translation>Remove from Tier Row</translation>
     </message>
     <message>
-        <location filename="../../src/tier/TierListView.cpp" line="1144"/>
+        <location filename="../../src/tier/TierListView.cpp" line="1182"/>
         <source>Remove from Image Gallery</source>
         <translation>Remove from Image Gallery</translation>
     </message>
     <message>
-        <location filename="../../src/tier/TierListView.cpp" line="2559"/>
+        <location filename="../../src/tier/TierListView.cpp" line="2597"/>
         <source>Double-click to display this tier. Right-click for tier actions.</source>
         <translation>Double-click to display this tier. Right-click for tier actions.</translation>
     </message>
     <message>
-        <location filename="../../src/tier/TierListView.cpp" line="2601"/>
+        <location filename="../../src/tier/TierListView.cpp" line="2639"/>
         <source>Open Gallery Overview</source>
         <translation>Open Gallery Overview</translation>
     </message>
     <message>
-        <location filename="../../src/tier/TierListView.cpp" line="2611"/>
+        <location filename="../../src/tier/TierListView.cpp" line="2649"/>
         <source>Double-click: %1</source>
         <translation>Double-click: %1</translation>
     </message>
     <message>
-        <location filename="../../src/tier/TierListView.cpp" line="2615"/>
+        <location filename="../../src/tier/TierListView.cpp" line="2653"/>
         <source>Long press: %1</source>
         <translation>Long press: %1</translation>
     </message>
     <message>
-        <location filename="../../src/tier/TierListView.cpp" line="2622"/>
+        <location filename="../../src/tier/TierListView.cpp" line="2660"/>
         <source>Option</source>
         <translation>Option</translation>
     </message>
     <message>
-        <location filename="../../src/tier/TierListView.cpp" line="2624"/>
+        <location filename="../../src/tier/TierListView.cpp" line="2662"/>
         <source>Alt</source>
         <translation>Alt</translation>
     </message>
     <message>
-        <location filename="../../src/tier/TierListView.cpp" line="2626"/>
+        <location filename="../../src/tier/TierListView.cpp" line="2664"/>
         <source>Hold %1 and drag: Move window
 Esc: Exit Focus Mode</source>
         <translation>Hold %1 and drag: Move window
 Esc: Exit Focus Mode</translation>
     </message>
     <message>
-        <location filename="../../src/tier/TierListView.cpp" line="3145"/>
+        <location filename="../../src/tier/TierListView.cpp" line="3183"/>
         <source>No imported images</source>
         <translation>No imported images</translation>
     </message>
     <message>
-        <location filename="../../src/tier/TierListView.cpp" line="3146"/>
+        <location filename="../../src/tier/TierListView.cpp" line="3184"/>
         <source>No images in this tier</source>
         <translation>No images in this tier</translation>
     </message>
@@ -2047,14 +2183,6 @@ Esc: Exit Focus Mode</translation>
         <location filename="../../src/tier/TierRowEditDialog.cpp" line="45"/>
         <source>Confirm</source>
         <translation>Confirm</translation>
-    </message>
-</context>
-<context>
-    <name>vkui::VkFramelessDialog</name>
-    <message>
-        <location filename="../../third_party/vkui/src/window/VkFramelessDialog.cpp" line="163"/>
-        <source>Close</source>
-        <translation>Close</translation>
     </message>
 </context>
 </TS>

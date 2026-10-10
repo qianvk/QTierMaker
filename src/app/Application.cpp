@@ -221,7 +221,7 @@ Application::Application(int& argc, char** argv) : QApplication(argc, argv) {
     m_languageManager = std::make_unique<LanguageManager>(this);
     m_languageManager->setLanguage(m_settings->language());
     m_themeManager = std::make_unique<ThemeManager>(m_settings.get());
-    m_themeManager->applyTo(*this);
+    m_themeManager->apply();
     m_repository = std::make_unique<ProjectRepository>();
     m_recentProjects = std::make_unique<RecentProjectsStore>();
     m_assetManager = std::make_unique<AssetManager>();

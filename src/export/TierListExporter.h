@@ -1,28 +1,25 @@
 #pragma once
 
-#include "assets/AssetManager.h"
 #include "export/ExportOptions.h"
 #include "persistence/Result.h"
-#include "tier/TierProject.h"
 
+#include <QImage>
 #include <QObject>
 
 namespace qtm {
 
-/** Renders complete tier lists to PNG, JPEG, or PDF without mutating the project. */
+class TierBoardWidget;
+
+/** Captures the live TierBoard rendering instead of maintaining a second export layout. */
 class TierListExporter : public QObject {
     Q_OBJECT
 
 public:
-    explicit TierListExporter(const AssetManager* assetManager, QObject* parent = nullptr);
+    explicit TierListExporter(QObject* parent = nullptr);
 
-    QImage renderToImage(const TierProject& project, const ExportOptions& options) const;
-    Result<void> exportProject(const TierProject& project, const QString& filePath,
-                               const ExportOptions& options) const;
-
-private:
-    const AssetManager* m_assetManager{nullptr};
+    QImage renderBoard(TierBoardWidget* board, const ExportOptions& options) const;
+    Result<void> exportBoard(TierBoardWidget* board, const QString& filePath,
+                             const ExportOptions& options) const;
 };
 
 } // namespace qtm
-

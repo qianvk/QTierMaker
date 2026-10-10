@@ -50,15 +50,15 @@ private slots:
         ThemeManager bridge(&settings);
 
         settings.setAppearance(AppearanceMode::Dark);
-        bridge.applyTo(*qApp);
+        bridge.apply();
         QCOMPARE(vkui::VkThemeManager::instance()->effectiveAppearance(), vkui::VkAppearance::Dark);
-        QCOMPARE(bridge.tokens().contentBackground,
+        QCOMPARE(activeThemeTokens().contentBackground,
                  vkui::VkThemeManager::instance()->theme().colors().contentBackground);
 
         settings.setAppearance(AppearanceMode::Light);
         QCOMPARE(vkui::VkThemeManager::instance()->effectiveAppearance(),
                  vkui::VkAppearance::Light);
-        QCOMPARE(qApp->palette().color(QPalette::Base), bridge.tokens().contentBackground);
+        QCOMPARE(qApp->palette().color(QPalette::Base), activeThemeTokens().contentBackground);
         settings.setAppearance(AppearanceMode::System);
     }
 

@@ -11,13 +11,11 @@
 #include "update/UpdateButton.h"
 #include "window/AppDialog.h"
 #include "window/AppTitleBar.h"
-#include "window/SidebarToggleButton.h"
 
 #include <QAbstractButton>
 #include <QApplication>
 #include <QDialog>
 #include <QDir>
-#include <QEasingCurve>
 #include <QFileInfo>
 #include <QFrame>
 #include <QHBoxLayout>
@@ -28,19 +26,20 @@
 #include <QResizeEvent>
 #include <QShortcut>
 #include <QShowEvent>
-#include <QSignalBlocker>
 #include <QSizePolicy>
 #include <QSplitter>
+#include <QSplitterHandle>
 #include <QStackedWidget>
 #include <QTextEdit>
 #include <QTimer>
 #include <QToolButton>
 #include <QVBoxLayout>
-#include <QVariantAnimation>
 #include <QWindow>
 
 #include <vkui/core/VkIcon.h>
-#include <vkui/window/VkWindowAgent.h>
+#include <vkui/widgets/controls/VSplitter.h>
+#include <vkui/widgets/panels/VPanelManager.h>
+#include <vkui/window/VWindowAgent.h>
 
 #include <algorithm>
 
@@ -50,10 +49,11 @@ namespace {
 constexpr int kSidebarInitialWidth = 236;
 constexpr int kSidebarMinimumExpandedWidth = 208;
 constexpr int kSidebarMaximumWidth = 360;
-constexpr int kSplitterHandleWidth = 0;
 constexpr int kTitleBarHeight = 54;
-constexpr int kSidebarToggleInset = 14;
-[[maybe_unused]] constexpr int kTitleBarControlGap = 10;
+constexpr int kSidebarButtonInset = 14;
+#if defined(Q_OS_MACOS) || defined(Q_OS_MAC)
+constexpr int kMacTrafficLightHeight = 14;
+#endif
 
 Qt::KeyboardModifier physicalControlModifier() {
 #if defined(Q_OS_MACOS) || defined(Q_OS_MAC)
@@ -77,32 +77,19 @@ bool sameProjectPath(const QString& left, const QString& right) {
                .compare(QDir::cleanPath(QFileInfo(right).absoluteFilePath()), pathCase) == 0;
 }
 
-QToolButton* makeTitleBarIconButton(const QString& tooltip, vkui::VkSymbol symbol,
-                                    QWidget* parent) {
-    auto* button = new QToolButton(parent);
-    button->setToolTip(tooltip);
-    button->setIcon(vkui::icon(symbol));
-    button->setToolButtonStyle(Qt::ToolButtonIconOnly);
-    button->setCursor(Qt::ArrowCursor);
-    button->setFocusPolicy(Qt::NoFocus);
-    button->setFixedSize(34, 34);
-    button->setIconSize(QSize(20, 20));
-    button->setAutoRaise(true);
-    return button;
-}
 } // namespace
 
 RootWidget::RootWidget(ProjectRepository* repository, RecentProjectsStore* recentProjects,
                        AssetManager* assetManager, ThumbnailCache* thumbnailCache,
                        AppSettings* settings, LanguageManager* languageManager, AppUpdater* updater,
-                       QWidget* parent)
-    : QWidget(parent) {
+                       vkui::VPanelManager& panelManager, QWidget* parent)
+    : QWidget(parent), m_panelManager(panelManager) {
     buildUi(repository, recentProjects, assetManager, thumbnailCache, settings, languageManager,
             updater);
     setupShortcuts();
 }
 
-void RootWidget::installWindowAgent(vkui::VkWindowAgent* agent) {
+void RootWidget::installWindowAgent(vkui::VWindowAgent* agent) {
     m_windowAgent = agent;
     if (!m_windowAgent || !m_sidebarTitleBar || !m_titleBar) {
         Logger::error(QStringLiteral("ui.window.agent.register rejected missing-widget=1"));
@@ -114,50 +101,38 @@ void RootWidget::installWindowAgent(vkui::VkWindowAgent* agent) {
         return;
     }
 
-    const auto registerInteractive = [this](QWidget* titleBar, QWidget* control) {
-        if (titleBar && control && !m_windowAgent->setHitTestVisible(titleBar, control, true)) {
-            Logger::warn(QStringLiteral("ui.window.agent.hittest.register failed titleBar=%1 "
-                                        "control=%2")
-                             .arg(titleBar->objectName(), control->objectName()));
+    const auto registerInteractive = [this](QWidget* control) {
+        if (control && !m_windowAgent->setHitTestVisible(control, true)) {
+            Logger::warn(QStringLiteral("ui.window.agent.hittest.register failed control=%1")
+                             .arg(control->objectName()));
         }
     };
 
-    if (m_previewOverlay) {
-        // The preview is a window-level input surface. While visible it must supersede every
-        // registered title bar so Windows routes pointer input through the client area.
-        registerInteractive(m_sidebarTitleBar, m_previewOverlay);
-        registerInteractive(m_titleBar, m_previewOverlay);
-    }
-
+    // Hit-test exclusions are window-scoped in current VkUI. Register each control once even when
+    // it overlaps both logical title bars.
+    registerInteractive(m_previewOverlay);
     const auto registerInteractiveChildren = [&registerInteractive](QWidget* titleBar) {
-        const auto buttons = titleBar->findChildren<QAbstractButton*>();
-        for (QAbstractButton* button : buttons) {
-            registerInteractive(titleBar, button);
+        for (QAbstractButton* button : titleBar->findChildren<QAbstractButton*>()) {
+            registerInteractive(button);
         }
-        const auto edits = titleBar->findChildren<QLineEdit*>();
-        for (QLineEdit* edit : edits) {
-            registerInteractive(titleBar, edit);
+        for (QLineEdit* edit : titleBar->findChildren<QLineEdit*>()) {
+            registerInteractive(edit);
         }
     };
     registerInteractiveChildren(m_sidebarTitleBar);
     for (QWidget* control : m_titleBar->interactiveWidgets()) {
-        registerInteractive(m_titleBar, control);
+        registerInteractive(control);
     }
-
-    if (m_sidebarToggleButton) {
-        registerInteractive(m_sidebarTitleBar, m_sidebarToggleButton);
-        registerInteractive(m_titleBar, m_sidebarToggleButton);
+    registerInteractive(m_newProjectButton);
+    if (m_splitter) {
+        registerInteractive(m_splitter->handle(1));
     }
-    if (m_newProjectButton) {
-        registerInteractive(m_sidebarTitleBar, m_newProjectButton);
-        registerInteractive(m_titleBar, m_newProjectButton);
-    }
-    if (m_splitter && m_splitter->handle(1)) {
-        registerInteractive(m_sidebarTitleBar, m_splitter->handle(1));
-        registerInteractive(m_titleBar, m_splitter->handle(1));
+    for (QWidget* edgeHandle : m_panelManager.windowEdgeHandles()) {
+        registerInteractive(edgeHandle);
     }
 #if defined(Q_OS_MACOS) || defined(Q_OS_MAC)
-    m_windowAgent->setSystemButtonAreaGeometry(QRect(12, 11, 72, 32));
+    m_windowAgent->setTrafficLightOrigin(
+        QPoint(12, (kTitleBarHeight - kMacTrafficLightHeight) / 2));
 #endif
     setTitleEditorHitTestVisible(m_currentPage == AppPage::Edit && hasActiveProject());
 }
@@ -190,13 +165,7 @@ void RootWidget::switchToPage(AppPage page) {
 
 void RootWidget::resizeEvent(QResizeEvent* event) {
     QWidget::resizeEvent(event);
-    if (m_sidebarShell && m_sidebarShell->isVisible()) {
-        m_currentSidebarWidth = m_sidebarShell->width();
-        syncSidebarPresentation(m_currentSidebarWidth);
-        layoutSidebarSurface();
-    }
-    layoutTitleBars();
-    layoutSidebarToggleButton();
+    synchronizeSidebarGeometry(true);
     if (m_previewOverlay) {
         m_previewOverlay->setGeometry(rect());
         if (m_previewOverlay->isOpen()) {
@@ -239,25 +208,15 @@ void RootWidget::buildUi(ProjectRepository* repository, RecentProjectsStore* rec
     root->setContentsMargins(0, 0, 0, 0);
     root->setSpacing(0);
 
-    m_splitter = new QSplitter(Qt::Horizontal, this);
+    m_splitter = new vkui::VSplitter(Qt::Horizontal, this);
     m_splitter->setObjectName(QStringLiteral("MainSplitter"));
-    m_splitter->setHandleWidth(kSplitterHandleWidth);
     m_splitter->setOpaqueResize(true);
-    m_splitter->setStyleSheet(
-        QStringLiteral("QSplitter#MainSplitter::handle{background:transparent;border:none;margin:0;"
-                       "padding:0;width:0px;}"
-                       "QSplitter#MainSplitter::handle:hover{background:transparent;}"));
     root->addWidget(m_splitter, 1);
 
-    m_sidebarShell = new QFrame(m_splitter);
-    m_sidebarShell->setObjectName(QStringLiteral("SidebarShell"));
-    m_sidebarShell->setMinimumWidth(0);
-    m_sidebarShell->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Expanding);
-    m_sidebarShell->setFrameShape(QFrame::NoFrame);
-    m_sidebarShell->setBackgroundRole(QPalette::Window);
-    m_sidebarShell->setAutoFillBackground(true);
-
-    m_sidebar = createSidebar(m_sidebarShell);
+    m_sidebar = createSidebar(m_splitter);
+    m_sidebar->setMinimumWidth(kSidebarMinimumExpandedWidth);
+    m_sidebar->setMaximumWidth(kSidebarMaximumWidth);
+    m_sidebar->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
     m_content = createContent(repository, recentProjects, assetManager, thumbnailCache, settings);
 
     m_previewOverlay = new PreviewOverlay(this);
@@ -297,30 +256,52 @@ void RootWidget::buildUi(ProjectRepository* repository, RecentProjectsStore* rec
     }
     connect(m_previewOverlay, &PreviewOverlay::opened, this, [this]() {
         if (m_windowAgent && !m_previewSystemButtonStateCaptured) {
-            m_previewSavedSystemButtonVisibility = m_windowAgent->systemButtonVisibility();
+            m_previewSavedSystemButtonsVisible = m_windowAgent->systemButtonsVisible();
             m_previewSystemButtonStateCaptured = true;
-            m_windowAgent->setSystemButtonVisibility(
-                vkui::VkWindowAgent::SystemButtonVisibility::AlwaysHidden);
+            m_windowAgent->setSystemButtonsVisible(false);
         }
+        m_panelManager.closePanelChooser();
+        setPanelControlsVisible(false);
         Logger::info(QStringLiteral("ui.preview.input.barrier enabled=1 scope=window"));
     });
     connect(m_previewOverlay, &PreviewOverlay::closed, this, [this]() {
         if (m_windowAgent && m_previewSystemButtonStateCaptured) {
-            m_windowAgent->setSystemButtonVisibility(m_previewSavedSystemButtonVisibility);
+            m_windowAgent->setSystemButtonsVisible(m_previewSavedSystemButtonsVisible);
         }
         m_previewSystemButtonStateCaptured = false;
+        if (!m_tierFocusMode) {
+            setPanelControlsVisible(true);
+        }
         Logger::info(QStringLiteral("ui.preview.input.barrier enabled=0 scope=window"));
     });
     connect(m_previewOverlay, &PreviewOverlay::closed, m_editPage,
             &EditPage::restoreGalleryAfterPreview);
 
-    m_splitter->addWidget(m_sidebarShell);
+    m_splitter->addWidget(m_sidebar);
     m_splitter->addWidget(m_content);
-    m_splitter->setCollapsible(0, true);
-    m_splitter->setCollapsible(1, false);
+    m_splitter->setChildrenCollapsible(true);
     m_splitter->setStretchFactor(0, 0);
     m_splitter->setStretchFactor(1, 1);
 
+    const bool panelRootRegistered = m_panelManager.setLayoutRoot(m_splitter);
+    const bool navigationRegistered = m_panelManager.registerPanel(
+        QStringLiteral("navigation"), tr("Navigation"), m_sidebar, 1);
+    const bool contentRegistered =
+        m_panelManager.registerPanel(QStringLiteral("content"), tr("Content"), m_content, 2);
+    if (!panelRootRegistered || !navigationRegistered || !contentRegistered) {
+        Logger::error(
+            QStringLiteral("ui.panel.register failed root=%1 navigation=%2 content=%3")
+                .arg(panelRootRegistered)
+                .arg(navigationRegistered)
+                .arg(contentRegistered));
+    }
+    Q_ASSERT(panelRootRegistered && navigationRegistered && contentRegistered);
+    // VkUI wraps each managed panel in an animation slot. Programmatic setSizes() does not
+    // emit splitterMoved, so follow the slot's geometry throughout collapse and restore.
+    m_sidebarSlot = m_sidebar->parentWidget();
+    if (m_sidebarSlot && m_sidebarSlot != m_splitter) {
+        m_sidebarSlot->installEventFilter(this);
+    }
     connect(m_sidebarView, &QListView::clicked, this, [this](const QModelIndex& index) {
         if (!index.flags().testFlag(Qt::ItemIsEnabled)) {
             updateSelection(m_currentPage);
@@ -328,62 +309,39 @@ void RootWidget::buildUi(ProjectRepository* repository, RecentProjectsStore* rec
         }
         switchToPage(m_sidebarModel->pageForIndex(index));
     });
-    connect(m_splitter, &QSplitter::splitterMoved, this, [this](int pos, int index) {
-        if (m_tierFocusMode) {
-            setSidebarWidth(0);
-            return;
-        }
-        m_currentSidebarWidth = m_sidebarShell ? m_sidebarShell->width() : 0;
-
-        const bool widthAnimationRunning =
-            m_sidebarAnimation && m_sidebarAnimation->state() == QAbstractAnimation::Running;
-        if (!widthAnimationRunning && m_currentSidebarWidth > 0 &&
-            m_currentSidebarWidth < kSidebarMinimumExpandedWidth) {
-            // Keep the manually resized navigation usable. Programmatic collapse still animates
-            // through intermediate widths, while drag resizing has a stable expanded minimum.
-            const QSignalBlocker blocker(m_splitter);
-            setSidebarWidth(kSidebarMinimumExpandedWidth);
-            m_currentSidebarWidth = m_sidebarShell ? m_sidebarShell->width() : 0;
-        }
-
-        if (m_currentSidebarWidth > 0) {
-            m_sidebarCollapsed = false;
-            if (m_currentSidebarWidth >= kSidebarMinimumExpandedWidth) {
-                m_lastExpandedSidebarWidth = m_currentSidebarWidth;
-            }
-            if (m_sidebarToggleButton) {
-                m_sidebarToggleButton->setToolTip(tr("Collapse sidebar"));
-            }
-        } else {
-            m_sidebarCollapsed = true;
-            if (m_sidebarToggleButton) {
-                m_sidebarToggleButton->setToolTip(tr("Show sidebar"));
-            }
-        }
-        syncSidebarPresentation(m_currentSidebarWidth);
-        layoutSidebarSurface();
-        layoutTitleBars();
-        layoutSidebarToggleButton();
-        Logger::debug(QStringLiteral("ui.main.splitter.moved pos=%1 index=%2 sidebarWidth=%3")
-                          .arg(pos)
-                          .arg(index)
-                          .arg(m_currentSidebarWidth));
+    connect(m_splitter, &QSplitter::splitterMoved, this, [this](int, int) {
+        synchronizeSidebarGeometry();
     });
+    connect(&m_panelManager, &vkui::VPanelManager::panelExpandedChanged, this,
+            [this](const QString& id, bool expanded) {
+                if (id != QStringLiteral("navigation")) {
+                    return;
+                }
+                synchronizeSidebarGeometry();
+                Logger::info(QStringLiteral("ui.panel.navigation.target expanded=%1 startWidth=%2")
+                                 .arg(expanded)
+                                 .arg(m_currentSidebarWidth));
+            });
 
-    m_newProjectButton = makeTitleBarIconButton(tr("New"), vkui::VkSymbol::Plus, this);
+    // Keep the action inside the managed sidebar so its animation slot clips the button
+    // during collapse instead of letting it float over the content panel.
+    m_newProjectButton = new QToolButton(m_sidebarTitleBar);
     m_newProjectButton->setObjectName(QStringLiteral("NewProjectButton"));
-    connect(m_newProjectButton, &QToolButton::clicked, this, [this]() {
+    m_newProjectButton->setToolTip(tr("New"));
+    m_newProjectButton->setAccessibleName(tr("New project"));
+    m_newProjectButton->setIcon(vkui::icon(vkui::VkSymbol::Plus));
+    m_newProjectButton->setIconSize(QSize(20, 20));
+    m_newProjectButton->setFixedSize(34, 34);
+    m_newProjectButton->setCursor(Qt::ArrowCursor);
+    m_newProjectButton->setFocusPolicy(Qt::NoFocus);
+    m_newProjectButton->setToolButtonStyle(Qt::ToolButtonIconOnly);
+    m_newProjectButton->setAutoRaise(true);
+    connect(m_newProjectButton, &QAbstractButton::clicked, this, [this]() {
         if (m_editPage && m_editPage->newProject()) {
             setActiveProjectAvailable(true);
             switchToPage(AppPage::Edit);
         }
     });
-
-    m_sidebarToggleButton = new SidebarToggleButton(this);
-    m_sidebarToggleButton->setObjectName(QStringLiteral("SidebarToggleButton"));
-    m_sidebarToggleButton->setToolTip(tr("Collapse sidebar"));
-    connect(m_sidebarToggleButton, &QAbstractButton::clicked, this,
-            [this]() { setSidebarCollapsed(!m_sidebarCollapsed); });
 
     if (updater) {
         connect(updater, &AppUpdater::stateChanged, this,
@@ -404,12 +362,6 @@ void RootWidget::buildUi(ProjectRepository* repository, RecentProjectsStore* rec
         refreshUpdateButton();
     }
 
-    m_sidebarAnimation = new QVariantAnimation(this);
-    m_sidebarAnimation->setDuration(260);
-    m_sidebarAnimation->setEasingCurve(QEasingCurve::OutQuint);
-    connect(m_sidebarAnimation, &QVariantAnimation::valueChanged, this,
-            [this](const QVariant& value) { setSidebarWidth(qRound(value.toReal())); });
-
     connect(m_projectsPage, &ProjectsPage::openProjectRequested, this, [this](const QString& path) {
         if (sameProjectPath(m_editPage->currentProjectPath(), path)) {
             setActiveProjectAvailable(true);
@@ -421,6 +373,8 @@ void RootWidget::buildUi(ProjectRepository* repository, RecentProjectsStore* rec
             switchToPage(AppPage::Edit);
         }
     });
+    connect(m_projectsPage, &ProjectsPage::exportProjectImageRequested, m_editPage,
+            &EditPage::exportProjectFromPath);
     const auto releaseProjectStorage = [this](const QString& path) {
         if (!m_editPage || !sameProjectPath(m_editPage->currentProjectPath(), path)) {
             return;
@@ -455,14 +409,20 @@ void RootWidget::buildUi(ProjectRepository* repository, RecentProjectsStore* rec
     connect(languageManager, &LanguageManager::languageChanged, m_sidebarModel,
             &SidebarModel::retranslate);
     connect(languageManager, &LanguageManager::languageChanged, this, [this]() {
-        if (m_sidebarView) {
+        if (m_sidebarView && m_sidebar) {
             const int preferred = std::clamp(m_sidebarView->preferredWidth() + 22,
                                              kSidebarMinimumExpandedWidth, kSidebarMaximumWidth);
-            m_lastExpandedSidebarWidth = std::max(m_lastExpandedSidebarWidth, preferred);
-            if (!m_sidebarCollapsed && m_currentSidebarWidth > 0) {
-                setSidebarWidth(std::max(m_currentSidebarWidth, preferred));
+            m_sidebar->setMinimumWidth(preferred);
+            if (m_panelManager.isPanelExpanded(QStringLiteral("navigation")) &&
+                m_currentSidebarWidth < preferred) {
+                resizeExpandedSidebar(preferred);
             }
         }
+        const bool navigationRegistered = m_panelManager.registerPanel(
+            QStringLiteral("navigation"), tr("Navigation"), m_sidebar, 1);
+        const bool contentRegistered = m_panelManager.registerPanel(
+            QStringLiteral("content"), tr("Content"), m_content, 2);
+        Q_ASSERT(navigationRegistered && contentRegistered);
         if (m_titleBar) {
             m_titleBar->retranslateUi();
         }
@@ -475,12 +435,9 @@ void RootWidget::buildUi(ProjectRepository* repository, RecentProjectsStore* rec
         if (m_preferencesDialog) {
             m_preferencesDialog->setWindowTitle(tr("Preferences"));
         }
-        if (m_sidebarToggleButton) {
-            m_sidebarToggleButton->setToolTip(m_sidebarCollapsed ? tr("Show sidebar")
-                                                                 : tr("Collapse sidebar"));
-        }
         if (m_newProjectButton) {
             m_newProjectButton->setToolTip(tr("New"));
+            m_newProjectButton->setAccessibleName(tr("New project"));
         }
         if (m_preferencesButton) {
             m_preferencesButton->setToolTip(tr("Preferences"));
@@ -493,13 +450,12 @@ void RootWidget::buildUi(ProjectRepository* repository, RecentProjectsStore* rec
     const int preferredSidebarWidth =
         std::clamp(m_sidebarView ? m_sidebarView->preferredWidth() + 22 : kSidebarInitialWidth,
                    kSidebarMinimumExpandedWidth, kSidebarMaximumWidth);
-    m_lastExpandedSidebarWidth = preferredSidebarWidth;
-    setSidebarWidth(preferredSidebarWidth);
+    m_sidebar->setMinimumWidth(preferredSidebarWidth);
+    resizeExpandedSidebar(preferredSidebarWidth);
     switchToPage(AppPage::Projects);
     layoutTitleBars();
-    layoutSidebarToggleButton();
+    layoutSidebarTitleButton();
     updateTitleBarLeadingReservation();
-    QTimer::singleShot(0, this, [this]() { synchronizeInitialLayout(); });
 }
 
 QFrame* RootWidget::createSidebar(QWidget* parent) {
@@ -596,90 +552,56 @@ QFrame* RootWidget::createContent(ProjectRepository* repository,
     return content;
 }
 
-void RootWidget::setSidebarCollapsed(bool collapsed) {
-    if (m_tierFocusMode) {
-        return;
-    }
-    if (m_sidebarCollapsed == collapsed || !m_sidebarAnimation) {
-        return;
-    }
-
-    m_sidebarCollapsed = collapsed;
-    m_sidebarToggleButton->setToolTip(collapsed ? tr("Show sidebar") : tr("Collapse sidebar"));
-    layoutSidebarToggleButton();
-
-    if (m_sidebarShell) {
-        m_sidebarShell->show();
-    }
-    if (m_sidebar) {
-        m_sidebar->show();
-    }
-
-    const int startWidth = m_currentSidebarWidth;
-    const int endWidth =
-        collapsed ? 0 : std::max(kSidebarMinimumExpandedWidth, m_lastExpandedSidebarWidth);
-    m_sidebarAnimation->stop();
-    m_sidebarAnimation->setStartValue(static_cast<double>(startWidth));
-    m_sidebarAnimation->setEndValue(static_cast<double>(endWidth));
-    m_sidebarAnimation->start();
-    m_sidebarAnimation->setCurrentTime(1);
-    Logger::info(QStringLiteral("ui.sidebar.toggle collapsed=%1 startWidth=%2 endWidth=%3")
-                     .arg(collapsed)
-                     .arg(startWidth)
-                     .arg(endWidth));
-}
-
-void RootWidget::setSidebarWidth(int width) {
-    if (!m_splitter || !m_sidebarShell || !m_sidebar) {
+void RootWidget::resizeExpandedSidebar(int width) {
+    if (!m_splitter || !m_sidebar ||
+        !m_panelManager.isPanelExpanded(QStringLiteral("navigation"))) {
         return;
     }
 
+    const int sidebarWidth =
+        std::clamp(width, m_sidebar->minimumWidth(), kSidebarMaximumWidth);
+    const int contentMinimumWidth = m_content ? m_content->minimumWidth() : 620;
     const int totalWidth =
-        std::max(width + (m_content ? m_content->minimumWidth() : 620), m_splitter->width());
-    const int maxSidebarWidth =
-        std::clamp(totalWidth - (m_content ? m_content->minimumWidth() : 620),
-                   kSidebarMinimumExpandedWidth, kSidebarMaximumWidth);
-    const int sidebarWidth = std::clamp(width, 0, maxSidebarWidth);
-
-    m_sidebarShell->show();
-    m_sidebar->show();
-    m_currentSidebarWidth = sidebarWidth;
-    m_sidebarShell->setMaximumWidth(sidebarWidth == 0 ? 0 : kSidebarMaximumWidth);
+        std::max(m_splitter->width() - m_splitter->handleWidth(),
+                 sidebarWidth + contentMinimumWidth);
     m_splitter->setSizes({sidebarWidth, std::max(1, totalWidth - sidebarWidth)});
-
-    syncSidebarPresentation(sidebarWidth);
-    layoutSidebarSurface();
-    layoutTitleBars();
-    layoutSidebarToggleButton();
+    synchronizeSidebarGeometry(true);
 }
 
 void RootWidget::synchronizeInitialLayout() {
-    if (!m_splitter || m_tierFocusMode) {
-        layoutTitleBars();
-        layoutSidebarToggleButton();
+    if (!m_splitter) {
         return;
     }
 
-    const int targetWidth =
-        m_sidebarCollapsed ? 0 : std::max(kSidebarMinimumExpandedWidth, m_lastExpandedSidebarWidth);
-    setSidebarWidth(targetWidth);
+    if (!m_tierFocusMode &&
+        m_panelManager.isPanelExpanded(QStringLiteral("navigation"))) {
+        resizeExpandedSidebar(std::max(m_currentSidebarWidth, m_sidebar->minimumWidth()));
+    } else {
+        synchronizeSidebarGeometry(true);
+    }
     if (m_pages) {
         updatePageMargins(m_currentPage);
         updateTitleBarForPage(m_currentPage);
     }
-    syncSidebarPresentation(m_currentSidebarWidth);
-    layoutSidebarSurface();
-    layoutTitleBars();
-    layoutSidebarToggleButton();
+}
+
+void RootWidget::setPanelControlsVisible(bool visible) {
+    if (m_splitter && m_splitter->handle(1)) {
+        m_splitter->handle(1)->setVisible(visible);
+        m_splitter->handle(1)->setEnabled(visible);
+    }
+    for (QWidget* edgeHandle : m_panelManager.windowEdgeHandles()) {
+        edgeHandle->setVisible(visible);
+        edgeHandle->setEnabled(visible);
+        if (visible) {
+            edgeHandle->raise();
+        }
+    }
 }
 
 void RootWidget::setTierFocusMode(bool enabled) {
     if (m_tierFocusMode == enabled) {
         return;
-    }
-
-    if (m_sidebarAnimation) {
-        m_sidebarAnimation->stop();
     }
 
     m_tierFocusMode = enabled;
@@ -694,20 +616,19 @@ void RootWidget::setTierFocusMode(bool enabled) {
 
     if (enabled) {
         if (m_windowAgent) {
-            m_savedSystemButtonVisibility = m_windowAgent->systemButtonVisibility();
-            m_windowAgent->setSystemButtonVisibility(
-                vkui::VkWindowAgent::SystemButtonVisibility::AlwaysHidden);
+            m_savedSystemButtonsVisible = m_windowAgent->systemButtonsVisible();
+            m_windowAgent->setSystemButtonsVisible(false);
         }
-        m_focusSavedSidebarCollapsed = m_sidebarCollapsed || m_currentSidebarWidth <= 0;
-        m_focusSavedSidebarWidth =
-            m_focusSavedSidebarCollapsed
-                ? std::max(kSidebarMinimumExpandedWidth, m_lastExpandedSidebarWidth)
-                : std::max(kSidebarMinimumExpandedWidth, m_currentSidebarWidth);
+        m_focusSavedNavigationExpanded =
+            m_panelManager.isPanelExpanded(QStringLiteral("navigation"));
+        m_focusSavedContentExpanded =
+            m_panelManager.isPanelExpanded(QStringLiteral("content"));
+        m_panelManager.closePanelChooser();
+        m_panelManager.setPanelExpanded(QStringLiteral("content"), true);
+        m_panelManager.setPanelExpanded(QStringLiteral("navigation"), false);
+        setPanelControlsVisible(false);
         if (m_pages) {
             m_pages->setContentsMargins(0, 0, 0, 0);
-        }
-        if (m_sidebarToggleButton) {
-            m_sidebarToggleButton->hide();
         }
         if (m_newProjectButton) {
             m_newProjectButton->hide();
@@ -719,11 +640,23 @@ void RootWidget::setTierFocusMode(bool enabled) {
         if (m_editPage) {
             m_editPage->setTierFocusMode(true);
         }
-        setSidebarWidth(0);
     } else {
         if (m_windowAgent) {
-            m_windowAgent->setSystemButtonVisibility(m_savedSystemButtonVisibility);
+            m_windowAgent->setSystemButtonsVisible(m_savedSystemButtonsVisible);
         }
+        if (m_focusSavedNavigationExpanded) {
+            m_panelManager.setPanelExpanded(QStringLiteral("navigation"), true);
+        }
+        if (m_focusSavedContentExpanded) {
+            m_panelManager.setPanelExpanded(QStringLiteral("content"), true);
+        }
+        if (!m_focusSavedNavigationExpanded) {
+            m_panelManager.setPanelExpanded(QStringLiteral("navigation"), false);
+        }
+        if (!m_focusSavedContentExpanded) {
+            m_panelManager.setPanelExpanded(QStringLiteral("content"), false);
+        }
+        setPanelControlsVisible(true);
         if (m_pages) {
             updatePageMargins(m_currentPage);
         }
@@ -734,16 +667,6 @@ void RootWidget::setTierFocusMode(bool enabled) {
         if (m_editPage) {
             m_editPage->setTierFocusMode(false);
         }
-        m_sidebarCollapsed = m_focusSavedSidebarCollapsed;
-        setSidebarWidth(m_sidebarCollapsed
-                            ? 0
-                            : std::clamp(m_focusSavedSidebarWidth, kSidebarMinimumExpandedWidth,
-                                         kSidebarMaximumWidth));
-        if (m_sidebarToggleButton) {
-            m_sidebarToggleButton->show();
-            m_sidebarToggleButton->setToolTip(m_sidebarCollapsed ? tr("Show sidebar")
-                                                                 : tr("Collapse sidebar"));
-        }
         if (m_newProjectButton) {
             m_newProjectButton->show();
         }
@@ -753,10 +676,15 @@ void RootWidget::setTierFocusMode(bool enabled) {
     }
 
     layoutTitleBars();
-    layoutSidebarToggleButton();
+    layoutSidebarTitleButton();
 }
 
 bool RootWidget::eventFilter(QObject* watched, QEvent* event) {
+    if (watched == m_sidebarSlot && event &&
+        (event->type() == QEvent::Resize || event->type() == QEvent::Move ||
+         event->type() == QEvent::Show || event->type() == QEvent::Hide)) {
+        synchronizeSidebarGeometry(true);
+    }
     if (!m_tierFocusMode || !event) {
         return QWidget::eventFilter(watched, event);
     }
@@ -808,23 +736,42 @@ bool RootWidget::eventFilter(QObject* watched, QEvent* event) {
     return QWidget::eventFilter(watched, event);
 }
 
+int RootWidget::sidebarPanelExtent() const {
+    if (m_sidebarSlot) {
+        return std::max(0, m_sidebarSlot->width());
+    }
+    if (m_splitter) {
+        const QList<int> sizes = m_splitter->sizes();
+        if (!sizes.isEmpty()) {
+            return std::max(0, sizes.constFirst());
+        }
+    }
+    return m_sidebar ? std::max(0, m_sidebar->width()) : 0;
+}
+
+void RootWidget::synchronizeSidebarGeometry(bool force) {
+    const int sidebarWidth = sidebarPanelExtent();
+    if (!force && sidebarWidth == m_currentSidebarWidth) {
+        return;
+    }
+    m_currentSidebarWidth = sidebarWidth;
+    syncSidebarPresentation(m_currentSidebarWidth);
+    layoutTitleBars();
+    layoutSidebarTitleButton();
+}
+
 void RootWidget::syncSidebarPresentation(int sidebarWidth) {
     if (!m_sidebarView) {
         return;
     }
-    m_sidebarView->setAvailableWidth(qMax(0, sidebarWidth - 22));
-    m_sidebarView->setVisible(sidebarWidth >= 72);
-}
-
-void RootWidget::layoutSidebarSurface() {
-    if (!m_sidebarShell || !m_sidebar) {
-        return;
-    }
-
-    // The shell owns the animated width. The real sidebar remains expanded and is clipped by the
-    // shell, matching VkUI's multi-titlebar model and avoiding QSplitter minimum-size jumps.
-    const int sidebarWidth = std::max(m_sidebarShell->width(), m_lastExpandedSidebarWidth);
-    m_sidebar->setGeometry(0, 0, sidebarWidth, m_sidebarShell->height());
+    // VPanelManager clips the registered panel while animating below its application minimum.
+    // Keep the navigation layout stable in that range and let the animation slot reveal it.
+    const int layoutWidth = sidebarWidth > 0 && m_sidebar
+                                ? std::max(sidebarWidth, m_sidebar->minimumWidth())
+                                : sidebarWidth;
+    m_sidebarView->setAvailableWidth(qMax(0, layoutWidth - 22));
+    // The panel slot clips its content at zero width. Hiding the list here leaves it explicitly
+    // hidden after a programmatic splitter animation, which need not emit splitterMoved.
 }
 
 void RootWidget::layoutTitleBars() {
@@ -854,35 +801,36 @@ void RootWidget::layoutTitleBars() {
     if (m_newProjectButton) {
         m_newProjectButton->raise();
     }
-    if (m_sidebarToggleButton) {
-        m_sidebarToggleButton->raise();
-    }
     updateTitleBarLeadingReservation();
     if (m_previewOverlay && m_previewOverlay->isOpen()) {
         m_previewOverlay->raise();
     }
 }
 
-void RootWidget::layoutSidebarToggleButton() {
-    if (!m_sidebarToggleButton || !m_newProjectButton) {
+void RootWidget::layoutSidebarTitleButton() {
+    if (!m_newProjectButton) {
         return;
     }
 
-    constexpr int kChromeButtonGap = 6;
-    const int groupWidth =
-        m_newProjectButton->width() + kChromeButtonGap + m_sidebarToggleButton->width();
-    const int minimumX = minimumSidebarToggleX();
+    const int minimumX = minimumSidebarButtonX();
+    const bool hasRoom =
+        m_currentSidebarWidth >= minimumX + m_newProjectButton->width() + kSidebarButtonInset;
+    m_newProjectButton->setVisible(!m_tierFocusMode && hasRoom);
+    if (!hasRoom) {
+        updateTitleBarLeadingReservation();
+        return;
+    }
     const int titleBarWidth = m_sidebarTitleBar ? m_sidebarTitleBar->width() : width();
-    const int maximumX = std::max(minimumX, titleBarWidth - groupWidth - kSidebarToggleInset);
+    const int maximumX =
+        std::max(minimumX, titleBarWidth - m_newProjectButton->width() - kSidebarButtonInset);
     const int naturalX = m_currentSidebarWidth > 0
-                             ? m_currentSidebarWidth - groupWidth - kSidebarToggleInset
+                             ? m_currentSidebarWidth - m_newProjectButton->width() -
+                                   kSidebarButtonInset
                              : minimumX;
     const int x = std::clamp(std::max(naturalX, minimumX), minimumX, maximumX);
-    const int y = std::max(0, (kTitleBarHeight - m_sidebarToggleButton->height()) / 2);
+    const int y = std::max(0, (kTitleBarHeight - m_newProjectButton->height()) / 2);
     m_newProjectButton->move(x, y);
-    m_sidebarToggleButton->move(x + m_newProjectButton->width() + kChromeButtonGap, y);
     m_newProjectButton->raise();
-    m_sidebarToggleButton->raise();
     updateTitleBarLeadingReservation();
 }
 
@@ -963,36 +911,20 @@ void RootWidget::updateTitleBarLeadingReservation() {
     if (!m_titleBar) {
         return;
     }
-
-#if defined(Q_OS_MACOS) || defined(Q_OS_MAC)
+    // The New button belongs to the sidebar title bar and cannot overlap content chrome.
     m_titleBar->setLeadingReservedWidth(0);
-#else
-    if (!m_sidebarToggleButton || !m_content || !m_sidebarToggleButton->isVisible() ||
-        m_tierFocusMode) {
-        m_titleBar->setLeadingReservedWidth(0);
-        return;
-    }
-
-    const int rightEdge = std::max(m_sidebarToggleButton->geometry().right(),
-                                   m_newProjectButton ? m_newProjectButton->geometry().right() : 0);
-    const int toggleRightInContent = rightEdge + 1 - m_content->x();
-    const int reservedWidth =
-        toggleRightInContent > 0 ? toggleRightInContent + kTitleBarControlGap : 0;
-    m_titleBar->setLeadingReservedWidth(reservedWidth);
-#endif
 }
 
-int RootWidget::minimumSidebarToggleX() const {
+int RootWidget::minimumSidebarButtonX() const {
 #if defined(Q_OS_MACOS) || defined(Q_OS_MAC)
-    if (m_windowAgent && m_windowAgent->systemButtonVisibility() !=
-                             vkui::VkWindowAgent::SystemButtonVisibility::AlwaysHidden) {
-        const QRect area = m_windowAgent->systemButtonAreaGeometry();
-        if (area.isValid()) {
-            return area.right() + 9;
+    if (m_windowAgent && m_windowAgent->systemButtonsVisible()) {
+        const auto origin = m_windowAgent->trafficLightOrigin();
+        if (origin.has_value()) {
+            return origin->x() + 81;
         }
     }
 #endif
-    return kSidebarToggleInset;
+    return kSidebarButtonInset;
 }
 
 void RootWidget::setupShortcuts() {
@@ -1055,8 +987,6 @@ void RootWidget::setupShortcuts() {
     auto* preferencesShortcut = new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_Comma), this);
     connect(preferencesShortcut, &QShortcut::activated, this,
             [this]() { switchToPage(AppPage::Preferences); });
-    auto* findShortcut = new QShortcut(QKeySequence::Find, this);
-    connect(findShortcut, &QShortcut::activated, m_projectsPage, &ProjectsPage::focusSearch);
     auto* previewShortcut = new QShortcut(QKeySequence(Qt::Key_Space), this);
     connect(previewShortcut, &QShortcut::activated, m_editPage, &EditPage::previewSelectedImage);
     auto* deleteShortcut = new QShortcut(QKeySequence::Delete, this);
@@ -1110,7 +1040,7 @@ void RootWidget::setTitleEditorHitTestVisible(bool visible) {
     if (!m_windowAgent || !m_titleBar || !m_titleBar->titleEditor()) {
         return;
     }
-    if (!m_windowAgent->setHitTestVisible(m_titleBar, m_titleBar->titleEditor(), visible)) {
+    if (!m_windowAgent->setHitTestVisible(m_titleBar->titleEditor(), visible)) {
         Logger::warn(
             QStringLiteral("ui.window.agent.hittest.title-editor failed visible=%1").arg(visible));
     }

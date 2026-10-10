@@ -13,7 +13,9 @@ class QPoint;
 class QPushButton;
 class QStackedLayout;
 class QToolButton;
-class QComboBox;
+namespace vkui {
+class VCombobox;
+}
 
 namespace qtm {
 
@@ -41,6 +43,7 @@ public slots:
 
 signals:
     void openProjectRequested(const QString& filePath);
+    void exportProjectImageRequested(const QString& filePath);
     void projectDeleted(const QString& filePath);
     void projectAboutToBeReplaced(const QString& filePath);
 
@@ -65,7 +68,7 @@ private:
     AppSettings* m_settings{nullptr};
     SampleProjectDownloader* m_sampleDownloader{nullptr};
     QLineEdit* m_search{nullptr};
-    QComboBox* m_sort{nullptr};
+    vkui::VCombobox* m_sort{nullptr};
     QToolButton* m_openProjectButton{nullptr};
     QListView* m_view{nullptr};
     RecentProjectsModel* m_model{nullptr};

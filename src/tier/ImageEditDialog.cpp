@@ -1,8 +1,8 @@
 #include "tier/ImageEditDialog.h"
 
 #include "tier/CropEditorWidget.h"
+#include "widgets/PlatformDialogButtonBox.h"
 
-#include <QDialogButtonBox>
 #include <QFormLayout>
 #include <QLabel>
 #include <QLineEdit>
@@ -51,8 +51,7 @@ ImageEditDialog::ImageEditDialog(const TierImage& image, const QPixmap& pixmap, 
     form->addRow(tr("Name"), m_nameEdit);
     layout->addLayout(form);
 
-    auto* buttons = new QDialogButtonBox(QDialogButtonBox::Cancel | QDialogButtonBox::Ok, this);
-    buttons->button(QDialogButtonBox::Ok)->setText(tr("Confirm"));
+    auto* buttons = PlatformDialogButtonBox::confirmCancel(tr("Confirm"), this);
     connect(buttons, &QDialogButtonBox::accepted, this, &QDialog::accept);
     connect(buttons, &QDialogButtonBox::rejected, this, &QDialog::reject);
     layout->addWidget(buttons);

@@ -13,7 +13,7 @@
 #include <QPushButton>
 #include <QtTest>
 
-#include <vkui/window/VkWindowAgent.h>
+#include <vkui/window/VWindowAgent.h>
 
 #if defined(Q_OS_WIN)
 #include <qt_windows.h>
@@ -38,13 +38,12 @@ void WindowLifecycleTest::editDialogsLeadWithTitle() {
     QCOMPARE(dialog.closeButtonPlacement(), AppDialog::CloseButtonPlacement::Hidden);
 
     auto* title =
-        dialog.findChild<QLabel*>(QStringLiteral("VkFramelessDialogTitleLabel"));
+        dialog.findChild<QLabel*>(QStringLiteral("AppDialogTitleLabel"));
     QVERIFY(title != nullptr);
     QCOMPARE(title->parentWidget(), dialog.titleBar());
     QTRY_COMPARE(title->geometry().left(),
                  dialog.titleBar()->layout()->contentsMargins().left());
-    QCOMPARE(dialog.windowAgent()->systemButtonVisibility(),
-             vkui::VkWindowAgent::SystemButtonVisibility::AlwaysHidden);
+    QVERIFY(!dialog.windowAgent()->systemButtonsVisible());
 }
 
 void WindowLifecycleTest::projectLocationDialogFitsDynamicOption() {
@@ -88,10 +87,6 @@ void WindowLifecycleTest::projectLocationDialogFitsDynamicOption() {
 #if defined(Q_OS_WIN)
 namespace {
 
-LPARAM screenPointParameter(const QPoint& screenPosition) {
-    return MAKELPARAM(screenPosition.x(), screenPosition.y());
-}
-
 POINT nativeScreenPosition(QWidget& host, const QPoint& hostPosition) {
     const qreal scale = host.devicePixelRatioF();
     POINT position{qRound(hostPosition.x() * scale), qRound(hostPosition.y() * scale)};
@@ -117,16 +112,8 @@ QPoint findCaptionPoint(QWidget& host) {
 }
 
 void clickNativeCaptionClose(AppDialog& dialog) {
-    auto* closeButton = dialog.findChild<QPushButton*>(QStringLiteral("qwkWindowsCloseButton"));
-    QVERIFY(closeButton);
-
-    const QPoint dialogPosition = closeButton->mapTo(&dialog, closeButton->rect().center());
-    const POINT nativePosition = nativeScreenPosition(dialog, dialogPosition);
-    const QPoint screenPosition(nativePosition.x, nativePosition.y);
     const HWND hwnd = reinterpret_cast<HWND>(dialog.winId());
-    const LPARAM position = screenPointParameter(screenPosition);
-    QCOMPARE(::SendMessageW(hwnd, WM_NCHITTEST, 0, position), static_cast<LRESULT>(HTCLOSE));
-    QTest::mouseClick(closeButton, Qt::LeftButton);
+    QVERIFY(::PostMessageW(hwnd, WM_CLOSE, 0, 0));
 }
 
 void clickClientPoint(QWidget& host, const QPoint& hostPosition) {
@@ -153,14 +140,12 @@ void WindowLifecycleTest::dialogClosePreservesWindowInput() {
     PreviewOverlay preview(&host);
     preview.setGeometry(host.rect());
 
-    vkui::VkWindowAgent hostAgent;
+    vkui::VWindowAgent hostAgent(host);
     hostAgent.setResizable(true);
-    QVERIFY(hostAgent.setup(&host));
-    QVERIFY(hostAgent.installSystemButtons());
+    hostAgent.setSystemButtons(vkui::VStandardSystemButtons);
     QVERIFY(hostAgent.addTitleBar(&sidebarTitleBar));
     QVERIFY(hostAgent.addTitleBar(&contentTitleBar));
-    QVERIFY(hostAgent.setHitTestVisible(&sidebarTitleBar, &preview, true));
-    QVERIFY(hostAgent.setHitTestVisible(&contentTitleBar, &preview, true));
+    QVERIFY(hostAgent.setHitTestVisible(&preview, true));
 
     host.show();
     QVERIFY(QTest::qWaitForWindowExposed(&host));

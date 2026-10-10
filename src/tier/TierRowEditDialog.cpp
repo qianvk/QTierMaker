@@ -1,9 +1,9 @@
 #include "tier/TierRowEditDialog.h"
 
 #include "theme/Theme.h"
+#include "widgets/PlatformDialogButtonBox.h"
 
 #include <QColorDialog>
-#include <QDialogButtonBox>
 #include <QFormLayout>
 #include <QLineEdit>
 #include <QPushButton>
@@ -41,8 +41,7 @@ TierRowEditDialog::TierRowEditDialog(const QString& title, const QString& label,
     form->addRow(tr("Color"), m_colorButton);
     contentLayout()->addLayout(form);
 
-    auto* buttons = new QDialogButtonBox(QDialogButtonBox::Cancel | QDialogButtonBox::Ok, this);
-    buttons->button(QDialogButtonBox::Ok)->setText(tr("Confirm"));
+    auto* buttons = PlatformDialogButtonBox::confirmCancel(tr("Confirm"), this);
     connect(buttons, &QDialogButtonBox::accepted, this, &QDialog::accept);
     connect(buttons, &QDialogButtonBox::rejected, this, &QDialog::reject);
     contentLayout()->addWidget(buttons);

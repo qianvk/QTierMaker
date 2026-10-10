@@ -1,10 +1,10 @@
 #include "pages/ProjectLocationDialog.h"
 
 #include "persistence/ProjectFileLayout.h"
+#include "widgets/PlatformDialogButtonBox.h"
 #include "window/AppMessageDialog.h"
 
 #include <QCheckBox>
-#include <QDialogButtonBox>
 #include <QDir>
 #include <QFileDialog>
 #include <QFileInfo>
@@ -82,7 +82,8 @@ ProjectLocationDialog::ProjectLocationDialog(const QString& projectName,
     contentLayout()->addLayout(form);
     contentLayout()->addWidget(m_defaultDirectoryCheck);
 
-    auto* buttons = new QDialogButtonBox(QDialogButtonBox::Cancel | QDialogButtonBox::Save, this);
+    auto* buttons = new PlatformDialogButtonBox(
+        QDialogButtonBox::Save | QDialogButtonBox::Cancel, this);
     connect(buttons, &QDialogButtonBox::rejected, this, &QDialog::reject);
     connect(buttons, &QDialogButtonBox::accepted, this, [this]() {
         if (this->projectName().isEmpty()) {
