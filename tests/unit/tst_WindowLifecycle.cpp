@@ -162,8 +162,10 @@ void WindowLifecycleTest::dialogClosePreservesWindowInput() {
         dialog->setCloseButtonPlacement(AppDialog::CloseButtonPlacement::Platform);
         dialog->resize(520, 360);
 
-        // Installing custom caption controls must not create the platform window before show().
-        QVERIFY(!dialog->internalWinId());
+        // VkUI creates the host handle on attachment. A transient dialog must own a distinct
+        // handle even before show(), without claiming or modifying its owner's native window.
+        QVERIFY(dialog->internalWinId());
+        QVERIFY(dialog->internalWinId() != host.internalWinId());
         dialog->show();
         QTRY_VERIFY(qApp->activeModalWidget());
         QCOMPARE(qApp->activeModalWidget(), dialog.data());

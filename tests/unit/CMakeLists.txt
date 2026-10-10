@@ -90,7 +90,7 @@ target_link_libraries(tst_WindowLifecycle PRIVATE
     Qt6::Test
 )
 target_include_directories(tst_WindowLifecycle PRIVATE "${PROJECT_SOURCE_DIR}/src")
-add_test(NAME tst_WindowLifecycle COMMAND tst_WindowLifecycle)
+add_test(NAME tst_WindowLifecycle COMMAND tst_WindowLifecycle -o -,txt)
 
 qt_add_executable(tst_PreviewOverlay
     tst_PreviewOverlay.cpp
@@ -124,7 +124,7 @@ target_include_directories(tst_WindowResizePolicy PRIVATE "${PROJECT_SOURCE_DIR}
 if(APPLE)
     set_source_files_properties(tst_WindowResizePolicy.cpp PROPERTIES LANGUAGE OBJCXX)
 endif()
-add_test(NAME tst_WindowResizePolicy COMMAND tst_WindowResizePolicy)
+add_test(NAME tst_WindowResizePolicy COMMAND tst_WindowResizePolicy -o -,txt)
 
 qt_add_executable(tst_Resources tst_Resources.cpp "${PROJECT_SOURCE_DIR}/resources/resources.qrc")
 target_link_libraries(tst_Resources PRIVATE VkUI::Core Qt6::Core Qt6::Gui Qt6::Widgets Qt6::Test)

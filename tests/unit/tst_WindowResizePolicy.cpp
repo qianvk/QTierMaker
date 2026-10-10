@@ -142,7 +142,8 @@ void WindowResizePolicyTest::transientAgentNeverClaimsOwnerWindow() {
         dialog->setCloseButtonPlacement(qtm::AppDialog::CloseButtonPlacement::Platform);
         dialog->resize(360, 220);
 
-        QVERIFY(!dialog->internalWinId());
+        QVERIFY(dialog->internalWinId());
+        QVERIFY(dialog->internalWinId() != host.internalWinId());
         QCOMPARE(hitTestAt(host, QPoint(240, 22)), static_cast<LRESULT>(HTCAPTION));
 
         dialog->show();

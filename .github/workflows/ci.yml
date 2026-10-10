@@ -62,6 +62,10 @@ jobs:
             exit "${status}"
           fi
 
+      - name: Test native window policy
+        if: runner.os == 'Windows'
+        run: ctest --test-dir build -C Release -V -R '^tst_WindowResizePolicy$'
+
       - name: Build
         shell: bash
         run: |
