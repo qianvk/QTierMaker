@@ -54,6 +54,10 @@ void WindowResizePolicyTest::dialogClosePlacementTracksPolicy() {
     QCOMPARE(dialog.size(), QSize(520, 360));
     QVERIFY(dialog.windowAgent()->systemButtonsVisible());
 
+    dialog.resize(600, 400);
+    QCoreApplication::processEvents();
+    QCOMPARE(dialog.size(), QSize(600, 400));
+
 #if defined(Q_OS_MACOS) || defined(Q_OS_MAC)
     auto* nativeView = reinterpret_cast<NSView*>(dialog.winId());
     QVERIFY(nativeView != nil);
@@ -66,6 +70,8 @@ void WindowResizePolicyTest::dialogClosePlacementTracksPolicy() {
 
     dialog.setCloseButtonPlacement(qtm::AppDialog::CloseButtonPlacement::Hidden);
     QVERIFY(!dialog.windowAgent()->systemButtonsVisible());
+    QCoreApplication::processEvents();
+    QCOMPARE(dialog.size(), QSize(600, 400));
     auto* title = dialog.findChild<QLabel*>(QStringLiteral("AppDialogTitleLabel"));
     QVERIFY(title != nullptr);
     QCOMPARE(title->parentWidget(), dialog.titleBar());
