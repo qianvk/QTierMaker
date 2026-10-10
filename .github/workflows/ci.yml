@@ -64,7 +64,13 @@ jobs:
 
       - name: Test native window policy
         if: runner.os == 'Windows'
-        run: ctest --test-dir build -C Release -V -R '^tst_WindowResizePolicy$'
+        shell: pwsh
+        run: |
+          & ./build/Release/tst_WindowResizePolicy.exe -o native-window-test.txt,txt
+          $nativeExitCode = $LASTEXITCODE
+          if (Test-Path native-window-test.txt) { Get-Content native-window-test.txt }
+          Write-Host "Native window test exit code: $nativeExitCode"
+          if ($nativeExitCode -ne 0) { exit $nativeExitCode }
 
       - name: Build
         shell: bash
