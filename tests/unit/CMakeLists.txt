@@ -127,7 +127,16 @@ endif()
 add_test(NAME tst_WindowResizePolicy COMMAND tst_WindowResizePolicy -o -,txt)
 
 qt_add_executable(tst_Resources tst_Resources.cpp "${PROJECT_SOURCE_DIR}/resources/resources.qrc")
-target_link_libraries(tst_Resources PRIVATE VkUI::Core Qt6::Core Qt6::Gui Qt6::Widgets Qt6::Test)
+target_link_libraries(tst_Resources PRIVATE
+    qtiermaker_core VkUI::Widgets VkUI::Window Qt6::Test
+)
+target_compile_features(tst_Resources PRIVATE cxx_std_20)
+target_include_directories(tst_Resources PRIVATE "${PROJECT_SOURCE_DIR}/src")
+qt_add_resources(tst_Resources test_translations
+    PREFIX "/translations"
+    BASE "${PROJECT_BINARY_DIR}"
+    FILES "${PROJECT_BINARY_DIR}/QTierMaker_zh_CN.qm"
+)
 target_compile_definitions(tst_Resources PRIVATE
     QTM_TEST_TRANSLATION_FILE="${PROJECT_BINARY_DIR}/QTierMaker_zh_CN.qm"
 )

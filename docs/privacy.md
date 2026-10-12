@@ -10,3 +10,7 @@ QTierMaker is local-first.
   from GitHub; it does not attach project data, image data, or telemetry to that request.
 
 Project files may include image filenames and paths. Treat project files as private if your image names or folder names are sensitive.
+
+Local build trees, user CMake presets, project data, logs, environment files, and private signing
+material (including Windows PFX certificates) are excluded from version control. Shared build
+configuration should use relative paths or documented placeholders for local Qt installations.

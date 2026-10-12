@@ -21,6 +21,9 @@ public:
 signals:
     void languageChanged(const QString& languageCode);
 
+protected:
+    bool eventFilter(QObject* watched, QEvent* event) override;
+
 private:
     QApplication* m_app{nullptr};
     QTranslator m_translator;

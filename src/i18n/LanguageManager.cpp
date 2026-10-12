@@ -1,14 +1,27 @@
 #include "i18n/LanguageManager.h"
 
 #include <QApplication>
+#include <QDialogButtonBox>
+#include <QEvent>
 #include <QLibraryInfo>
 #include <QLocale>
+#include <QPushButton>
+#include <QTimer>
 
 #include <array>
 
 namespace qtm {
 
 namespace {
+void refreshCancelLabel(QDialogButtonBox* buttons) {
+    if (auto* cancel = buttons->button(QDialogButtonBox::Cancel)) {
+        const QString text = QCoreApplication::translate("QPlatformTheme", "Cancel");
+        if (cancel->text() != text) {
+            cancel->setText(text);
+        }
+    }
+}
+
 // Qt obtains standard QDialogButtonBox labels from platform theme contexts. Keeping these source
 // strings in the application catalog makes packaged builds independent of Qt's optional catalogs.
 [[maybe_unused]] constexpr std::array kStandardDialogButtonTexts{
@@ -28,7 +41,27 @@ namespace {
 };
 } // namespace
 
-LanguageManager::LanguageManager(QApplication* app, QObject* parent) : QObject(parent), m_app(app) {}
+LanguageManager::LanguageManager(QApplication* app, QObject* parent) : QObject(parent), m_app(app) {
+    if (m_app) {
+        m_app->installEventFilter(this);
+    }
+}
+
+bool LanguageManager::eventFilter(QObject* watched, QEvent* event) {
+    if (event && (event->type() == QEvent::Show || event->type() == QEvent::Polish ||
+                  event->type() == QEvent::LanguageChange || event->type() == QEvent::StyleChange)) {
+        if (auto* buttons = qobject_cast<QDialogButtonBox*>(watched)) {
+            if (event->type() == QEvent::Show) {
+                refreshCancelLabel(buttons);
+                return QObject::eventFilter(watched, event);
+            }
+            // Qt's own handler can refresh standard labels after an application event filter.
+            // Reconcile afterwards, with the button box as context so destruction cancels it.
+            QTimer::singleShot(0, buttons, [buttons]() { refreshCancelLabel(buttons); });
+        }
+    }
+    return QObject::eventFilter(watched, event);
+}
 
 QStringList LanguageManager::availableLanguages() const {
     return {QStringLiteral("system"), QStringLiteral("en"), QStringLiteral("zh_CN")};
@@ -60,6 +93,11 @@ bool LanguageManager::setLanguage(const QString& languageCode) {
         }
     }
     m_currentLanguage = requestedLanguage;
+    for (QWidget* widget : QApplication::allWidgets()) {
+        if (auto* buttons = qobject_cast<QDialogButtonBox*>(widget)) {
+            refreshCancelLabel(buttons);
+        }
+    }
     emit languageChanged(requestedLanguage);
     return loaded || resolvedLanguage == QStringLiteral("en");
 }

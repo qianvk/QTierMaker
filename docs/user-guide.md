@@ -27,9 +27,15 @@ Select or hover an image and press Space. Press Space or Escape again, or click 
 ## Save and Export
 
 Projects are saved as `.qtm` files inside same-named folders. Changing the project title and saving
-renames both the folder and project file. Export creates PNG, JPEG, or PDF output without mutating
+renames both the folder and project file. Export creates PNG or JPEG output without mutating
 the project.
 
 **Save As** relocates the active project: it moves the `.qtm` file and `assets` into the selected
 same-named project folder, applies the name entered in the dialog, and removes the previous project
 storage only after the new project is safely written.
+
+## Application Language
+
+Choose **Preferences > General > Language** to switch between English, Simplified Chinese, and
+the system language. Standard Cancel buttons in Qt/VkUI confirmation dialogs follow the selected
+application language, including dialogs already open and dialogs opened after switching.
