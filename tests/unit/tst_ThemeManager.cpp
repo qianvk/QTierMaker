@@ -1,9 +1,12 @@
 #include "settings/AppSettings.h"
 #include "theme/Theme.h"
 #include "theme/ThemeManager.h"
+#include "window/AppTitleBar.h"
 
 #include <QApplication>
 #include <QStandardPaths>
+#include <QStyleHints>
+#include <QLineEdit>
 #include <QtTest>
 #include <vkui/core/VkAppearance.h>
 #include <vkui/core/VkThemeManager.h>
@@ -14,6 +17,46 @@ class tst_ThemeManager : public QObject {
     Q_OBJECT
 
 private slots:
+    void titleTextFollowsLiveAppearanceChanges() {
+        QStandardPaths::setTestModeEnabled(true);
+        AppSettings settings;
+        const auto original = settings.appearance();
+        ThemeManager bridge(&settings);
+        settings.setAppearance(AppearanceMode::Light);
+        bridge.apply();
+        QWidget surface;
+        AppTitleBar title(&surface);
+        title.setDocumentTitle(QStringLiteral("Readable title"));
+        title.setTitleEditable(false);
+        surface.resize(900, 100);
+        title.resize(900, 54);
+        surface.show();
+        QVERIFY(QTest::qWaitForWindowExposed(&surface));
+        settings.setAppearance(AppearanceMode::Dark);
+        QTRY_VERIFY(title.titleEditor()->palette().color(QPalette::Text).lightness() > 128);
+        settings.setAppearance(AppearanceMode::Light);
+        QTRY_VERIFY(title.titleEditor()->palette().color(QPalette::Text).lightness() < 128);
+        settings.setAppearance(original);
+    }
+    void windowsCaptionColorsFollowAppearance() {
+#if defined(Q_OS_WIN)
+        QStandardPaths::setTestModeEnabled(true);
+        AppSettings settings;
+        const auto original = settings.appearance();
+        ThemeManager bridge(&settings);
+        settings.setAppearance(AppearanceMode::Dark);
+        bridge.apply();
+        QTRY_COMPARE(qApp->styleHints()->colorScheme(), Qt::ColorScheme::Dark);
+        settings.setAppearance(AppearanceMode::Light);
+        QTRY_COMPARE(qApp->styleHints()->colorScheme(), Qt::ColorScheme::Light);
+        settings.setAppearance(AppearanceMode::System);
+        bridge.apply();
+        QVERIFY(vkui::VkThemeManager::instance()->appearance() == vkui::VkAppearance::Auto);
+        settings.setAppearance(original);
+#else
+        QSKIP("Qt's Windows caption renderer uses the application color scheme.");
+#endif
+    }
     void lightAndDarkHaveDistinctTokens() {
         auto* manager = vkui::VkThemeManager::instance();
         const vkui::VkAppearance original = manager->appearance();

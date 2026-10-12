@@ -1,4 +1,5 @@
 #include "tier/TierListDelegate.h"
+#include "tier/TierBoardGeometry.h"
 
 #include "theme/Theme.h"
 #include "tier/TierListLayout.h"
@@ -10,14 +11,11 @@
 #include <QImageIOHandler>
 #include <QImageReader>
 #include <QPainter>
-#include <QPainterPath>
 
 #include <algorithm>
 #include <utility>
 
 #include <vkui/core/VkIcon.h>
-#include <vkui/core/VkTheme.h>
-#include <vkui/core/VkThemeManager.h>
 
 namespace qtm {
 
@@ -44,36 +42,6 @@ qreal canvasBackgroundVisibility(const TierProject* project) {
 
 bool imagesVisible(const TierProject* project) {
     return !project || !project->canvas.value(QStringLiteral("previewImagesHidden")).toBool(false);
-}
-
-int platformOuterRadius() {
-    return std::max(0, qRound(vkui::VkThemeManager::instance()
-                                  ->theme()
-                                  .metrics()
-                                  .windowCornerRadius));
-}
-
-QPainterPath rowClipPath(const QRect& rect, bool firstRow, bool lastRow) {
-    const QRectF rowRect = QRectF(rect).adjusted(0.5, 0.0, -0.5, 0.0);
-    if (!firstRow && !lastRow) {
-        QPainterPath path;
-        path.addRect(rowRect);
-        return path;
-    }
-
-    QPainterPath rounded;
-    const int radius = platformOuterRadius();
-    rounded.addRoundedRect(rowRect, radius, radius);
-
-    QPainterPath squareMask;
-    if (!firstRow) {
-        squareMask.addRect(QRectF(rowRect.left(), rowRect.top(), rowRect.width(), radius + 1));
-    }
-    if (!lastRow) {
-        squareMask.addRect(
-            QRectF(rowRect.left(), rowRect.bottom() - radius - 1, rowRect.width(), radius + 1));
-    }
-    return rounded.united(squareMask);
 }
 
 } // namespace
@@ -113,10 +81,6 @@ int TierListDelegate::labelWidth() const {
 
 int TierListDelegate::minimumLabelWidth() {
     return kMinimumLabelWidth;
-}
-
-int TierListDelegate::outerRadius() {
-    return platformOuterRadius();
 }
 
 QRect TierListDelegate::labelRect(const QRect& rowRect) const {
@@ -275,7 +239,9 @@ void TierListDelegate::paint(QPainter* painter, const QStyleOptionViewItem& opti
     const float materialAlpha = static_cast<float>(1.0 - backgroundVisibility);
     const float gridAlpha = static_cast<float>(1.0 - backgroundVisibility * 0.72);
 
-    painter->setClipPath(rowClipPath(rowRect, firstRow, lastRow));
+    const qreal radius = view ? view->outerCornerRadius() : tierBoardCornerRadius();
+    painter->setClipPath(tierBoardRowClipPath(QRectF(rowRect), radius, firstRow, lastRow),
+                         Qt::IntersectClip);
     QColor labelColor = rowColor.isValid() ? rowColor : colors.controlFillHovered;
     labelColor.setAlphaF(labelAlpha);
     const int currentLabelWidth = labelWidth();
@@ -301,7 +267,6 @@ void TierListDelegate::paint(QPainter* painter, const QStyleOptionViewItem& opti
         painter->fontMetrics().elidedText(index.data(TierListModel::LabelRole).toString(),
                                           Qt::ElideRight, currentLabelWidth - 10));
 
-    painter->setClipping(false);
     painter->setRenderHint(QPainter::Antialiasing, false);
     QColor gridLine = colors.separator;
     gridLine.setAlphaF(gridAlpha * static_cast<float>(1.0 - missionProgress));
@@ -377,7 +342,7 @@ void TierListDelegate::paint(QPainter* painter, const QStyleOptionViewItem& opti
         QPixmap pixmap = pixmapForImage(*image, targetPixelSize);
         painter->save();
         const QRectF drawBounds = imageRect;
-        painter->setClipRect(drawBounds);
+        painter->setClipRect(drawBounds, Qt::IntersectClip);
         painter->fillRect(drawBounds, colors.elevatedBackground);
         if (!pixmap.isNull()) {
             painter->drawPixmap(drawBounds, pixmap,

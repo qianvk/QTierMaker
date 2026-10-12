@@ -72,10 +72,7 @@ AppTitleBar::AppTitleBar(QWidget* parent) : QWidget(parent) {
     m_titleEdit->setMaximumWidth(520);
     m_titleEdit->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
     m_titleEdit->installEventFilter(this);
-    m_titleEdit->setStyleSheet(
-        QStringLiteral("QLineEdit#ProjectTitleEdit{background:transparent;border:none;"
-                       "border-radius:0px;padding:4px "
-                       "10px;}"));
+    refreshTitlePalette();
     m_unsavedIndicator = new QLabel(controlsParent);
     m_unsavedIndicator->setObjectName(QStringLiteral("UnsavedIndicator"));
     m_unsavedIndicator->setFixedSize(16, 16);
@@ -174,10 +171,7 @@ void AppTitleBar::setTitleEditable(bool editable) {
         m_titleEdit->clearFocus();
         m_titleEdit->deselect();
     }
-    m_titleEdit->setStyleSheet(
-        QStringLiteral("QLineEdit#ProjectTitleEdit{background:transparent;border:none;"
-                       "border-radius:0px;padding:4px "
-                       "10px;}"));
+    refreshTitlePalette();
     updateTitleGeometry();
 }
 
@@ -381,8 +375,21 @@ void AppTitleBar::changeEvent(QEvent* event) {
     QWidget::changeEvent(event);
     if (event->type() == QEvent::PaletteChange ||
         event->type() == QEvent::ApplicationPaletteChange) {
+        refreshTitlePalette();
         update();
     }
+}
+
+void AppTitleBar::refreshTitlePalette() {
+    if (!m_titleEdit) {
+        return;
+    }
+    // QStyleSheetStyle caches the line edit's palette when its transparent stylesheet is
+    // installed. Refresh its text rule on theme changes instead of retaining the old color.
+    m_titleEdit->setStyleSheet(
+        QStringLiteral("QLineEdit#ProjectTitleEdit{background:transparent;border:none;"
+                       "border-radius:0px;padding:4px 10px;color:%1;}")
+            .arg(palette().color(QPalette::Text).name()));
 }
 
 void AppTitleBar::updateTitleGeometry() {

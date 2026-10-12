@@ -626,6 +626,12 @@ void RootWidget::setTierFocusMode(bool enabled) {
         m_panelManager.closePanelChooser();
         m_panelManager.setPanelExpanded(QStringLiteral("content"), true);
         m_panelManager.setPanelExpanded(QStringLiteral("navigation"), false);
+        // A zero-width QSplitter handle still overlaps its neighboring panels.
+        // Hide the actual splitter slot so Qt removes both its extent and handle.
+        if (m_sidebarSlot) {
+            m_focusSavedNavigationSlotHidden = m_sidebarSlot->isHidden();
+            m_sidebarSlot->hide();
+        }
         setPanelControlsVisible(false);
         if (m_pages) {
             m_pages->setContentsMargins(0, 0, 0, 0);
@@ -641,6 +647,9 @@ void RootWidget::setTierFocusMode(bool enabled) {
             m_editPage->setTierFocusMode(true);
         }
     } else {
+        if (m_sidebarSlot) {
+            m_sidebarSlot->setVisible(!m_focusSavedNavigationSlotHidden);
+        }
         if (m_windowAgent) {
             m_windowAgent->setSystemButtonsVisible(m_savedSystemButtonsVisible);
         }
@@ -738,6 +747,9 @@ bool RootWidget::eventFilter(QObject* watched, QEvent* event) {
 
 int RootWidget::sidebarPanelExtent() const {
     if (m_sidebarSlot) {
+        if (m_sidebarSlot->isHidden()) {
+            return 0;
+        }
         return std::max(0, m_sidebarSlot->width());
     }
     if (m_splitter) {

@@ -1,4 +1,5 @@
 #include "pages/EditPage.h"
+#include "tier/TierBoardGeometry.h"
 
 #include "assets/CoverImageCache.h"
 #include "assets/ImageLoader.h"
@@ -134,7 +135,7 @@ protected:
         painter.setPen(Qt::NoPen);
 
         const qreal extent = kTierBoardShadowExtent;
-        const qreal radius = TierListDelegate::outerRadius();
+        const qreal radius = tierBoardCornerRadius();
         const QRectF boardRect = QRectF(rect()).adjusted(extent, extent, -extent, -extent);
         if (boardRect.isEmpty()) {
             return;

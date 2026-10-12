@@ -413,6 +413,33 @@ private:
     SortMode m_sortMode{LastEdited};
 };
 
+struct ProjectRowLayout {
+    static constexpr int outerVerticalMargin = 6;
+    static constexpr int innerVerticalMargin = 10;
+    static constexpr int textSpacing = 4;
+    QFont titleFont;
+    int titleHeight;
+    int bodyHeight;
+
+    explicit ProjectRowLayout(const QFont& font) : titleFont(font) {
+        titleFont.setBold(true);
+        if (font.pointSizeF() > 0) {
+            titleFont.setPointSizeF(font.pointSizeF() + 1);
+        } else {
+            titleFont.setPixelSize(font.pixelSize() + 1);
+        }
+        titleHeight = QFontMetrics(titleFont).height();
+        bodyHeight = QFontMetrics(font).height();
+    }
+
+    int textHeight() const {
+        return titleHeight + 2 * bodyHeight + 2 * textSpacing;
+    }
+    int height() const {
+        return 2 * outerVerticalMargin + qMax(78, textHeight() + 2 * innerVerticalMargin);
+    }
+};
+
 class ProjectDelegate : public QStyledItemDelegate {
 public:
     explicit ProjectDelegate(ThumbnailCache* thumbnailCache, QObject* parent = nullptr)
@@ -427,7 +454,9 @@ public:
         painter->save();
         painter->setRenderHint(QPainter::Antialiasing);
         painter->setRenderHint(QPainter::SmoothPixmapTransform);
-        const QRect r = option.rect.adjusted(8, 6, -8, -6);
+        const ProjectRowLayout layout(option.font);
+        const QRect r = option.rect.adjusted(8, ProjectRowLayout::outerVerticalMargin, -8,
+                                             -ProjectRowLayout::outerVerticalMargin);
         const bool selected = option.state.testFlag(QStyle::State_Selected);
         const bool hovered = option.state.testFlag(QStyle::State_MouseOver);
         const ThemeTokens& colors = activeThemeTokens();
@@ -439,7 +468,7 @@ public:
         painter->setBrush(fill);
         painter->drawRoundedRect(r, 10, 10);
 
-        const QRect thumb(r.left() + 12, r.top() + 12, 74, 54);
+        const QRect thumb(r.left() + 12, r.top() + (r.height() - 54) / 2, 74, 54);
         painter->setPen(Qt::NoPen);
         painter->setBrush(colors.controlFill);
         painter->drawRoundedRect(thumb, 8, 8);
@@ -494,11 +523,9 @@ public:
         const QDateTime updated = index.data(UpdatedAtRole).toDateTime();
         const QDateTime created = index.data(CreatedAtRole).toDateTime();
         const bool exists = index.data(ExistsRole).toBool();
-        QRect textRect = r.adjusted(100, 10, -12, -8);
-        QFont titleFont = option.font;
-        titleFont.setBold(true);
-        titleFont.setPointSize(titleFont.pointSize() + 1);
-        painter->setFont(titleFont);
+        QRect textRect(r.left() + 100, r.top() + (r.height() - layout.textHeight()) / 2,
+                       qMax(0, r.width() - 112), layout.titleHeight);
+        painter->setFont(layout.titleFont);
         painter->setPen(colors.primaryText);
         painter->drawText(
             textRect, Qt::AlignLeft | Qt::AlignTop,
@@ -514,17 +541,20 @@ public:
                      index.data(RowCountRole).toString(), index.data(ImageCountRole).toString(),
                      exists ? QString()
                             : QCoreApplication::translate("qtm::ProjectsPage", "  |  Missing"));
+        textRect.translate(0, layout.titleHeight + ProjectRowLayout::textSpacing);
+        textRect.setHeight(layout.bodyHeight);
         painter->drawText(
-            textRect.adjusted(0, 24, 0, 0), Qt::AlignLeft | Qt::AlignTop,
+            textRect, Qt::AlignLeft | Qt::AlignTop,
             painter->fontMetrics().elidedText(meta, Qt::ElideRight, textRect.width()));
+        textRect.translate(0, layout.bodyHeight + ProjectRowLayout::textSpacing);
         painter->drawText(
-            textRect.adjusted(0, 46, 0, 0), Qt::AlignLeft | Qt::AlignTop,
+            textRect, Qt::AlignLeft | Qt::AlignTop,
             painter->fontMetrics().elidedText(path, Qt::ElideMiddle, textRect.width()));
         painter->restore();
     }
 
-    QSize sizeHint(const QStyleOptionViewItem&, const QModelIndex&) const override {
-        return QSize(400, 92);
+    QSize sizeHint(const QStyleOptionViewItem& option, const QModelIndex&) const override {
+        return QSize(400, ProjectRowLayout(option.font).height());
     }
 
 private:

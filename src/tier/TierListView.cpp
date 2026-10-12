@@ -1,4 +1,5 @@
 #include "tier/TierListView.h"
+#include "tier/TierBoardGeometry.h"
 
 #include "theme/Theme.h"
 
@@ -101,35 +102,12 @@ QRectF tierBoardPaintBounds(const QWidget* viewport) {
 }
 
 QPainterPath tierBoardClipPath(const QWidget* viewport) {
-    QPainterPath path;
     const QRectF bounds = tierBoardPaintBounds(viewport);
-    if (bounds.isValid() && !bounds.isEmpty()) {
-        path.addRoundedRect(bounds, TierListDelegate::outerRadius(),
-                            TierListDelegate::outerRadius());
+    if (!bounds.isValid() || bounds.isEmpty()) {
+        return {};
     }
-    return path;
-}
-
-QPainterPath placeholderClipPath(const QRectF& rect, bool firstRow, bool lastRow) {
-    if (!firstRow && !lastRow) {
-        QPainterPath path;
-        path.addRect(rect);
-        return path;
-    }
-
-    QPainterPath rounded;
-    rounded.addRoundedRect(rect, TierListDelegate::outerRadius(), TierListDelegate::outerRadius());
-
-    QPainterPath squareMask;
-    if (!firstRow) {
-        squareMask.addRect(
-            QRectF(rect.left(), rect.top(), rect.width(), TierListDelegate::outerRadius() + 1));
-    }
-    if (!lastRow) {
-        squareMask.addRect(QRectF(rect.left(), rect.bottom() - TierListDelegate::outerRadius() - 1,
-                                  rect.width(), TierListDelegate::outerRadius() + 1));
-    }
-    return rounded.united(squareMask);
+    const auto* view = qobject_cast<const TierListView*>(viewport->parentWidget());
+    return tierBoardRowClipPath(bounds, view ? view->outerCornerRadius() : tierBoardCornerRadius());
 }
 
 struct MissionInput {
@@ -481,7 +459,18 @@ void TierListView::setBlankAreaActions(BlankAreaAction doubleClickAction,
 }
 
 void TierListView::setTierFocusMode(bool enabled) {
+    if (m_tierFocusMode == enabled) {
+        return;
+    }
     m_tierFocusMode = enabled;
+    m_missionBackdropCache.clear();
+    viewport()->update();
+}
+
+qreal TierListView::outerCornerRadius() const {
+    // Full-window content uses the native window's only clip, including square
+    // maximized/fullscreen corners. A nested curve would change its silhouette.
+    return m_tierFocusMode ? 0.0 : tierBoardCornerRadius();
 }
 
 void TierListView::setToolTipsEnabled(bool enabled) {
@@ -1284,7 +1273,8 @@ void TierListView::paintEvent(QPaintEvent* event) {
             const bool firstVisualRow = placeholderRect.top() <= 0.5;
             const bool lastVisualRow = placeholderRect.bottom() >= viewport()->height() - 1.5;
             const QPainterPath clipPath =
-                placeholderClipPath(placeholderRect, firstVisualRow, lastVisualRow);
+                tierBoardRowClipPath(placeholderRect, outerCornerRadius(), firstVisualRow,
+                                     lastVisualRow);
             painter.fillPath(clipPath, fill);
         }
     }

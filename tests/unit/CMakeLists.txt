@@ -16,7 +16,13 @@ add_qtm_unit_test(tst_FocusBackdrop tst_FocusBackdrop.cpp)
 add_qtm_unit_test(tst_LiquidGlassBackdrop tst_LiquidGlassBackdrop.cpp)
 add_qtm_unit_test(tst_BackdropMaterial tst_BackdropMaterial.cpp)
 add_qtm_unit_test(tst_ImageLoader tst_ImageLoader.cpp)
-add_qtm_unit_test(tst_ThemeManager tst_ThemeManager.cpp)
+add_qtm_unit_test(tst_ThemeManager tst_ThemeManager.cpp
+    "${PROJECT_SOURCE_DIR}/src/window/AppTitleBar.cpp"
+    "${PROJECT_SOURCE_DIR}/src/window/AppTitleBar.h"
+    "${PROJECT_SOURCE_DIR}/src/window/CompositionAwareLineEdit.cpp"
+    "${PROJECT_SOURCE_DIR}/src/window/CompositionAwareLineEdit.h"
+)
+target_link_libraries(tst_ThemeManager PRIVATE VkUI::Window)
 add_qtm_unit_test(tst_PanelManager tst_PanelManager.cpp)
 target_link_libraries(tst_PanelManager PRIVATE VkUI::Widgets VkUI::Window)
 qt_add_executable(tst_DialogButtonOrder

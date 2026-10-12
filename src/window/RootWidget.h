@@ -124,6 +124,7 @@ private:
     int m_currentSidebarWidth{0};
     bool m_focusSavedNavigationExpanded{true};
     bool m_focusSavedContentExpanded{true};
+    bool m_focusSavedNavigationSlotHidden{false};
     bool m_initialLayoutSynced{false};
     QPointer<QWidget> m_focusMoveWindow;
     QPoint m_focusMoveOffset;

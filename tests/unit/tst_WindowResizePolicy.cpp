@@ -3,7 +3,9 @@
 #include <QLabel>
 #include <QLayout>
 #include <QPointer>
+#include <QPushButton>
 #include <QWidget>
+#include <QWindow>
 #include <QtTest>
 
 #include <vkui/window/VWindowAgent.h>
@@ -11,6 +13,7 @@
 #if defined(Q_OS_MACOS) || defined(Q_OS_MAC)
 #import <AppKit/AppKit.h>
 #elif defined(Q_OS_WIN)
+#include <dwmapi.h>
 #include <qt_windows.h>
 #endif
 
@@ -21,6 +24,8 @@ private slots:
     void nativeResizePolicyTracksExplicitSetting();
     void dialogClosePlacementTracksPolicy();
     void transientAgentNeverClaimsOwnerWindow();
+    void nativeStateSurvivesGeometryChanges();
+    void fullContentChromeTracksPolicyAndPalette();
 };
 
 #if defined(Q_OS_WIN)
@@ -37,6 +42,172 @@ bool nativeWindowEnabled(QWidget& host) {
 }
 } // namespace
 #endif
+
+void WindowResizePolicyTest::nativeStateSurvivesGeometryChanges() {
+#if defined(Q_OS_WIN)
+    QWidget host;
+    vkui::VWindowAgent agent(host);
+    host.resize(640, 420);
+    host.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&host));
+    const auto hwnd = reinterpret_cast<HWND>(host.winId());
+    host.move(host.pos() + QPoint(20, 20));
+    host.resize(660, 440);
+    QTRY_VERIFY(::IsWindowVisible(hwnd));
+
+    // Modal owners must stay disabled even if layout or DPI changes resize them.
+    ::EnableWindow(hwnd, FALSE);
+    host.resize(680, 460);
+    agent.setSystemButtons(vkui::VSystemButton::Close);
+    QCoreApplication::processEvents();
+    QVERIFY(!::IsWindowEnabled(hwnd));
+    agent.setSystemButtons(vkui::VStandardSystemButtons);
+    QVERIFY(!::IsWindowEnabled(hwnd));
+    ::EnableWindow(hwnd, TRUE);
+
+    host.showMaximized();
+    QTRY_VERIFY(::IsZoomed(hwnd));
+    QVERIFY(::IsWindowVisible(hwnd));
+    agent.setSystemButtonsVisible(false);
+    QVERIFY(::IsZoomed(hwnd));
+    agent.setSystemButtonsVisible(true);
+    QVERIFY(::IsZoomed(hwnd));
+    MONITORINFO monitor{sizeof(MONITORINFO)};
+    QVERIFY(::GetMonitorInfoW(::MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST), &monitor));
+    const auto fitsWorkArea = [&] {
+        RECT rect{};
+        ::GetClientRect(hwnd, &rect);
+        ::MapWindowPoints(hwnd, nullptr, reinterpret_cast<POINT*>(&rect), 2);
+        return rect.left == monitor.rcWork.left && rect.top == monitor.rcWork.top &&
+               rect.right == monitor.rcWork.right && rect.bottom == monitor.rcWork.bottom;
+    };
+    QTRY_VERIFY(fitsWorkArea());
+    host.showNormal();
+    QTRY_VERIFY(!::IsZoomed(hwnd));
+    host.showMinimized();
+    QTRY_VERIFY(::IsIconic(hwnd));
+    host.showNormal();
+    QTRY_VERIFY(!::IsIconic(hwnd));
+    QVERIFY(::IsWindowVisible(hwnd));
+
+    // Compare the real client rectangle with Qt's platform geometry, not only QWidget state.
+    host.resize(700, 480);
+    const auto geometryAgrees = [&] {
+        RECT rect{};
+        ::GetClientRect(hwnd, &rect);
+        const QSize expected = host.windowHandle()->size() * host.devicePixelRatioF();
+        return qAbs(rect.right - expected.width()) <= 2 &&
+               qAbs(rect.bottom - expected.height()) <= 2;
+    };
+    QTRY_VERIFY(geometryAgrees());
+    QCOMPARE(host.size(), QSize(700, 480));
+
+    QPushButton button(QStringLiteral("Still interactive"), &host);
+    button.setGeometry(40, 80, 180, 40);
+    button.show();
+    QSignalSpy clicked(&button, &QPushButton::clicked);
+    const QPoint point = button.geometry().center() * host.devicePixelRatioF();
+    const LPARAM position = MAKELPARAM(point.x(), point.y());
+    ::SendMessageW(hwnd, WM_LBUTTONDOWN, MK_LBUTTON, position);
+    ::SendMessageW(hwnd, WM_LBUTTONUP, 0, position);
+    QTRY_COMPARE(clicked.count(), 1);
+#else
+    QSKIP("Windows native style regression.");
+#endif
+}
+
+void WindowResizePolicyTest::fullContentChromeTracksPolicyAndPalette() {
+#if defined(Q_OS_WIN)
+    QWidget host;
+    vkui::VWindowAgent agent(host);
+    host.resize(640, 420);
+    host.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&host));
+    QCOMPARE(host.contentsMargins().top(), 0);
+    // Qt's expanded-client renderer must not replace DWM caption controls.
+    QVERIFY(!host.windowHandle()->flags().testFlag(Qt::ExpandedClientAreaHint));
+    QVERIFY(host.windowHandle()->flags().testFlag(Qt::NoTitleBarBackgroundHint));
+    QVERIFY(host.windowHandle()->flags().testFlag(Qt::WindowCloseButtonHint));
+
+    const auto hwnd = reinterpret_cast<HWND>(host.winId());
+    // DWM must remain eligible for native corners and captions, rather than a
+    // layered frameless window with custom-painted controls.
+    QVERIFY(!(::GetWindowLongPtrW(hwnd, GWL_EXSTYLE) & WS_EX_LAYERED));
+    QVERIFY(!host.testAttribute(Qt::WA_NoSystemBackground));
+    QCOMPARE(host.grab().toImage().pixelColor(20, 80).alpha(), 255);
+    auto* nativeSurface = host.findChild<QWidget*>(QStringLiteral("VkNativeCaptionSurface"));
+    QVERIFY(nativeSurface);
+    QVERIFY(nativeSurface->isVisible());
+    QTRY_COMPARE(nativeSurface->geometry().right() + 1, host.width());
+    const auto closeAtRightEdge = [&] {
+        RECT client{}, frame{}, buttons{};
+        ::GetClientRect(hwnd, &client);
+        ::GetWindowRect(hwnd, &frame);
+        ::DwmGetWindowAttribute(hwnd, DWMWA_CAPTION_BUTTON_BOUNDS, &buttons, sizeof(buttons));
+        POINT right{frame.left + buttons.right, frame.top + (buttons.top + buttons.bottom) / 2};
+        ::ScreenToClient(hwnd, &right);
+        // DWM may retain the native thin frame on the last physical pixel when maximized.
+        const int thinFrame = ::GetSystemMetricsForDpi(SM_CXBORDER, ::GetDpiForWindow(hwnd));
+        if (client.right - right.x > thinFrame) {
+            return false;
+        }
+        return hitTestAt(host, QPoint(qMin(client.right, right.x) - 1, right.y)) == HTCLOSE;
+    };
+    QTRY_VERIFY(closeAtRightEdge());
+    QVERIFY(nativeSurface->testAttribute(Qt::WA_TransparentForMouseEvents));
+    const QImage captionImage = nativeSurface->grab().toImage();
+    QCOMPARE(captionImage.pixelColor(captionImage.width() / 2, captionImage.height() / 2).alpha(),
+             0);
+    RECT buttons{};
+    QVERIFY(SUCCEEDED(
+        ::DwmGetWindowAttribute(hwnd, DWMWA_CAPTION_BUTTON_BOUNDS, &buttons, sizeof(buttons))));
+    RECT frame{};
+    QVERIFY(::GetWindowRect(hwnd, &frame));
+    const int buttonWidth = (buttons.right - buttons.left) / 3;
+    const POINT maximum{frame.left + buttons.right - buttonWidth * 3 / 2,
+                        frame.top + (buttons.top + buttons.bottom) / 2};
+    QCOMPARE(::SendMessageW(hwnd, WM_NCHITTEST, 0, MAKELPARAM(maximum.x, maximum.y)),
+             static_cast<LRESULT>(HTMAXBUTTON));
+    agent.setSystemButtonsVisible(false);
+    QVERIFY(!nativeSurface->isVisible());
+    QVERIFY(!host.windowHandle()->flags().testFlag(Qt::WindowCloseButtonHint));
+    QVERIFY(!host.windowHandle()->flags().testFlag(Qt::WindowMinMaxButtonsHint));
+    agent.setSystemButtonsVisible(true);
+    QVERIFY(nativeSurface->isVisible());
+    QVERIFY(host.windowHandle()->flags().testFlag(Qt::WindowCloseButtonHint));
+
+    host.resize(720, 460);
+    QTRY_COMPARE(nativeSurface->geometry().right() + 1, host.width());
+    QTRY_VERIFY(closeAtRightEdge());
+    host.showMaximized();
+    QTRY_VERIFY(::IsZoomed(hwnd));
+    QTRY_COMPARE(nativeSurface->geometry().right() + 1, host.width());
+    QTRY_VERIFY(closeAtRightEdge());
+    host.showNormal();
+    QTRY_VERIFY(!::IsZoomed(hwnd));
+
+    DWORD corner = 0;
+    const HRESULT supported = ::DwmGetWindowAttribute(hwnd, 33, &corner, sizeof(corner));
+    if (SUCCEEDED(supported)) {
+        QCOMPARE(corner, DWORD(2));
+    }
+    QPalette palette = host.palette();
+    palette.setColor(QPalette::Window, QColor(24, 24, 24));
+    palette.setColor(QPalette::WindowText, Qt::white);
+    host.setPalette(palette);
+    BOOL dark = FALSE;
+    const HRESULT darkSupported = ::DwmGetWindowAttribute(hwnd, 20, &dark, sizeof(dark));
+    if (SUCCEEDED(darkSupported)) {
+        QTRY_VERIFY((::DwmGetWindowAttribute(hwnd, 20, &dark, sizeof(dark)), dark));
+        palette.setColor(QPalette::Window, Qt::white);
+        palette.setColor(QPalette::WindowText, Qt::black);
+        host.setPalette(palette);
+        QTRY_VERIFY((::DwmGetWindowAttribute(hwnd, 20, &dark, sizeof(dark)), !dark));
+    }
+#else
+    QSKIP("Windows full-content chrome regression.");
+#endif
+}
 
 void WindowResizePolicyTest::dialogClosePlacementTracksPolicy() {
     QWidget host;
@@ -75,8 +246,7 @@ void WindowResizePolicyTest::dialogClosePlacementTracksPolicy() {
     auto* title = dialog.findChild<QLabel*>(QStringLiteral("AppDialogTitleLabel"));
     QVERIFY(title != nullptr);
     QCOMPARE(title->parentWidget(), dialog.titleBar());
-    QTRY_COMPARE(title->geometry().left(),
-                 dialog.titleBar()->layout()->contentsMargins().left());
+    QTRY_COMPARE(title->geometry().left(), dialog.titleBar()->layout()->contentsMargins().left());
 
 #if defined(Q_OS_MACOS) || defined(Q_OS_MAC)
     QVERIFY(closeButton.hidden);

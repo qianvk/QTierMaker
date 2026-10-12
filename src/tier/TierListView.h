@@ -68,6 +68,7 @@ public:
     }
     void setBlankAreaActions(BlankAreaAction doubleClickAction, BlankAreaAction longPressAction);
     void setTierFocusMode(bool enabled);
+    qreal outerCornerRadius() const;
     void setToolTipsEnabled(bool enabled);
     void setOverviewBackdropEffect(BackdropEffect effect);
     void setLiquidGlassParameters(const LiquidGlassParameters& parameters);

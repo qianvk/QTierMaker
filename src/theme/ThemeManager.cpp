@@ -2,6 +2,8 @@
 
 #include <vkui/core/VkAppearance.h>
 #include <vkui/core/VkThemeManager.h>
+#include <QGuiApplication>
+#include <QStyleHints>
 
 namespace qtm {
 
@@ -26,6 +28,23 @@ void ThemeManager::apply() {
             break;
         }
     }
+#if defined(Q_OS_WIN)
+    // Qt's native caption renderer uses colorScheme rather than the widget palette.
+    // Keep its button colors consistent with the user's explicit app appearance.
+    if (auto* hints = QGuiApplication::styleHints()) {
+        switch (appearance) {
+        case vkui::VkAppearance::Light:
+            hints->setColorScheme(Qt::ColorScheme::Light);
+            break;
+        case vkui::VkAppearance::Dark:
+            hints->setColorScheme(Qt::ColorScheme::Dark);
+            break;
+        case vkui::VkAppearance::Auto:
+            hints->unsetColorScheme();
+            break;
+        }
+    }
+#endif
     vkui::VkThemeManager::instance()->setAppearance(appearance);
 }
 

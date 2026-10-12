@@ -1,8 +1,9 @@
 #include "export/TierListExporter.h"
+#include "theme/Theme.h"
 #include "tier/ProjectHistory.h"
 #include "tier/TierBoardWidget.h"
-#include "tier/TierListDelegate.h"
 #include "tier/TierDragController.h"
+#include "tier/TierListDelegate.h"
 #include "tier/TierListLayout.h"
 #include "tier/TierListModel.h"
 #include "tier/TierListView.h"
@@ -12,7 +13,10 @@
 #include <QDragMoveEvent>
 #include <QDropEvent>
 #include <QImage>
+#include <QPainter>
+#include <QPainterPath>
 #include <QTemporaryDir>
+#include <vkui/core/VkThemeManager.h>
 
 #include <limits>
 #include <memory>
@@ -28,6 +32,10 @@ private slots:
     void girlsProjectKeepsEveryImageInsideItsRow();
     void expandedWidthsReflowRows();
     void viewResizeRecomputesLayout();
+    void rowFillReachesViewportEdges_data();
+    void rowFillReachesViewportEdges();
+    void imageRowsKeepPlatformCorners_data();
+    void imageRowsKeepPlatformCorners();
     void noCropPreservesAspectAndSharedLineHeight();
     void missionControlBalancesCenteredFreePacking();
     void missionControlHoverKeepsNonLocalTilesFixed();
@@ -298,6 +306,128 @@ void TierListLayoutTest::viewResizeRecomputesLayout() {
     QTRY_COMPARE(model.rowUnitCountAt(3), collapsed.rowUnits.at(3));
     QTRY_COMPARE(model.rowUnitCountAt(4), collapsed.rowUnits.at(4));
     QVERIFY(normal.rowUnits != collapsed.rowUnits);
+}
+
+void TierListLayoutTest::rowFillReachesViewportEdges_data() {
+    QTest::addColumn<qreal>("dpr");
+    QTest::addColumn<bool>("focus");
+    for (qreal dpr : {1.0, 1.25, 1.5, 2.0}) {
+        for (bool focus : {false, true}) {
+            const QByteArray name =
+                QStringLiteral("dpr-%1-%2").arg(dpr).arg(focus ? "focus" : "normal").toLatin1();
+            QTest::newRow(name.constData()) << dpr << focus;
+        }
+    }
+}
+
+void TierListLayoutTest::rowFillReachesViewportEdges() {
+    QFETCH(qreal, dpr);
+    QFETCH(bool, focus);
+    TierProject project = TierProject::createUntitled();
+    project.canvas.insert(QStringLiteral("backgroundVisibility"), 0.0);
+    TierBoardWidget board;
+    board.setAttribute(Qt::WA_DontShowOnScreen);
+    board.resize(640, 400);
+    board.setData(&project, nullptr, nullptr, {});
+    board.setTierFocusMode(focus);
+    board.show();
+    QCoreApplication::processEvents();
+    auto* view = board.findChild<TierListView*>();
+    QVERIFY(view);
+    QImage image(view->viewport()->size() * dpr, QImage::Format_ARGB32_Premultiplied);
+    image.setDevicePixelRatio(dpr);
+    image.fill(Qt::transparent);
+    QPainter painter(&image);
+    view->viewport()->render(&painter);
+    painter.end();
+    for (int row = 0; row < project.rows.size(); ++row) {
+        const QRect rect = view->visualRect(view->model()->index(row, 0));
+        const int y = qFloor(rect.center().y() * dpr);
+        for (int x = 0; x < qCeil(4 * dpr); ++x) {
+            QCOMPARE(image.pixelColor(x, y), project.rows.at(row).color);
+            QCOMPARE(image.pixelColor(image.width() - 1 - x, y),
+                     activeThemeTokens().tierRowBackground);
+        }
+    }
+}
+
+void TierListLayoutTest::imageRowsKeepPlatformCorners_data() {
+    QTest::addColumn<qreal>("dpr");
+    QTest::addColumn<bool>("focus");
+    for (qreal dpr : {1.0, 1.25, 1.5, 2.0}) {
+        for (bool focus : {false, true}) {
+            const QByteArray name =
+                QStringLiteral("dpr-%1-%2").arg(dpr).arg(focus ? "focus" : "normal").toLatin1();
+            QTest::newRow(name.constData()) << dpr << focus;
+        }
+    }
+}
+
+void TierListLayoutTest::imageRowsKeepPlatformCorners() {
+    QFETCH(qreal, dpr);
+    QFETCH(bool, focus);
+    QTemporaryDir storage;
+    QImage source(1020, 800, QImage::Format_RGB32);
+    source.fill(Qt::magenta);
+    const QString path = storage.filePath("corner.png");
+    QVERIFY(source.save(path));
+    TierProject project = TierProject::createUntitled();
+    project.rows.resize(1);
+    project.canvas.insert(QStringLiteral("backgroundVisibility"), 0.0);
+    project.setImagePresentationMode(ImagePresentationMode::NoCrop);
+    AssetManager assets;
+    const auto imported = assets.importImages(project, {path});
+    QVERIFY(imported);
+    project.rows[0].imageIds = imported.value();
+    TierListModel model;
+    TierListDelegate delegate;
+    TierListView view;
+    delegate.setContext(&project, &assets, nullptr, {});
+    view.setModel(&model);
+    view.setItemDelegate(&delegate);
+    view.setTierFocusMode(focus);
+    model.setProject(&project);
+    const QSize size(delegate.labelWidth() + 104, 80);
+    QStyleOptionViewItem option;
+    option.rect = QRect(QPoint(), size);
+    option.widget = &view;
+    option.font = view.font();
+    QImage rendered(size * dpr, QImage::Format_ARGB32_Premultiplied);
+    rendered.setDevicePixelRatio(dpr);
+    rendered.fill(Qt::transparent);
+    QPainter painter(&rendered);
+    delegate.paint(&painter, option, model.index(0, 0));
+    painter.end();
+    const qreal radius =
+        focus ? 0.0 : vkui::VkThemeManager::instance()->theme().metrics().windowCornerRadius;
+    QCOMPARE(view.outerCornerRadius(), radius);
+    QImage expected(size * dpr, QImage::Format_ARGB32_Premultiplied);
+    expected.setDevicePixelRatio(dpr);
+    expected.fill(Qt::transparent);
+    QPainter maskPainter(&expected);
+    maskPainter.setRenderHint(QPainter::Antialiasing);
+    QPainterPath mask;
+    mask.addRoundedRect(QRectF(QPointF(), QSizeF(size)), radius, radius);
+    maskPainter.fillPath(mask, Qt::white);
+    maskPainter.end();
+    // Both labels and actual imported image tiles must stay inside the platform
+    // outline. Focus content is square so the native window owns the only clip.
+    for (int y : {0, 1, rendered.height() - 2, rendered.height() - 1}) {
+        for (int x = 0; x < rendered.width(); ++x) {
+            // Antialiased boundary pixels accumulate opacity across layers;
+            // pixels fully outside the platform outline must stay transparent.
+            if (expected.pixelColor(x, y).alpha() == 0) {
+                QCOMPARE(rendered.pixelColor(x, y).alpha(), 0);
+            } else if (expected.pixelColor(x, y).alpha() == 255 &&
+                       (x < qCeil(radius * dpr) + 2 ||
+                        x >= rendered.width() - qCeil(radius * dpr) - 2)) {
+                QCOMPARE(rendered.pixelColor(x, y).alpha(), 255);
+            }
+        }
+    }
+    if (focus) {
+        QCOMPARE(rendered.pixelColor(0, 0), project.rows[0].color);
+    }
 }
 
 void TierListLayoutTest::resettingViewStateEndsMissionControlImmediately() {

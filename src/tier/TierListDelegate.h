@@ -27,7 +27,6 @@ public:
     const TierProject* project() const { return m_project; }
     int labelWidth() const;
     static int minimumLabelWidth();
-    static int outerRadius();
 
     QRect labelRect(const QRect& rowRect) const;
     QVector<QRect> tileRects(const QModelIndex& index, const QRect& rowRect) const;

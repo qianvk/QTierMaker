@@ -60,6 +60,7 @@ private:
     void rememberTitleEditBaseline();
     void updateTitleWidth();
     void updateTitleGeometry();
+    void refreshTitlePalette();
     void setActionButtonsVisible(bool visible);
     int actionButtonsWidth() const;
     void installTitleEditOutsideClickFilter();
