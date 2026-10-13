@@ -344,10 +344,10 @@ jobs:
               channel: $channel,
               localizations: {
                 en: {
-                  changelog: ("QTierMaker " + $version + " updates VkUI controls and native window integration, fixes sidebar restoration, keeps the New button inside the sidebar, unifies toolbar hover styling, aligns macOS traffic lights, improves dialog actions and translations, exports the displayed board as PNG/JPEG, and adds a keyboard shortcut reference in preferences. On macOS, allow the app from System Settings > Privacy & Security on first launch.")
+                  changelog: ("QTierMaker " + $version + " updates VkUI native window integration, fixes window chrome and resize behavior, restores sidebar layout after Focus Mode, improves tier board geometry and rendering, keeps project rows readable, synchronizes title text with appearance changes, and fixes Chinese Cancel labels in confirmation dialogs. On macOS, allow the app from System Settings > Privacy & Security on first launch.")
                 },
                 zh_CN: {
-                  changelog: ("QTierMaker " + $version + " 更新 VkUI 控件与原生窗口集成，修复侧栏恢复显示，保持新增按钮位于侧栏，统一工具栏悬停样式，对齐 macOS 窗口按钮，完善对话框操作及翻译，按画板实际显示导出 PNG/JPEG 图片，并新增设置中的快捷键说明。macOS 首次启动时，请在系统设置 > 隐私与安全性中选择仍要打开。")
+                  changelog: ("QTierMaker " + $version + " 更新 VkUI 原生窗口集成，修复窗口装饰和尺寸调整行为，恢复专注模式切换后的侧栏布局，完善分级画板布局及渲染，改善项目列表文字显示，同步标题文字与外观变化，并修复中文确认窗口中的取消按钮翻译。macOS 首次启动时，请在系统设置 > 隐私与安全性中选择仍要打开。")
                 }
               },
               updates: {
